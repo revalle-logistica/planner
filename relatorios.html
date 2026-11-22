@@ -128,6 +128,13 @@ async function lerArquivo(f){
   const b=await f.arrayBuffer();let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(e){t=new TextDecoder('windows-1252').decode(b)}
   return R.ler(f.name,t,{codigos:CODES});
 }
+// cada planilha de ajustes de janela (TCD) entra num histórico único, por nº do pedido, para a tela de Alterações
+async function historicoAjustes(aj,orig){let H={itens:[]};try{H=JSON.parse(await PlannerData.text('janelas/ajustes-hist.json'))}catch(e){}
+  const tem=new Set(H.itens.map(x=>x.unb+'|'+(x.pedido||x.cod+'|'+x.ajuste)));const hoje=new Date();let n=0;
+  for(const a of aj)for(const it of JSON.parse(a.conteudo).itens){const k=a.unb+'|'+(it.pedido||it.cod+'|'+it.ajuste);if(tem.has(k))continue;tem.add(k);
+    let em='';const m=String(it.aprovado||'').match(/(\d{2})\/(\d{2})(?:\/(\d{2,4}))?/);if(m){let y=m[3]?(m[3].length===2?'20'+m[3]:m[3]):String(hoje.getFullYear());let d=`${y}-${m[2]}-${m[1]}`;if(!m[3]&&d>hoje.toISOString().slice(0,10))d=`${+y-1}-${m[2]}-${m[1]}`;em=d}
+    H.itens.push(Object.assign({unb:a.unb,em,recebido:hoje.toISOString(),orig},it));n++}
+  if(n)await PlannerData.put('janelas/ajustes-hist.json',JSON.stringify(H));return n}
 async function subir(files){
   const me=(PlannerAuth.user()||{}).email||'';
   for(const f of files){
@@ -144,6 +151,7 @@ async function subir(files){
         logL('ok',`✓ ${esc(r.nome)} · ${esc(R.UNIDADES[i.unb])}: ${fmt(i.linhas)} ${r.id==='ajustes'?'ajustes':'linhas'}`,ln);
       }catch(e){logL('err',`✗ ${esc(r.nome)} · ${esc(R.UNIDADES[i.unb])}: ${esc(e.message)}`,ln)}
     }
+    const aj=itens.filter(i=>i.id==='ajustes');if(aj.length){try{const n=await historicoAjustes(aj,f.name);if(n)logL('ok',`✓ Histórico de ajustes de janela: ${fmt(n)} pedido(s) novo(s) registrados em Alterações`)}catch(e){logL('err','✗ Histórico de ajustes: '+esc(e.message))}}
     try{await PlannerData.put('rel/index.json',JSON.stringify(IX))}catch(e){logL('err','✗ Não consegui atualizar o resumo: '+esc(e.message))}
     render();
   }

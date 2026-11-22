@@ -125,6 +125,22 @@ $('fi').onchange=e=>{importFiles(e.target.files);e.target.value=''};
   await load(h.v&&IDX.versions.some(v=>v.id===h.v)?h.v:IDX.versions[0].id);
 })();
 let OLD={keys:[],st:null};
+// ajustes de janela aprovados (planilha semanal da TCD, histórico montado na Central) dentro do período do planner
+let AJH=null,AJB={};
+async function janelasDoPeriodo(vid){
+  if(AJH===null){AJH=[];try{AJH=JSON.parse(await PlannerData.text('janelas/ajustes-hist.json')).itens||[]}catch(e){}
+    await Promise.all(Object.keys(UNB_N).map(async u=>{try{AJB[u]=(JSON.parse(await PlannerData.text('janelas/base/'+u+'.json')).pedidos)||{}}catch(e){AJB[u]={}}}))}
+  if(!AJH.length)return [];
+  const iso=k=>{const [d,m,a]=k.split('.');return `20${a}-${m}-${d}`};
+  const datas=[...IDX.versions.map(v=>v.vig),...(OLD.keys||[]).map(iso)].sort();
+  const de=/^old:/.test(vid)?iso(vid.slice(4)):(IDX.versions.find(v=>v.id===vid)||{}).vig;if(!de)return [];
+  const ate=datas.find(d=>d>de)||'9999';
+  const setor={};if(V&&V.clients&&!/^old:/.test(vid))for(const c of V.clients)setor[c[0]+'|'+c[1]]=c[7]||c[4]||'';
+  const DD=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'],br=d=>d?d.split('-').reverse().join('/'):'';
+  return AJH.filter(a=>a.em&&a.em>=de&&a.em<ate).map((a,i)=>{const ap=(AJB[a.unb]||{})[a.pedido];
+    return {id:'tcd'+i,ro:true,u:a.unb,code:a.cod,n:a.pdv,s:setor[a.unb+'|'+a.cod]||'',sNovo:'',tipo:'Janela de entrega (TCD)',novoDia:'',
+      novaJanela:(a.dias||[]).map((x,j)=>x?DD[j]:'').filter(Boolean).join('/'),just:[a.ajuste,a.req?'pedido por '+a.req:''].filter(Boolean).join(' · '),
+      parecer:'Aprovado',obs:ap?'Aplicado no BEES na semana de '+br(ap):'Ainda não aplicado no BEES',gv:'',origem:`TCD · pedido ${a.pedido||'—'} · aprovado em ${br(a.em)}`}})}
 const UNB_N={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'},UNB_A={'1031287':'ALA','1031295':'SER','826588':'POM','983616':'PAF'};
 const unbDeNome=n=>Object.keys(UNB_N).find(k=>String(n||'').toLowerCase().includes(UNB_N[k].toLowerCase().split(' ').pop()));
 const kNum=k=>{const [d,m,a]=k.split('.');return +(a+m+d)};
@@ -141,12 +157,12 @@ function itensAntigos(k){const st=OLD.st,out=[];let n=0;
   for(const u in st.units){const unb=unbDeNome(u);if(!unb)continue;
     for(const r of ((st.units[u].crit||{})[k]||[]))out.push({id:'old'+(n++),u:unb,code:r[0],n:r[2],s:r[1],sNovo:'',tipo:r[5],novoDia:r[6],novaJanela:r[7],just:r[8],parecer:r[9],obs:r[10],gv:'',origem:'Planilha de crítica (antes da virada)'});}
   for(const r of (st.form||[])){if(!(r[0]>=de&&r[0]<ate))continue;const unb=unbDeNome(r[1]);if(!unb)continue;
-    out.push({id:'old'+(n++),u:unb,code:r[2],n:'',s:'',sNovo:'',tipo:r[5]||'Formulário',novoDia:r[3],novaJanela:r[4],just:'Formulário de alterações · '+r[0].split('-').reverse().join('/'),parecer:'Sem parecer',obs:'',gv:'',origem:'Formulário (depois da virada)'})}
+    out.push({id:'old'+(n++),u:unb,code:r[2],n:'',s:'',sNovo:'',tipo:r[5]||'Formulário',novoDia:r[3],novaJanela:r[4],just:'Formulário de alterações · '+r[0].split('-').reverse().join('/'),parecer:'Aprovado',obs:'',gv:'',origem:'Formulário (depois da virada)'})}
   return out}
 async function load(vid){
   S.vid=vid;$('ver').value=vid;
   const antigo=/^old:/.test(vid);['editBtn','pubBtn','refBtn','mapBtn'].forEach(id=>{const e=$(id);if(e)e.style.display=antigo?'none':''});
-  if(antigo){const k=vid.slice(4);REG={items:itensAntigos(k)};PEND=new Map();setDirty(false);
+  if(antigo){const k=vid.slice(4);REG={items:itensAntigos(k).concat(await janelasDoPeriodo(vid))};PEND=new Map();setDirty(false);
     V={vig:'20'+k.split('.').reverse().join('-'),units:Object.keys(UNB_N).filter(u=>REG.items.some(r=>r.u===u)).map(u=>({id:u,name:UNB_N[u],abbr:UNB_A[u]}))};
     for(const u of V.units)UNITS[u.id]=u;
     $('vsub').textContent=`Planner ${k.replace(/\./g,'/')} · solicitações das planilhas do processo antigo (crítica e formulário) · só consulta`;
@@ -167,7 +183,7 @@ async function refresh(show,silentRender){
   if(!PlannerAPI.ok()){REG={items:[]};say('err','A conexão com o registro ainda não foi configurada.');if(!silentRender)render();return}
   try{if(show)say('info','Buscando as solicitações…');const items=await PlannerAPI.list(S.vid);
     for(const it of items){const p=PEND.get(it.id);if(p){it.parecer=p.parecer;it.obs=p.obs}}
-    REG={items};if(show)$('msg').className='msg';$('vsub').textContent=`Solicitações de Vendas e parecer da Logística · planner com vigência ${fmtD(V.vig)} · atualizado às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+    REG={items:items.concat(await janelasDoPeriodo(S.vid))};if(show)$('msg').className='msg';$('vsub').textContent=`Solicitações de Vendas e parecer da Logística · planner com vigência ${fmtD(V.vig)} · atualizado às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
   }catch(e){say('err','Não consegui ler o registro: '+esc(e.message)+'. <a href="#" onclick="refresh(true);return false">Tentar de novo</a>')}
   if(!silentRender||true)render();
 }
@@ -209,10 +225,10 @@ function renderTable(R){
   const all=S.u==='ALL';
   $('tbl').innerHTML=`<thead><tr><th>Cliente</th>${all?'<th>Unid.</th>':''}<th>Setor</th><th>Tipo</th><th>Novo dia visita</th><th>Nova janela</th><th>Justificativa</th><th>Parecer</th></tr></thead><tbody>`+
   R.map(r=>{const i=REG.items.indexOf(r);const k=parK(r.parecer);
-    const tc={'Carteira/vendedor':'#ff5d5d','Dia de visita':'#3b9eff','Visita e janela':'#b07cff','Janela de entrega':'#2dd4bf'}[r.tipo]||'#8a94a8';
+    const tc={'Janela de entrega (TCD)':'#22d3ee','Carteira/vendedor':'#ff5d5d','Dia de visita':'#3b9eff','Visita e janela':'#b07cff','Janela de entrega':'#2dd4bf'}[r.tipo]||'#8a94a8';
     return `<tr><td class="cli"><b>${esc(r.n)}</b><small>${esc(r.code)}</small></td>${all?`<td>${esc((UNITS[r.u]||{}).abbr||r.u)}</td>`:''}<td class="mono">${esc(r.s)}${r.sNovo&&r.sNovo!==r.s?`<br><b style="color:#f5c2fb">→ ${esc(r.sNovo)}</b>`:''}</td><td><span class="chip" style="background:${tc}22;color:${tc}">${esc(r.tipo)}</span></td><td>${esc(r.novoDia)}${r.novaFreq?`<br><span style="color:var(--mut);font-size:12px">${esc(r.novaFreq)}</span>`:''}</td><td>${esc(r.novaJanela)}</td>
     <td class="j">${esc(r.just)||'<span style="color:var(--dim)">—</span>'}${!S.edit&&r.obs?`<i>Log: ${esc(r.obs)}</i>`:''}${r.origem?`<span style="display:block;color:#93c5fd;text-transform:none;font-size:11.5px;margin-top:3px">📄 ${esc(r.origem)}</span>`:''}${r.gv?`<span style="display:block;color:var(--dim);text-transform:none;font-size:11.5px;margin-top:3px">GV: ${esc(r.gv)}</span>`:''}</td>
-    <td class="${S.edit?'edit':''}">${S.edit?`<select data-i="${i}" class="pp">${['Pendente','Aprovado','Reprovado'].map(x=>`<option ${parK(r.parecer)===parK(x)?'selected':''}>${x}</option>`).join('')}</select><textarea data-i="${i}" class="po" rows="2" placeholder="Observação da Logística">${esc(r.obs||'')}</textarea>`:`<span class="par ${k}">${esc(r.parecer||'Pendente')}</span>`}</td></tr>`}).join('')+'</tbody>';
+    <td class="${S.edit&&!r.ro?'edit':''}">${S.edit&&!r.ro?`<select data-i="${i}" class="pp">${['Pendente','Aprovado','Reprovado'].map(x=>`<option ${parK(r.parecer)===parK(x)?'selected':''}>${x}</option>`).join('')}</select><textarea data-i="${i}" class="po" rows="2" placeholder="Observação da Logística">${esc(r.obs||'')}</textarea>`:`<span class="par ${k}">${esc(r.parecer||'Pendente')}</span>`}</td></tr>`}).join('')+'</tbody>';
   const mark=it=>{PEND.set(it.id,{id:it.id,parecer:it.parecer,obs:it.obs||''});setDirty(true)};
   if(S.edit){$('tbl').querySelectorAll('.pp').forEach(el=>el.onchange=()=>{const it=REG.items[+el.dataset.i];it.parecer=el.value;mark(it);render()});
     $('tbl').querySelectorAll('.po').forEach(el=>el.onchange=()=>{const it=REG.items[+el.dataset.i];it.obs=el.value.trim();mark(it)})}
