@@ -70,6 +70,12 @@ h2{margin:0 0 4px;font-size:15px}
     <div style="overflow-x:auto"><table class="tbl" id="tbl"></table></div>
     <div class="det" id="det"></div>
   </div>
+  <div class="card">
+    <h2>Rotina e indicadores</h2>
+    <div class="sub">Bases da Reunião semanal, Monitor, Indicadores e Buffer. Elas são importadas em <a href="rotina.html?m=imp" style="color:#93c5fd">Bases da rotina</a> (dá para conectar a pasta e atualizar com um clique). A data é até quando há dados.</div>
+    <div style="overflow-x:auto"><table class="tbl" id="tblR"></table></div>
+    <div style="margin-top:12px"><a class="btn pri" href="rotina.html?m=imp">Importar bases da rotina →</a></div>
+  </div>
 </main>
 <script>
 {
@@ -87,6 +93,19 @@ async function load(){
   if(!CODES.size){try{const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];const V=await PlannerData.json(`v/${v.id}.json`);
     for(const c of V.clients){if(!CODES.has(c[0]))CODES.set(c[0],new Set());CODES.get(c[0]).add(String(c[1]))}}catch(e){}}
   render();
+  try{const m=JSON.parse(await PlannerData.text('rotina/meta.json'));renderRotina(m.status||{})}catch(e){renderRotina(null)}
+}
+function renderRotina(S){
+  const RR=[['0530','Entregas por mapa (volume e entregas)','03.05.30','semanal'],['1142','KM rodado por mapa','03.11.42','semanal'],['1120','KM previsto por mapa','03.11.20','semanal'],['ped','Relatório de pedidos','Pedidos','semanal'],
+    ['vis','Visitas da semana (histórico do Monitor)','01.02.78.03','semanal'],['jan','Janelas da semana (histórico do Monitor)','Janela de entrega','semanal'],['acoes','Planos de ação das reuniões','Sistema de gestão','semanal'],['cli','Clientes (município e coordenadas)','Relatório de clientes','mensal']];
+  const NOME={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Pombal','983616':'Paulo Afonso'};
+  const un=u=>{if(!S||!S.units)return null;const k=Object.keys(S.units).find(x=>x.toLowerCase().includes(NOME[u].toLowerCase()));return k?S.units[k]:null};
+  const idade=d=>d?Math.floor((Date.now()-new Date(String(d).slice(0,10)+'T12:00:00'))/864e5):null;
+  $('tblR').innerHTML=`<thead><tr><th>Base</th><th>Frequência</th>${R.ORDEM.map(u=>`<th>${ABR[u]}</th>`).join('')}</tr></thead><tbody>`+RR.map(([k,n,c,f])=>`<tr><td class="rn"><b>${esc(n)}</b><span class="cd">${esc(c)}</span></td><td class="fq">${f==='mensal'?'Mensal':'Semanal'}</td>
+    ${R.ORDEM.map(u=>{const x=un(u);let v=x?(k==='acoes'?S.acoes:x[k]):null;
+      if(k==='cli'){return `<td><span class="st s-${v?'ok':'nunca'}">${v?fmt(v)+' PDVs':'Nunca enviado'}</span></td>`}
+      const a=idade(v),lim=f==='mensal'?35:9,st=a==null?'nunca':a<=lim?'ok':a<=lim+7?'atualizar':'atrasado';
+      return `<td><span class="st s-${st}">${TXT[st]}<small>${v?'até '+new Date(String(v).slice(0,10)+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'—'}</small></span></td>`}).join('')}</tr>`).join('')+'</tbody>';
 }
 function cel(id,u){const x=(IX.r[id]||{})[u];const r=R.CATALOGO.find(c=>c.id===id);return {x,s:R.situacao(r.freq,x&&x.em)}}
 function render(){

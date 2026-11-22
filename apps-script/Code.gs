@@ -13,7 +13,8 @@ const SHEETS = {
   Equipes: ['unb', 'setor', 'gv_email', 'atualizado'],
   Links: ['token', 'unb', 'setor', 'ativo', 'criado_por', 'criado_em', 'desativado_em'],
   Arquivos: ['nome', 'file_id', 'atualizado', 'por', 'bytes'],
-  Log: ['quando', 'email', 'acao', 'detalhe']
+  Log: ['quando', 'email', 'acao', 'detalhe'],
+  Notas: ['id', 'tipo', 'unidade', 'planner', 'pdv', 'setor', 'texto', 'status', 'autor', 'autor_nome', 'criado', 'atualizado', 'excluida']
 };
 
 // ---------- infraestrutura
@@ -353,7 +354,7 @@ const ACTIONS = {
   // dados (planner, relatórios, janelas)
   'data.get'(b) {
     const u = session(b, ['admin', 'gv']), nome = String(b.name || '');
-    if (u.perfil !== 'admin' && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome))) throw new Error('Sem permissão para este arquivo');
+    if (u.perfil !== 'admin' && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome))) throw new Error('Sem permissão para este arquivo');
     return readFile(nome);
   },
   'data.put'(b) {
@@ -361,8 +362,39 @@ const ACTIONS = {
     const nome = String(b.name || ''); if (!/^[\w\-./]+$/.test(nome) || nome.indexOf('..') >= 0) throw new Error('Nome de arquivo inválido');
     const r = writeFile(nome, String(b.content == null ? '' : b.content), u.email); log(u.email, 'data.put', nome); return r;
   },
+  // anotações do time (Oportunidades): qualquer usuário registra; muda/exclui quem escreveu ou o administrador
+  'notas.list'(b) {
+    session(b, ['admin', 'gv']); const t = String(b.tipo || '');
+    return { notas: rows('Notas').filter(n => n.excluida !== 'sim' && (!t || n.tipo === t)).map(notaPub_) };
+  },
+  'notas.add'(b) {
+    const u = session(b, ['admin', 'gv']); const itens = (b.itens || []).slice(0, 200);
+    if (!itens.length) throw new Error('Nada para registrar');
+    const out = locked(() => itens.map(it => {
+      const texto = String(it.texto || '').trim().slice(0, 4000); if (!texto) throw new Error('Texto vazio');
+      const n = { id: uid('n'), tipo: String(it.tipo || 'opp'), unidade: String(it.unidade || ''), planner: String(it.planner || ''), pdv: String(it.pdv || '').replace(/\D/g, ''), setor: String(it.setor || '').replace(/\D/g, ''),
+        texto, status: 'aberta', autor: u.email, autor_nome: u.nome, criado: now(), atualizado: now(), excluida: '' };
+      append('Notas', n); return n;
+    }));
+    log(u.email, 'notas.add', out.length + ' nota(s)'); return { notas: out.map(notaPub_) };
+  },
+  'notas.set'(b) {
+    const u = session(b, ['admin', 'gv']);
+    return locked(() => {
+      const n = rows('Notas').find(x => x.id === String(b.id || '')); if (!n || n.excluida === 'sim') throw new Error('Anotação não encontrada');
+      if (u.perfil !== 'admin' && n.autor !== u.email) throw new Error('Só quem escreveu (ou a Logística) pode mudar esta anotação');
+      const p = { atualizado: now() };
+      if (b.excluir) p.excluida = 'sim';
+      if (b.status) { if (['aberta', 'andamento', 'feita'].indexOf(b.status) < 0) throw new Error('Situação inválida'); p.status = b.status; }
+      if (b.texto != null) p.texto = String(b.texto).trim().slice(0, 4000);
+      update('Notas', n._row, p); log(u.email, 'notas.set', n.id + (b.excluir ? ' excluída' : ' ' + (b.status || 'texto')));
+      return { nota: notaPub_(Object.assign(n, p)) };
+    });
+  },
   'data.list'(b) {
     session(b, ['admin']); const p = String(b.prefix || '');
     return { files: rows('Arquivos').filter(a => a.nome.indexOf(p) === 0).map(a => ({ nome: a.nome, atualizado: a.atualizado, por: a.por, bytes: +a.bytes || 0 })) };
   }
 };
+
+function notaPub_(n) { const o = {}; SHEETS.Notas.forEach(k => { if (k !== 'excluida') o[k] = n[k]; }); return o; }

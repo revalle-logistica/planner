@@ -4,7 +4,7 @@
 (function () {
   var KEY = 'plannerSess';
   // telas e perfis que podem abrir (admin pode tudo)
-  var PERM = { 'index.html': ['gv'], 'painel.html': ['gv'], 'rota.html': ['gv'], 'critica.html': ['gv'], 'links.html': ['gv'] };
+  var PERM = { 'index.html': ['gv'], 'painel.html': ['gv'], 'rota.html': ['gv'], 'critica.html': ['gv'], 'links.html': ['gv'], 'rotina.html': ['gv'] };
   var PUBLIC = { 'login.html': 1 };
   var page = location.pathname.split('/').pop() || 'index.html';
   var params = new URLSearchParams(location.search);
