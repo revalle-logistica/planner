@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Figtree:wght@400;500;600;700;800&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
 <script src="vendor/xlsx.full.min.js"></script>
 <script src="js/rotina-mun.js"></script>
+<script src="js/api.js"></script>
 <style>
 .rt{
   --bg:#ECEDEF; --slide:#FFFFFF; --ink:#1E1E1E; --muted:#6B6F76; --line:#D5D8DC; --hl:#BDBDBD;
@@ -372,7 +373,7 @@ function avisoLeitura(){if(avisoLeitura.ok)return;avisoLeitura.ok=1;alertMsg('S�
 function grupoDe(id){for(const g in GRUPOS)if(GRUPOS[g].ids.includes(id))return g;return 'sem'}
 function irPara(i){const s=SLIDES[i];if(!s)return;const g=grupoDe(s.id);if(g===M){UI.slide=i;render();window.scrollTo(0,0)}else location.href='rotina.html?m='+g+'&s='+s.id}
 function grupoTabs(){const G=GRUPOS[M];const el=document.getElementById('gtabs');if(!el)return;
-  const NOMES={mon:'📡 Monitor semanal',alt:'📈 Histórico pós-planner'};
+  const NOMES={mon:'📡 Monitor semanal',alt:'📊 Resumo das solicitações'};
   el.innerHTML=(M==='alt'&&PlannerAuth.can('alteracoes.html')?'<a href="alteracoes.html"><button>📝 Solicitações dos GVs</button></a>':'')+(G.ids.length>1?G.ids.map(id=>{const i=SLIDES.findIndex(s=>s.id===id);return `<button data-s="${i}" aria-pressed="${i===UI.slide}">${NOMES[id]||SLIDES[i].n}</button>`}).join(''):'');
   const t=document.getElementById('pgT');if(t)t.textContent=G.ids.length>1?G.t:SLIDES[UI.slide].n;
   const p=document.getElementById('pgS');if(p)p.textContent=SLIDES[UI.slide].sub}
@@ -410,7 +411,7 @@ async function iniciar(){
   const G=GRUPOS[M];const sp=new URLSearchParams(location.search).get('s');
   let i=SLIDES.findIndex(x=>x.id===sp);
   if(i<0)i=SLIDES[UI.slide]&&G.ids.includes(SLIDES[UI.slide].id)?UI.slide:SLIDES.findIndex(x=>x.id===G.ids[0]);
-  UI.slide=i;delete UI.wk; // a semana abre sempre na mais recente
+  instalarResumo();UI.slide=i;delete UI.wk; // a semana abre sempre na mais recente
   if(!UI.pInit){for(const u in ST.units){const ds=Object.keys(ST.units[u].planners||{});if(ds.length){UI.p=ds.sort((a,b)=>{const x=pd(a),y=pd(b);return (x.y*1e4+x.m*100+x.d)-(y.y*1e4+y.m*100+y.d)}).pop();UI.pInit=1;break}}}
   render()}
 // ---- sem dados ainda: o administrador traz o HTML antigo (todo o histórico) ou importa as bases
@@ -491,6 +492,21 @@ async function completar(){
   await Promise.all(tarefas)}
 
 function semUnidade(n){throw new Error('não reconheci a unidade pelo nome do arquivo (use Alagoinhas, Serrinha, Pombal ou Paulo Afonso no nome)')}
+
+// ---- Resumo das solicitações: planilhas (planners antigos) ou o próprio sistema (Crítica do planner)
+const SOLIC={};
+function vidDe(p){const [d,m,a]=p.split('.');return `20${a}-${m}-${d}`}
+function unbDe(u){return Object.keys(UNB).find(k=>u.toLowerCase().includes(UNB[k].toLowerCase().split(' ').pop()))}
+function instalarResumo(){const altOrig=R.alt;
+  R.alt=()=>{const AO=altOf();const nota=t=>`<p class="note" style="margin:0 0 10px">${t}</p>`;
+    if(AO.n)return nota('📄 Planner '+UI.p.replace(/\./g,'/')+': dados das planilhas do processo antigo (crítica e formulário de alterações).')+altOrig();
+    const k=UI.p,v=vidDe(k);
+    if(!(k in SOLIC)){SOLIC[k]=null;if(window.PlannerAPI)PlannerAPI.list(v).then(it=>{SOLIC[k]=it||[];render()}).catch(()=>{SOLIC[k]=[];render()});return title('Solicitações','Planner '+k.replace(/\./g,'/'))+'<p class="note">Buscando as solicitações feitas no sistema…</p>'}
+    if(SOLIC[k]===null)return title('Solicitações','Planner '+k.replace(/\./g,'/'))+'<p class="note">Buscando as solicitações feitas no sistema…</p>';
+    const un=unbDe(UI.u);const it=SOLIC[k].filter(r=>!un||String(r.u)===un);
+    if(!it.length)return title('Solicitações','Planner '+k.replace(/\./g,'/'))+nota('Nenhuma solicitação dos GVs para '+esc(UI.u)+' neste planner. Elas entram pela <b>Crítica do planner</b> e aparecem aqui sozinhas.');
+    const C=it.map(r=>{const a=Array(11).fill('');a[0]=String(r.code||'');a[1]=String(r.s||r.sNovo||'');a[2]=String(r.n||'');a[5]=String(r.tipo||'Outro');a[6]=String(r.visita||r.janela||'');a[7]=String([r.sNovo&&('setor '+r.sNovo),r.novoDia,r.novaFreq].filter(Boolean).join(' · '));a[8]=String(r.just||'');a[9]=String(r.parecer||'Pendente');a[10]=String(r.obs||'');return a});
+    return nota('💻 Solicitações feitas no sistema pela Crítica do planner ('+it.length+'). O detalhe de cada uma, com o parecer, está na aba Solicitações dos GVs.')+critView(C)}}
 
 
 /* =========================================================

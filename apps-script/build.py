@@ -212,6 +212,7 @@ html = '''<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Figtree:wght@400;500;600;700;800&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
 <script src="vendor/xlsx.full.min.js"></script>
 <script src="js/rotina-mun.js"></script>
+<script src="js/api.js"></script>
 <style>
 ''' + css + '''
 </style>
