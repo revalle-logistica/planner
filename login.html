@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="medio">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrar | Planner Revalle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<link rel="stylesheet" href="css/theme.css">
+<style>
+:root{--bg:#152033;--panel:#1d2a40;--panel2:#24344e;--line:#31445f;--txt:#eef3fa;--mut:#a2afc6;--pos:#f5b301}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif;padding:20px}
+.box{width:100%;max-width:400px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 24px;box-shadow:0 20px 60px -30px rgba(0,0,0,.8)}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.logo{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font:900 18px Inter;color:#111;background:conic-gradient(from 200deg,#f5b301,#ffd25e,#f59e0b,#f5b301)}
+.top b{font-size:17px;font-weight:800}.top b span{color:var(--pos)}.top small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+.tabs{display:flex;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px;margin-bottom:18px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--mut);font:600 13px Inter;padding:9px;border-radius:8px;cursor:pointer}
+.tabs button.on{background:var(--panel2);color:var(--txt)}
+label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut);font-weight:600;margin-bottom:12px}
+input,select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:12px;border-radius:10px;font:500 15px Inter;outline:none;min-height:44px}
+input:focus,select:focus{border-color:var(--pos)}
+.btn{width:100%;background:var(--pos);color:#111;border:0;border-radius:10px;padding:12px;font:700 14px Inter;cursor:pointer;min-height:44px;margin-top:4px}
+.btn:disabled{opacity:.5}
+.msg{display:none;margin-top:14px;padding:11px 13px;border-radius:10px;font-size:13px;line-height:1.5}
+.msg.err{display:block;background:#ef444418;border:1px solid #ef444455;color:#fca5a5}
+.msg.ok{display:block;background:#22c55e18;border:1px solid #22c55e55;color:#86efac}
+.msg.info{display:block;background:#3b9eff18;border:1px solid #3b9eff55;color:#93c5fd}
+.f{display:none}.f.on{display:block}
+.note{color:var(--mut);font-size:12px;line-height:1.5;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="top"><div class="logo">R</div><div><b>Planner <span>Revalle</span></b><small>Logística · Agreste e Nordeste</small></div></div>
+  <div class="tabs"><button class="on" data-t="in">Entrar</button><button data-t="up">Pedir acesso</button></div>
+  <form class="f on" id="fin" autocomplete="on">
+    <label>E-mail<input type="email" id="e1" autocomplete="username" required></label>
+    <label>Senha<input type="password" id="p1" autocomplete="current-password" required></label>
+    <button class="btn" id="b1">Entrar</button>
+  </form>
+  <form class="f" id="fup">
+    <label>Nome completo<input id="n2" autocomplete="name" required></label>
+    <label>E-mail<input type="email" id="e2" autocomplete="email" required></label>
+    <label>Função<select id="a2"><option value="GV">Gerente de vendas (GV)</option><option value="Logística">Logística</option><option value="Outra">Outra</option></select></label>
+    <label>Senha (mínimo 6 caracteres)<input type="password" id="p2" autocomplete="new-password" minlength="6" required></label>
+    <button class="btn" id="b2">Pedir acesso</button>
+    <div class="note">O administrador recebe o seu pedido e libera o acesso. Depois disso é só entrar com este e-mail e senha.</div>
+  </form>
+  <div class="msg" id="msg"></div>
+</div>
+<script>
+{
+const $=id=>document.getElementById(id);
+const say=(c,t)=>{$('msg').className='msg '+c;$('msg').textContent=t};
+const next=()=>{const n=new URLSearchParams(location.search).get('next')||'./';return /^[\w.\-?=&#%/]*$/.test(n)&&!/^\/\//.test(n)?n:'./'};
+if(!PlannerAuth.configured())say('info','O sistema ainda não foi conectado ao Apps Script. Siga o passo a passo de instalação.');
+else if(PlannerAuth.sess())location.replace(next());
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$('fin').classList.toggle('on',b.dataset.t==='in');$('fup').classList.toggle('on',b.dataset.t==='up');$('msg').className='msg'});
+$('fin').onsubmit=async e=>{e.preventDefault();$('b1').disabled=true;say('info','Entrando…');
+  try{await PlannerAuth.login($('e1').value.trim(),$('p1').value);location.replace(next())}catch(err){say('err',err.message)}finally{$('b1').disabled=false}};
+$('fup').onsubmit=async e=>{e.preventDefault();$('b2').disabled=true;say('info','Enviando…');
+  try{const r=await PlannerAuth.signup({nome:$('n2').value.trim(),email:$('e2').value.trim(),area:$('a2').value,senha:$('p2').value});
+    if(r.admin){say('ok','Cadastro criado como administrador (primeiro acesso do sistema). Entrando…');await PlannerAuth.login($('e2').value.trim(),$('p2').value);location.replace('usuarios.html')}
+    else{say('ok','Pedido enviado. Você consegue entrar assim que o administrador aprovar.');$('fup').reset()}}
+  catch(err){say('err',err.message)}finally{$('b2').disabled=false}};
+}
+</script>
+</body>
+</html>

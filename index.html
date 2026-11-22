@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#152033">
+<title>Planner Revalle · Início</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--up:#22c55e;--down:#ef4444;
+  --cV:#ff5d5d;--cD:#3b9eff;--cF:#b07cff;--crit:#e879f9;--r:18px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+a{color:inherit}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+main{max-width:1320px;margin:0 auto;padding:28px 28px 60px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.rise{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+
+/* Topo */
+.hero{position:relative;overflow:hidden;border-radius:24px;padding:30px 32px;border:1px solid var(--line);
+  background:linear-gradient(120deg,rgba(245,179,1,.16),rgba(59,158,255,.10) 55%,rgba(176,124,255,.10)),var(--panel);
+  display:grid;grid-template-columns:1.4fr 1fr;gap:28px;align-items:center}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:360px;height:360px;border-radius:50%;
+  background:radial-gradient(circle,rgba(245,179,1,.25),transparent 65%);pointer-events:none}
+.hello{color:var(--mut);font-weight:600;font-size:13px;letter-spacing:.02em}
+.hero h1{margin:6px 0 10px;font-size:32px;line-height:1.1;font-weight:900;letter-spacing:-.03em}
+.hero h1 span{background:linear-gradient(90deg,#f5b301,#ffd25e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:0;color:var(--mut);font-size:14.5px;line-height:1.55;max-width:560px}
+.cta{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.b{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:12px;font:700 13.5px Inter;text-decoration:none;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);cursor:pointer}
+.b:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+.b.pri{background:var(--pos);border-color:var(--pos);color:#111}.b.pri:hover{background:#ffc42e}
+.b.go{background:linear-gradient(135deg,#22c55e,#16a34a);border-color:#22c55e;color:#04140c;box-shadow:0 8px 22px -10px rgba(34,197,94,.8)}
+.count{position:relative;z-index:1;justify-self:end;text-align:center;padding:20px 26px;border-radius:20px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);min-width:250px}
+.count small{display:block;color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.count b{display:block;font-size:46px;font-weight:900;letter-spacing:-.04em;margin:4px 0 2px;color:var(--pos)}
+.count span{color:var(--txt);font-weight:600}
+.ring{width:100%;height:6px;border-radius:6px;background:rgba(255,255,255,.08);margin-top:12px;overflow:hidden}
+.ring i{display:block;height:100%;background:linear-gradient(90deg,#f5b301,#22c55e);border-radius:6px;width:0;transition:width 1.2s ease}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden;text-decoration:none;display:block}
+.kpi small{color:var(--mut);font-weight:600;font-size:12px}
+.kpi b{display:block;font-size:30px;font-weight:800;letter-spacing:-.03em;margin-top:6px}
+.kpi em{font-style:normal;font-size:12.5px;color:var(--mut)}
+.kpi em b{display:inline;font-size:inherit;margin:0;letter-spacing:0}
+.kpi em.up{color:var(--up)}.kpi em.dn{color:#ff8a8a}
+.kpi .ico{position:absolute;right:16px;top:16px;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px;background:rgba(255,255,255,.06)}
+.kpi.alert{border-color:rgba(245,179,1,.5);background:linear-gradient(135deg,rgba(245,179,1,.12),transparent),var(--panel)}
+
+h2{font-size:15px;font-weight:800;margin:34px 0 14px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+h2 small{color:var(--mut);font-weight:500;font-size:12.5px}
+h2 .ln{flex:1;height:1px;background:var(--line)}
+
+/* Unidades */
+.units{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.unit{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;text-decoration:none;display:block;position:relative;overflow:hidden}
+.unit:hover{border-color:var(--pos);transform:translateY(-3px);box-shadow:0 18px 40px -20px rgba(0,0,0,.8)}
+.unit .tag{font:800 11px 'JetBrains Mono';color:var(--pos);background:rgba(245,179,1,.12);padding:3px 8px;border-radius:999px}
+.unit h3{margin:10px 0 2px;font-size:17px;font-weight:800}
+.unit .sub{color:var(--mut);font-size:12.5px}
+.unit .pct{display:flex;align-items:baseline;gap:6px;margin:14px 0 8px}
+.unit .pct b{font-size:28px;font-weight:900;letter-spacing:-.03em}
+.unit .pct span{color:var(--mut);font-size:12.5px}
+.stack{display:flex;height:8px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.07)}
+.stack i{display:block;height:100%;width:0;transition:width 1s ease}
+.leg{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;font-size:11.5px;color:var(--mut)}
+.leg span{display:inline-flex;align-items:center;gap:5px}.leg i{width:8px;height:8px;border-radius:3px;display:inline-block}
+.unit .go{position:absolute;right:16px;top:16px;opacity:0;transform:translateX(-6px);transition:.2s;color:var(--pos);font-weight:800}
+.unit:hover .go{opacity:1;transform:none}
+
+/* Busca rápida */
+.search{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px 8px 8px 16px;margin-top:18px}
+.search:focus-within{border-color:var(--pos);box-shadow:0 0 0 4px rgba(245,179,1,.12)}
+.search input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--txt);font:500 15px Inter;padding:8px 0}
+.search svg{width:20px;height:20px;stroke:var(--mut);fill:none;stroke-width:2}
+
+/* Módulos */
+.mods{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mod{--c:var(--pos);position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;text-decoration:none;display:flex;flex-direction:column;gap:8px;min-height:168px}
+.mod::before{content:"";position:absolute;inset:0;background:radial-gradient(420px 160px at var(--mx,80%) var(--my,0%),color-mix(in srgb,var(--c) 22%,transparent),transparent 70%);opacity:.7;transition:opacity .2s;pointer-events:none}
+.mod:hover{border-color:color-mix(in srgb,var(--c) 70%,transparent);transform:translateY(-3px);box-shadow:0 20px 44px -22px rgba(0,0,0,.85)}
+.mod:hover::before{opacity:1}
+.mod .ic{position:relative;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 18%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+.mod .ic svg{width:24px;height:24px;stroke:var(--c);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mod h3{position:relative;margin:6px 0 0;font-size:16.5px;font-weight:800;letter-spacing:-.01em}
+.mod p{position:relative;margin:0;color:var(--mut);font-size:13px;line-height:1.5}
+.mod .who{position:relative;margin-top:auto;display:flex;gap:6px;flex-wrap:wrap}
+.mod .who span{font:700 10.5px Inter;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--mut)}
+.mod .arrow{position:absolute;right:18px;top:20px;font-size:18px;color:var(--c);opacity:0;transform:translateX(-6px);transition:.2s}
+.mod:hover .arrow{opacity:1;transform:none}
+.mod .bdg{position:absolute;right:18px;top:18px;background:var(--pos);color:#111;font:800 12px Inter;padding:4px 10px;border-radius:999px}
+.mod:hover .bdg{opacity:0}
+.mods.soon .mod{min-height:120px;opacity:.62;cursor:default}
+.mods.soon .mod:hover{transform:none;opacity:.85}
+.mods.soon .mod .tagsoon{position:absolute;right:16px;top:16px;font:700 10px Inter;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px dashed var(--dim);color:var(--mut)}
+footer{margin-top:40px;color:var(--dim);font-size:12px;text-align:center}
+
+@media (max-width:1100px){.units{grid-template-columns:repeat(2,1fr)}.mods{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:700px){main{padding:16px}.hero{grid-template-columns:1fr;padding:22px}.count{justify-self:stretch}.hero h1{font-size:26px}
+  .units,.mods{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.kpi .ico{display:none}.search .b{padding:10px 12px}.kpi b{font-size:24px}}
+</style>
+<script src="js/api.js"></script>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<main>
+  <section class="hero rise">
+    <div style="position:relative;z-index:1">
+      <div class="hello" id="hello">Olá!</div>
+      <h1>Planner de visitas <span>Revalle</span></h1>
+      <p id="heroTxt">Tudo do novo planner num só lugar: o que mudou por unidade e vendedor, a rota de cada vendedor, a crítica dos GVs e o parecer da Logística.</p>
+      <div class="cta">
+        <a class="b pri" href="painel.html">📊 Ver o antes × depois</a>
+        <a class="b go" href="rota.html">🧭 Minha rota</a>
+        <a class="b" href="critica.html">✍️ Fazer crítica</a>
+      </div>
+    </div>
+    <div class="count" id="count"><small>Vigência do planner</small><b id="cdN">–</b><span id="cdT">carregando…</span><div class="ring"><i id="cdBar"></i></div></div>
+  </section>
+
+  <div class="search rise" style="animation-delay:.05s">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" placeholder="Consultar cliente pelo código — veja dia e vendedor antes e depois" inputmode="numeric">
+    <button class="b pri" id="qGo">Consultar</button>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>Unidades <small id="uSub"></small><span class="ln"></span></h2>
+  <div class="units" id="units"></div>
+
+  <h2>Módulos <span class="ln"></span></h2>
+  <div class="mods" id="mods"></div>
+
+  <h2>Em construção <small>próximos módulos do painel</small><span class="ln"></span></h2>
+  <div class="mods soon" id="soon"></div>
+
+  <footer>Revalle Logística · Planner de visitas</footer>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('pt-BR');
+const IC={
+  chart:'<path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="12" y="7" width="3" height="10" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/>',
+  route:'<circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8 19h7.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H16"/>',
+  pen:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/>',
+  list:'<rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
+  up:'<path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+  map:'<path d="m9 4-5 2v14l5-2 6 2 5-2V4l-5 2z"/><path d="M9 4v14M15 6v14"/>',
+  meet:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  radar:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12 18 6"/>',
+  kpi:'<path d="M4 18a8 8 0 1 1 16 0"/><path d="m12 18 4-6"/>',
+  box:'<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+  star:'<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',
+  truck:'<path d="M3 6.5h11v9H3z"/><path d="M14 9.5h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>',
+  link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>',
+  check:'<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/>'
+};
+const svg=k=>`<svg viewBox="0 0 24 24">${IC[k]}</svg>`;
+const MODS=[
+  {h:'painel.html',ic:'chart',c:'#f5b301',t:'Antes × Depois',d:'Visitas por dia, o que mudou, planificador por vendedor, frequência, mapa e relação de clientes.',w:['Gestão','Vendas']},
+  {h:'rota.html',ic:'route',c:'#22c55e',t:'Minha rota',d:'Para o vendedor: semana com datas, roteiro do dia no mapa e mensagens prontas para avisar os clientes.',w:['Vendedor']},
+  {h:'critica.html',ic:'pen',c:'#e879f9',t:'Crítica do planner',d:'O GV seleciona clientes no mapa (laço), propõe vendedor, dia e frequência e envia para a Logística.',w:['GV']},
+  {h:'alteracoes.html',ic:'list',c:'#3b9eff',t:'Alterações',d:'Todas as solicitações dos GVs num só lugar, com parecer da Logística e Excel completo.',w:['Logística'],badge:1},
+  {h:'painel.html#mapa',ic:'map',c:'#2dd4bf',t:'Mapa dos clientes',d:'Clientes no mapa coloridos pelo tipo de mudança, com ruas ou satélite.',w:['Todos']},
+  {h:'importar.html',ic:'up',c:'#94a3b8',t:'Importar planner',d:'Sobe um planner novo (pré, pós, clientes e volume) e guarda o histórico de versões.',w:['Logística']},
+  {h:'links.html',ic:'link',c:'#4ade80',t:'Links dos vendedores',d:'Gera o link pessoal da Minha rota de cada setor da sua equipe para mandar no WhatsApp.',w:['GV','Logística']},
+  {h:'usuarios.html',ic:'users',c:'#f472b6',t:'Usuários e equipes',d:'Aprova os pedidos de acesso, define perfis e os setores de cada GV.',w:['Administrador']},
+  {h:'janelas.html',ic:'truck',c:'#60a5fa',t:'Janelas BEES',d:'Gera o arquivo semanal de importação das janelas de entrega no BEES e guarda o histórico das semanas.',w:['Logística']}
+];
+const SOON=[
+  {ic:'meet',c:'#f5b301',t:'Reunião semanal',d:'Pauta e acompanhamento semanal do planner.'},
+  {ic:'radar',c:'#3b9eff',t:'Monitor de alterações',d:'Mudanças feitas fora do planner ao longo do ciclo.'},
+  {ic:'kpi',c:'#22c55e',t:'Indicadores',d:'Aderência à rota, visitas realizadas e drop size.'},
+  {ic:'box',c:'#ff8a3d',t:'Buffer',d:'Acúmulo de pedidos por dia e por unidade.'},
+  {ic:'star',c:'#e879f9',t:'Oportunidades',d:'Clientes com potencial de ajuste de frequência ou janela.'},
+  {ic:'check',c:'#2dd4bf',t:'Plano de ação',d:'Ações, responsáveis e prazos.'}
+];
+function renderMods(pend){
+  $('mods').innerHTML=MODS.filter(m=>!window.PlannerAuth||!PlannerAuth.configured()||PlannerAuth.can(m.h.split('#')[0])).map(m=>`<a class="mod" href="${m.h}" style="--c:${m.c}"><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p><div class="who">${m.w.map(x=>`<span>${x}</span>`).join('')}</div>${m.badge&&pend?`<span class="bdg">${pend} aguardando</span>`:''}<span class="arrow">→</span></a>`).join('');
+  if(window.PlannerAuth&&PlannerAuth.configured()&&!(PlannerAuth.user()&&PlannerAuth.user().perfil==='admin')){$('soon').previousElementSibling&&($('soon').previousElementSibling.style.display='none');}
+  $('soon').innerHTML=SOON.map(m=>`<div class="mod" style="--c:${m.c}"><span class="tagsoon">em breve</span><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join('');
+  document.querySelectorAll('.mod').forEach(el=>el.addEventListener('mousemove',e=>{const r=el.getBoundingClientRect();el.style.setProperty('--mx',(e.clientX-r.left)+'px');el.style.setProperty('--my',(e.clientY-r.top)+'px')}));
+}
+function countUp(el,to,suf='',dec=0){const t0=performance.now(),d=900;const step=t=>{const p=Math.min(1,(t-t0)/d),e=1-Math.pow(1-p,3);el.textContent=(dec?(to*e).toFixed(dec).replace('.',','):fmt(to*e))+suf;if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+
+const h=new Date().getHours();$('hello').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+' 👋';
+renderMods(0);
+$('qGo').onclick=()=>{const v=$('q').value.trim().replace(/\D/g,'');if(v)location.href='painel.html#q='+v};
+$('q').onkeydown=e=>{if(e.key==='Enter')$('qGo').click()};
+
+(async()=>{
+  const IDX=await PlannerData.json('index.json');
+  IDX.versions.sort((a,b)=>b.vig.localeCompare(a.vig));
+  const V=IDX.versions[0],U=V.units;
+  // Contagem para a vigência
+  const vig=new Date(V.vig+'T00:00:00'),today=new Date();today.setHours(0,0,0,0);
+  const dd=Math.round((vig-today)/864e5),vf=V.vig.split('-').reverse().join('/');
+  if(dd>0){$('cdN').textContent=dd===1?'Amanhã':dd+' dias';$('cdT').textContent='entra em vigor em '+vf;$('cdBar').style.width=Math.max(8,100-dd*10)+'%'}
+  else if(dd===0){$('cdN').textContent='Hoje';$('cdT').textContent='começa a valer hoje ('+vf+')';$('cdBar').style.width='100%'}
+  else{const w=Math.floor(-dd/7)+1;$('cdN').textContent='Semana '+w;$('cdT').textContent='em vigor desde '+vf;$('cdBar').style.width='100%'}
+
+  const T=U.reduce((a,u)=>({n:a.n+u.n,chg:a.chg+u.chg,V:a.V+u.V,D:a.D+u.D,F:a.F+u.F,va:a.va+u.va,vb:a.vb+u.vb}),{n:0,chg:0,V:0,D:0,F:0,va:0,vb:0});
+  const dv=(T.vb-T.va)/T.va*100;
+  $('kpis').innerHTML=`
+    <a class="kpi rise" href="painel.html" style="animation-delay:.08s"><div class="ico">🏪</div><small>Clientes no planner</small><b id="k1">0</b><em>${U.length} unidades</em></a>
+    <a class="kpi rise" href="painel.html" style="animation-delay:.12s"><div class="ico">🔄</div><small>Clientes com alguma mudança</small><b id="k2">0</b><em>${(T.chg/T.n*100).toFixed(0)}% da carteira</em></a>
+    <a class="kpi rise" href="painel.html" style="animation-delay:.16s"><div class="ico">📅</div><small>Visitas por semana (média)</small><b id="k3">0</b><em class="${dv<0?'dn':'up'}">${dv<0?'▼':'▲'} ${Math.abs(dv).toFixed(1).replace('.',',')}% · antes ${fmt(T.va/4)}</em></a>
+    <a class="kpi rise" id="kPend" href="alteracoes.html" style="animation-delay:.2s"><div class="ico">✍️</div><small>Solicitações dos GVs</small><b id="k4">–</b><em id="k4t">carregando…</em></a>`;
+  countUp($('k1'),T.n);countUp($('k2'),T.chg);countUp($('k3'),T.vb/4);
+  $('uSub').textContent=V.label||('Planner '+vf);
+  $('units').innerHTML=U.map((u,i)=>{const p=u.chg/u.n*100,tot=u.V+u.D+u.F||1;
+    return `<a class="unit rise" href="painel.html#u=${u.id}" style="animation-delay:${.1+i*.05}s"><span class="go">→</span><span class="tag">${u.abbr} · ${u.id}</span><h3>${u.name}</h3><div class="sub">${fmt(u.n)} clientes · ${fmt(u.vb/4)} visitas/sem</div>
+      <div class="pct"><b data-p="${p}">0%</b><span>mudaram</span></div>
+      <div class="stack"><i style="background:var(--cV)" data-w="${u.V/tot*p}"></i><i style="background:var(--cD)" data-w="${u.D/tot*p}"></i><i style="background:var(--cF)" data-w="${u.F/tot*p}"></i></div>
+      <div class="leg"><span><i style="background:var(--cV)"></i>Vendedor ${fmt(u.V)}</span><span><i style="background:var(--cD)"></i>Dia ${fmt(u.D)}</span><span><i style="background:var(--cF)"></i>Freq. ${fmt(u.F)}</span></div></a>`}).join('');
+  requestAnimationFrame(()=>setTimeout(()=>{document.querySelectorAll('.stack i').forEach(i=>i.style.width=i.dataset.w+'%');document.querySelectorAll('[data-p]').forEach(b=>countUp(b,+b.dataset.p,'%'))},150));
+
+  try{
+    const items=await PlannerAPI.list(V.id);
+    const pend=items.filter(i=>!i.parecer||/pendente/i.test(i.parecer)).length,ap=items.filter(i=>/aprov/i.test(i.parecer||'')).length,gvs=new Set(items.map(i=>i.gv).filter(Boolean)).size;
+    $('k4').textContent=fmt(items.length);
+    $('k4t').innerHTML=items.length?`<b style="color:var(--pos)">${pend}</b> aguardando · ${ap} aprovadas · ${gvs} GV${gvs===1?'':'s'}`:'nenhuma enviada ainda';
+    if(pend)$('kPend').classList.add('alert');
+    renderMods(pend);
+  }catch(e){$('k4t').textContent='registro indisponível agora'}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Importar planner | Revalle Logística</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/core.js"></script>
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--up:#22c55e;--down:#ef4444;--pre:#7c879c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+header{border-bottom:1px solid var(--line);background:rgba(11,15,23,.9)}
+.hw{max-width:1280px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:14px}
+.brand{margin-right:auto}.brand b{font-size:18px;font-weight:800}.brand b span{color:var(--pos)}.brand small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+main{max-width:1280px;margin:0 auto;padding:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+h2{margin:0 0 4px;font-size:15px;display:flex;gap:10px;align-items:center}
+h2 .n{background:var(--pos);color:#111;width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;font-size:12px}
+.sub{color:var(--mut);font-size:12.5px;margin-bottom:14px;line-height:1.5}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut);font-weight:600}
+input,select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:10px;font:500 14px Inter;outline:none}
+input:focus,select:focus{border-color:var(--pos)}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.groups{display:grid;grid-template-columns:2fr 2fr 1.25fr;gap:14px}
+.grp{border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.02)}
+.grp h3{margin:0 0 2px;font-size:14px;display:flex;align-items:center;gap:8px}
+.grp h3 i{font-style:normal;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px}
+.grp .gs{color:var(--mut);font-size:12px;margin:0 0 12px 38px}
+.zones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grp.g3 .zones{grid-template-columns:1fr}
+.zone .pick{margin-top:auto;align-self:center;background:var(--pos);color:#111;border:0;border-radius:9px;padding:8px 14px;font:700 12.5px Inter;cursor:pointer}
+.zone.opt{min-height:0;padding:10px;border-style:dotted}.zone.opt .ic{font-size:18px}
+.zone.done{border-style:solid;border-color:#22c55e88;background:rgba(34,197,94,.05)}
+.zone{border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.15s;min-height:150px;display:flex;flex-direction:column;gap:8px}
+.zone:hover,.zone.drag{border-color:var(--pos);background:rgba(245,179,1,.05)}
+.zone b{font-size:14px}.zone small{color:var(--mut);font-size:12px}
+.zone .ic{font-size:26px}
+.file{display:flex;justify-content:space-between;gap:8px;background:var(--panel2);border-radius:8px;padding:6px 9px;font-size:12px;text-align:left}
+.file .ok{color:var(--up)}.file .err{color:var(--down)}
+.file button{background:none;border:0;color:var(--mut);cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:9px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.t-file{background:#22c55e22;color:#4ade80}.t-reuse{background:#3b9eff22;color:#60a5fa}.t-miss{background:#ef444422;color:#f87171}.t-keep{background:#2a3142;color:#9aa3b5}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 14px;border-radius:10px;font:600 13px Inter;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--pos)}.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}.btn:disabled{opacity:.4;cursor:default}
+.msg{padding:12px 14px;border-radius:10px;font-size:13px;margin-top:12px;display:none;line-height:1.5}
+.msg.ok{display:block;background:#22c55e18;border:1px solid #22c55e55;color:#86efac}
+.msg.err{display:block;background:#ef444418;border:1px solid #ef444455;color:#fca5a5}
+.msg.info{display:block;background:#3b9eff18;border:1px solid #3b9eff55;color:#93c5fd}
+details{color:var(--mut);font-size:12.5px;line-height:1.6;margin-top:10px}
+details summary{cursor:pointer;color:var(--txt);font-weight:600}
+ol{padding-left:18px;margin:8px 0}
+.how{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+.how div{background:var(--panel2);border-radius:10px;padding:12px;font-size:12.5px;color:var(--mut);line-height:1.45}
+.how b{display:block;color:var(--txt);margin-bottom:4px;font-size:13px}
+@media(max-width:1000px){.groups{grid-template-columns:1fr}}@media(max-width:800px){.zones,.how{grid-template-columns:1fr}}
+</style>
+<script src="js/api.js"></script>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hw"><div class="brand"><b>Importar planner <span>novo</span></b><small>Revalle Logística · visitas, janelas de entrega e clientes</small></div></div></header>
+<main>
+  <div class="card">
+    <h2>Como funciona</h2>
+    <div class="how">
+      <div><b>1. Vigência</b>Informe a data em que o planner passa a valer. Cada data vira uma versão no histórico.</div>
+      <div><b>2. Arquivos</b>Importe cada arquivo no seu botão: visitas, janelas e clientes. A unidade é reconhecida sozinha.</div>
+      <div><b>3. Conferência</b>Veja o que vem de arquivo e o que é reaproveitado antes de publicar.</div>
+      <div><b>4. Publicar</b>A versão vai para o site e fica disponível para todo o time.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">1</span>Vigência do planner</h2>
+    <div class="sub">Se a data já existir no histórico, a versão é <b>atualizada</b> (só as unidades com arquivo novo mudam). Se for uma data nova, é criada uma <b>nova versão</b>.</div>
+    <div class="row">
+      <label class="f">Data de vigência<input type="date" id="vig"></label>
+      <label class="f" title="Usado na página Minha rota para transformar S1–S4 em datas">Semana do ciclo na vigência<select id="s1"><option value="1">S1</option><option value="2">S2</option><option value="3">S3</option><option value="4">S4</option></select></label>
+      <label class="f" style="flex:1;min-width:240px">Descrição (opcional)<input id="label" placeholder="Ex.: Planner pós escala 5x2"></label>
+      <div id="mode" style="padding-bottom:10px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span>Arquivos</h2>
+    <div class="sub">Clique em <b>Importar</b> ou arraste os arquivos para a caixa certa (um arquivo por unidade; pode escolher os 4 de uma vez). Nenhum é obrigatório: o que faltar é reaproveitado, conforme a conferência abaixo.</div>
+    <div class="groups">
+      <div class="grp"><h3><i style="background:#f5b30122">🗓️</i>Visitas</h3><div class="gs">Planner de visita dos vendedores (dia e frequência)</div>
+        <div class="zones">
+          <div class="zone" data-k="pre"><div class="ic">📋</div><b>Pré-planner</b><small>Como era a visita</small><div class="list"></div><button class="pick">Importar</button></div>
+          <div class="zone" data-k="pos"><div class="ic">✅</div><b>Pós-planner</b><small>Como fica a visita</small><div class="list"></div><button class="pick">Importar</button></div>
+        </div></div>
+      <div class="grp"><h3><i style="background:#3b9eff22">🚚</i>Janelas de entrega</h3><div class="gs">Dias de entrega de cada cliente</div>
+        <div class="zones">
+          <div class="zone" data-k="jpre"><div class="ic">📋</div><b>Pré-planner</b><small>Como era a janela</small><div class="list"></div><button class="pick">Importar</button></div>
+          <div class="zone" data-k="jpos"><div class="ic">✅</div><b>Pós-planner</b><small>Como fica a janela</small><div class="list"></div><button class="pick">Importar</button></div>
+        </div></div>
+      <div class="grp g3"><h3><i style="background:#22c55e22">📍</i>Clientes</h3><div class="gs">Endereço e coordenadas para o mapa</div>
+        <div class="zones">
+          <div class="zone" data-k="cli"><div class="ic">📍</div><b>Relatório de clientes</b><small>Do roteirizador (todas as unidades)</small><div class="list"></div><button class="pick">Importar</button></div>
+          <div class="zone opt" data-k="vol"><b style="font-size:12.5px">📦 Volume 03.05.30 <small>(opcional)</small></b><div class="list"></div></div>
+        </div></div>
+    </div>
+    <input type="file" id="fi" multiple accept=".csv,.txt" style="display:none">
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span>Conferência por unidade</h2>
+    <div class="sub">Quando não tem arquivo, o painel reaproveita: o <b>pré</b> vem do pós do planner anterior; as <b>coordenadas</b> vêm da última versão que tinha a unidade.</div>
+    <div id="preview"><div class="sub" style="text-align:center;padding:20px">Informe a vigência e solte os arquivos.</div></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">4</span>Publicar</h2>
+    <div class="sub">A publicação grava a versão no Drive da Logística e ela aparece para todo o time na hora. Só o administrador publica.</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn pri" id="pub" disabled>⬆ Publicar no site</button>
+      <button class="btn" id="dl" disabled>⬇ Baixar arquivo da versão</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+</main>
+<script>
+const P=PlannerCore;const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>n.toLocaleString('pt-BR');const fmtD=d=>d?d.split('-').reverse().join('/'):'';
+const host=location.hostname.endsWith('github.io');
+const OWNER=host?location.hostname.split('.')[0]:'revalle-logistica';
+const REPO=host?(location.pathname.split('/')[1]||'planner'):'planner';
+let IDX={versions:[]};const VER={};
+const F={pre:[],pos:[],jpre:[],jpos:[],cli:[],vol:[]}; // {name, ok, unb, unbName, recs|coords, err}
+let built=null;
+
+(async()=>{
+  try{IDX=await PlannerData.json('index.json')}catch(e){}
+  $('vig').value=nextMonday();upd();
+})();
+function nextMonday(){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7));return d.toISOString().slice(0,10)}
+async function getVer(id){if(!VER[id])VER[id]=await PlannerData.json(`v/${id}.json`);return VER[id]}
+
+// drop zones
+let target='pre';
+document.querySelectorAll('.zone').forEach(z=>{
+  z.onclick=e=>{if(e.target.closest('.file'))return;target=z.dataset.k;$('fi').click()};
+  z.ondragover=e=>{e.preventDefault();z.classList.add('drag')};
+  z.ondragleave=()=>z.classList.remove('drag');
+  z.ondrop=e=>{e.preventDefault();z.classList.remove('drag');addFiles(z.dataset.k,e.dataTransfer.files)};
+});
+$('fi').onchange=e=>{addFiles(target,e.target.files);e.target.value=''};
+async function addFiles(k,list){
+  for(const file of list){
+    const it={name:file.name,ok:false};
+    try{
+      const rows=P.parseCSV(P.decode(await file.arrayBuffer()));const kind=P.kindOf(rows);
+      if(k==='vol'){
+        if(kind!=='volume')throw new Error('não parece o 03.05.30 (sem Volume/Entregas/Mapa)');
+        Object.assign(it,P.parseVolume(rows));it.ok=true;it.info=`${fmt(it.vol.size)} clientes · ${fmtD(it.from)} a ${fmtD(it.to)}`;
+      }else if(k==='cli'){
+        if(kind!=='clientes')throw new Error('não parece relatório de clientes (sem Latitude/Longitude)');
+        it.coords=P.parseClientes(rows);it.ok=true;it.info=[...it.coords].map(([u,m])=>`${P.unitMeta(u).abbr} ${fmt(m.size)}`).join(' · ')||'nenhuma coordenada válida';
+      }else{
+        if(kind!=='planner')throw new Error(k[0]==='j'?'formato de janela não reconhecido — envie um exemplo para ajustarmos a leitura':'não parece exportação do Planner (sem Periodicidade/Seg1)');
+        const p=P.parsePlanner(rows);if(!p.unb)throw new Error('arquivo sem clientes');
+        Object.assign(it,p);it.ok=true;it.info=`${P.unitMeta(p.unb,p.unbName).name} · ${fmt(p.recs.size)} clientes`;
+        F[k]=F[k].filter(x=>x.unb!==p.unb); // um arquivo por unidade
+      }
+    }catch(e){it.err=e.message}
+    F[k].push(it);
+  }
+  drawFiles();upd();
+}
+function drawFiles(){
+  for(const k of Object.keys(F))document.querySelector(`.zone[data-k=${k}]`).classList.toggle('done',F[k].some(f=>f.ok));for(const k of Object.keys(F))document.querySelector(`.zone[data-k=${k}] .list`).innerHTML=F[k].map((f,i)=>`<div class="file"><span>${esc(f.name)}<br><span class="${f.ok?'ok':'err'}">${f.ok?'✓ '+esc(f.info):'✗ '+esc(f.err)}</span></span><button data-k="${k}" data-i="${i}" onclick="F['${k}'].splice(${i},1);drawFiles();upd()">✕</button></div>`).join('');
+}
+$('vig').onchange=upd;$('s1').onchange=()=>{if(built)built.ver.s1=+$('s1').value};$('label').oninput=()=>{if(built)built.ver.label=$('label').value||defLabel()};
+const defLabel=()=>'Planner '+fmtD($('vig').value);
+
+async function upd(){
+  const vig=$('vig').value;built=null;$('pub').disabled=$('dl').disabled=true;
+  if(!vig){$('preview').innerHTML='';return}
+  const existing=IDX.versions.find(v=>v.id===vig);
+  const prev=IDX.versions.filter(v=>v.vig<vig).sort((a,b)=>b.vig.localeCompare(a.vig))[0];
+  $('mode').innerHTML=existing?`<span class="tag t-reuse">Atualizar versão ${fmtD(vig)}</span>`:`<span class="tag t-file">Nova versão</span>`;
+  $('label').placeholder=existing?(existing.label||defLabel()):defLabel()+' (ex.: Planner pós escala 5x2)';
+  const exV=existing?await getVer(existing.id):null;
+  const prevV=prev?await getVer(prev.id):null;
+  // last version with coordinates per unit (most recent first, excluding none)
+  const allDesc=[...IDX.versions].sort((a,b)=>b.vig.localeCompare(a.vig));
+  const units=new Set();
+  for(const k of ['pre','pos'])F[k].filter(f=>f.ok).forEach(f=>units.add(f.unb));
+  if(exV)for(const k of ['jpre','jpos'])F[k].filter(f=>f.ok&&exV.units.some(x=>x.id===f.unb)).forEach(f=>units.add(f.unb));
+  const cliMap=new Map();for(const f of F.cli.filter(f=>f.ok))for(const[u,m]of f.coords){if(!cliMap.has(u))cliMap.set(u,new Map());for(const[c,v]of m)cliMap.get(u).set(c,v)}
+  // volume: unidade descoberta pelos códigos dos planners
+  const unitCodes=new Map();for(const k of ['pre','pos'])for(const f of F[k].filter(f=>f.ok)){if(!unitCodes.has(f.unb))unitCodes.set(f.unb,new Set());for(const c of f.recs.keys())unitCodes.get(f.unb).add(c)}
+  if(exV)for(const c of exV.clients){if(!unitCodes.has(c[0]))unitCodes.set(c[0],new Set());unitCodes.get(c[0]).add(c[1])}
+  const volMap=new Map();for(const f of F.vol.filter(f=>f.ok)){const g=P.guessUnit(f.vol,unitCodes);f.unit=g.unit;if(g.unit){volMap.set(g.unit,f);f.info=`${P.unitMeta(g.unit).name} · ${fmt(f.vol.size)} clientes · ${fmtD(f.from)} a ${fmtD(f.to)}`}else f.info='unidade não identificada'}
+  drawFiles();
+  if(exV)for(const u of volMap.keys())if(exV.units.some(x=>x.id===u))units.add(u);
+  const rows=[];const ver=exV?JSON.parse(JSON.stringify(exV)):{id:vig,vig,units:[],sellers:{},clients:[]};
+  if(exV&&!$('s1').dataset.touched)$('s1').value=String(exV.s1||1);
+  ver.label=$('label').value||(exV&&exV.label)||defLabel();ver.s1=+$('s1').value;
+  let okAll=units.size>0||(exV&&cliMap.size>0);
+  // units only with coordinates file but existing version: refresh coords
+  if(exV)for(const u of cliMap.keys())if(exV.units.some(x=>x.id===u))units.add(u);
+  for(const u of units){
+    const fPre=F.pre.find(f=>f.ok&&f.unb===u),fPos=F.pos.find(f=>f.ok&&f.unb===u);
+    const meta=P.unitMeta(u,(fPos||fPre||{}).unbName);
+    const inEx=exV&&exV.units.some(x=>x.id===u),inPrev=prevV&&prevV.units.some(x=>x.id===u);
+    let pre,preSrc,pos,posSrc,co,coSrc,srcNames={};
+    if(fPre){pre=fPre.recs;preSrc=['file','Arquivo: '+fPre.name];srcNames.pre=fPre.name}
+    else if(inEx){pre=P.recsFromVersion(exV,u,'pre');preSrc=['keep','Mantém o pré já publicado'];srcNames.pre=(exV.units.find(x=>x.id===u).src||{}).pre}
+    else if(inPrev){pre=P.recsFromVersion(prevV,u,'pos');preSrc=['reuse','Pós do planner de '+fmtD(prevV.vig)];srcNames.pre='Pós de '+fmtD(prevV.vig)}
+    else{preSrc=['miss','Falta o pré-planner']}
+    if(fPos){pos=fPos.recs;posSrc=['file','Arquivo: '+fPos.name];srcNames.pos=fPos.name}
+    else if(inEx){pos=P.recsFromVersion(exV,u,'pos');posSrc=['keep','Mantém o pós já publicado'];srcNames.pos=(exV.units.find(x=>x.id===u).src||{}).pos}
+    else{posSrc=['miss','Falta o pós-planner']}
+    if(cliMap.has(u)){co=cliMap.get(u);coSrc=['file',`Arquivo (${fmt(co.size)} coordenadas)`]}
+    else{const v=allDesc.find(v=>v.units.some(x=>x.id===u));if(v){co=P.coordsFromVersion(await getVer(v.id),u);coSrc=['reuse','Da versão '+fmtD(v.vig)]}else{co=new Map();coSrc=['miss','Sem coordenadas (mapa vazio)']}}
+    let vo,voSrc;
+    if(volMap.has(u)){const f=volMap.get(u);vo=f.vol;voSrc=['file',`Arquivo (${fmtD(f.from)} a ${fmtD(f.to)})`];srcNames.vol=f.name+` (${f.from} a ${f.to})`}
+    else{const v=allDesc.find(v=>v.units.some(x=>x.id===u));const vv=v?P.volFromVersion(await getVer(v.id),u):new Map();if(vv.size){vo=vv;voSrc=['reuse','Da versão '+fmtD(v.vig)];srcNames.vol=((await getVer(v.id)).units.find(x=>x.id===u).src||{}).vol}else{vo=null;voSrc=['miss','Sem volume']}}
+    let res=null,stat='',jSrc=['miss','—'],jStat='';
+    if(pre&&pos){
+      res=P.buildUnit(meta,pre,pos,co,srcNames,vo);
+      const s=P.summarize({units:[res.unit],clients:res.clients}).units[0];
+      stat=`${fmt(s.n)} clientes · <b>${fmt(s.chg)}</b> com mudança (${s.n?Math.round(100*s.chg/s.n):0}%)<br><span style="color:var(--mut)">vendedor ${fmt(s.V)} · dia ${fmt(s.D)} · frequência ${fmt(s.F)} · ${res.unit.coord}/${res.unit.coord+res.unit.nocoord} no mapa</span>`;
+      ver.units=ver.units.filter(x=>x.id!==u);ver.units.push(res.unit);
+      // janelas de entrega: arquivo novo > o que já estava publicado > (pré) pós da versão anterior
+      const fJa=F.jpre.find(f=>f.ok&&f.unb===u),fJb=F.jpos.find(f=>f.ok&&f.unb===u);
+      const old=new Map();if(exV)for(const c of exV.clients)if(c[0]===u)old.set(c[1],c);
+      const prevJ=new Map();if(prevV)for(const c of prevV.clients)if(c[0]===u&&c[21])prevJ.set(c[1],c[21]);
+      let ja=0,jb=0;
+      for(const c of res.clients){const o=old.get(c[1]);
+        c[20]=fJa?(fJa.recs.get(c[1])||{}).m||null:(o&&o[20])||prevJ.get(c[1])||null;
+        c[21]=fJb?(fJb.recs.get(c[1])||{}).m||null:(o&&o[21])||null;
+        if(c[20])ja++;if(c[21])jb++;}
+      jSrc=[fJa||fJb?'file':(ja||jb?'keep':'miss'),fJa||fJb?`Arquivo (${fJa?'pré ':''}${fJb?'pós':''})`.replace(' )',')'):(ja||jb?'Mantém as já publicadas':'Sem janelas')];
+      jStat=`<br><span style="color:var(--mut)">🚚 janelas: ${fmt(ja)} antes · ${fmt(jb)} depois</span>`;
+      ver.clients=ver.clients.filter(c=>c[0]!==u).concat(res.clients);ver.sellers[u]=res.sellers;
+    }else okAll=false;
+    rows.push(`<tr><td><b>${esc(meta.name)}</b></td><td><span class="tag t-${preSrc[0]}">${esc(preSrc[1])}</span></td><td><span class="tag t-${posSrc[0]}">${esc(posSrc[1])}</span></td><td><span class="tag t-${coSrc[0]}">${esc(coSrc[1])}</span><br><span class="tag t-${voSrc[0]}" style="margin-top:4px">📦 ${esc(voSrc[1])}</span></td><td><span class="tag t-${jSrc[0]}">🚚 ${esc(jSrc[1])}</span></td><td>${stat?stat+jStat:'<span style="color:#f87171">Não dá para montar esta unidade</span>'}</td></tr>`);
+  }
+  if(exV)for(const x of exV.units)if(!units.has(x.id))rows.push(`<tr><td><b>${esc(x.name)}</b></td><td colspan="4"><span class="tag t-keep">Sem arquivo novo — fica como está</span></td><td style="color:var(--mut)">${fmt(x.pos)} clientes</td></tr>`);
+  $('preview').innerHTML=rows.length?`<table><thead><tr><th>Unidade</th><th>Pré</th><th>Pós</th><th>Coordenadas / volume</th><th>Janelas</th><th>Resultado</th></tr></thead><tbody>${rows.join('')}</tbody></table>`:'<div class="sub" style="text-align:center;padding:20px">Solte os arquivos acima.</div>';
+  if(okAll&&ver.units.length){
+    const order=['1031287','1031295','826588','983616'];ver.units.sort((a,b)=>(order.indexOf(a.id)+99)%99-(order.indexOf(b.id)+99)%99);
+    const now=new Date().toISOString();ver.updated=now;if(!ver.created)ver.created=now;
+    built={ver,existing:!!existing};$('pub').disabled=$('dl').disabled=false;
+  }
+}
+
+// ---- publish (Drive, pelo Apps Script)
+function say(cls,html){const m=$('msg');m.className='msg '+cls;m.innerHTML=html}
+$('pub').onclick=async()=>{
+  if(!built)return;
+  const v=built.ver;$('pub').disabled=true;
+  try{
+    say('info','Gravando a versão '+fmtD(v.vig)+'…');
+    await PlannerData.put(`v/${v.id}.json`,JSON.stringify(v));
+    say('info','Atualizando o histórico…');
+    let idx={versions:[]};try{idx=JSON.parse(await PlannerData.text('index.json'))}catch(e){}
+    idx.versions=idx.versions.filter(x=>x.id!==v.id).concat([P.summarize(v)]).sort((a,b)=>b.vig.localeCompare(a.vig));
+    await PlannerData.put('index.json',JSON.stringify(idx,null,1));
+    try{Object.keys(sessionStorage).filter(k=>k.startsWith('pd:')).forEach(k=>sessionStorage.removeItem(k))}catch(e){}
+    IDX=idx;VER[v.id]=v;
+    say('ok',`✓ Versão <b>${fmtD(v.vig)}</b> publicada para todo o time. <a href="painel.html#v=${v.id}" style="color:#fde68a">Abrir o painel →</a>`);
+  }catch(e){say('err','Não consegui publicar: '+esc(e.message))}
+  finally{$('pub').disabled=false}
+};
+$('dl').onclick=()=>{if(!built)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(built.ver)],{type:'application/json'}));a.download=built.ver.id+'.json';a.click();
+  say('info',`Arquivo baixado. Ele serve como cópia de segurança da versão; para o time ver, use o botão Publicar.`)};
+</script>
+</body>
+</html>

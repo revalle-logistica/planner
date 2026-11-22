@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Links dos vendedores | Revalle Logística</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--up:#22c55e;--down:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+header{border-bottom:1px solid var(--line);background:rgba(11,15,23,.9)}
+.hw{max-width:1280px;margin:0 auto;padding:14px 22px}
+.brand b{font-size:18px;font-weight:800}.brand b span{color:var(--pos)}.brand small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+main{max-width:1280px;margin:0 auto;padding:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+h2{margin:0 0 4px;font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sub{color:var(--mut);font-size:12.5px;margin-bottom:14px;line-height:1.5}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.how div{background:var(--panel2);border-radius:10px;padding:12px;font-size:12.5px;color:var(--mut);line-height:1.45}
+.how b:first-child{display:block;margin-bottom:4px;font-size:13px}.how b{color:var(--txt)}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:8px 12px;border-radius:9px;font:600 12.5px Inter;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:36px}
+.btn:hover{border-color:var(--pos)}.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}.btn.wa{background:#22c55e;color:#062e14;border-color:#22c55e}.btn.red{color:#fca5a5}.btn:disabled{opacity:.4;cursor:default}
+.un h3{margin:0 0 10px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.un h3 small{color:var(--mut);font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.s{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:10px}
+.s.on{border-color:#22c55e55}
+.s .t{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.s .t b{font-size:15px}
+.s .t small{color:var(--mut);font-size:11.5px;text-align:right}
+.s .a{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+.t-ok{background:#22c55e22;color:#4ade80}.t-no{background:#2a3142;color:#9aa3b5}
+.msg{padding:12px 14px;border-radius:10px;font-size:13px;margin-top:12px;display:none;line-height:1.5}
+.msg.ok{display:block;background:#22c55e18;border:1px solid #22c55e55;color:#86efac}
+.msg.err{display:block;background:#ef444418;border:1px solid #ef444455;color:#fca5a5}
+.msg.info{display:block;background:#3b9eff18;border:1px solid #3b9eff55;color:#93c5fd}
+.empty{color:var(--mut);font-size:13px;padding:6px 0}
+input.q{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 12px;border-radius:10px;font:500 14px Inter;min-width:220px}
+@media(max-width:800px){.how{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hw"><div class="brand"><b>Links dos <span>vendedores</span></b><small>Revalle Logística · acesso da Minha rota por setor, sem senha</small></div></div></header>
+<main>
+  <div class="card">
+    <div class="how">
+      <div><b>1. Um link por setor</b>Cada link abre só a rota daquele setor. O vendedor não precisa de senha.</div>
+      <div><b>2. Mande no WhatsApp</b>O botão já abre o WhatsApp com a mensagem pronta. Peça para o vendedor não repassar.</div>
+      <div><b>3. Trocou o vendedor ou o celular?</b>Clique em <b>Gerar novo</b>: o link antigo para de funcionar na hora.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 id="ttl">Setores</h2>
+    <div class="sub" id="scope"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><input class="q" id="q" placeholder="Buscar setor" inputmode="numeric"><button class="btn pri" id="all">Gerar os links que faltam</button></div>
+    <div id="list"><div class="empty">Carregando…</div></div>
+    <div class="msg" id="msg"></div>
+  </div>
+</main>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const say=(c,h)=>{$('msg').className='msg '+c;$('msg').innerHTML=h};
+const fmtD=s=>s?new Date(s).toLocaleDateString('pt-BR'):'';
+const ORDEM=['1031287','1031295','826588','983616'];
+const NOME={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};
+let SCOPE=[],LINKS=new Map(),GV=new Map(),perfil='';
+const url=t=>new URL('rota.html?k='+t,location.href).href;
+const wa=(u,s,t)=>'https://wa.me/?text='+encodeURIComponent(`Olá! Este é o seu link da Minha rota (${NOME[u]||u} · Setor ${s}): ${url(t)}\n\nÉ pessoal: abre só a rota do seu setor. Não repasse.`);
+
+async function load(){
+  try{
+    const j=await PlannerAuth.call('links.list');perfil=j.perfil;
+    LINKS=new Map(j.links.map(l=>[l.unb+'|'+l.setor,l]));GV=new Map(j.equipe.map(e=>[e.unb+'|'+e.setor,e.gv]));
+    if(perfil==='admin'){ // administrador: todos os setores do planner publicado
+      const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];const V=await PlannerData.json(`v/${v.id}.json`);
+      const set=new Set();for(const c of V.clients)if(c[7]&&c[9])set.add(c[0]+'|'+c[7]);
+      SCOPE=[...set].map(k=>{const[unb,setor]=k.split('|');return{unb,setor}});
+      $('scope').textContent='Você é administrador: aparecem todos os setores do planner publicado.';
+    }else{SCOPE=j.equipe.map(e=>({unb:e.unb,setor:e.setor}));$('scope').textContent=SCOPE.length?`Setores da sua equipe: ${SCOPE.length}.`:''}
+    render();
+  }catch(e){$('list').innerHTML='';say('err',esc(e.message))}
+}
+function render(){
+  const q=$('q').value.trim();
+  const by={};for(const s of SCOPE){if(q&&!s.setor.includes(q))continue;(by[s.unb]=by[s.unb]||[]).push(s)}
+  const units=Object.keys(by).sort((a,b)=>(ORDEM.indexOf(a)+99)%99-(ORDEM.indexOf(b)+99)%99);
+  const falta=SCOPE.filter(s=>!LINKS.has(s.unb+'|'+s.setor)).length;
+  $('all').disabled=!falta;$('all').textContent=falta?`Gerar os links que faltam (${falta})`:'Todos os setores têm link';
+  $('list').innerHTML=!SCOPE.length?`<div class="empty">${perfil==='gv'?'Nenhum setor na sua equipe ainda. Peça ao administrador para definir a sua equipe.':'Nenhum setor encontrado.'}</div>`:
+    units.map(u=>`<div class="un" style="margin-bottom:16px"><h3>${esc(NOME[u]||u)} <small>${by[u].length} setores · ${by[u].filter(s=>LINKS.has(u+'|'+s.setor)).length} com link</small></h3><div class="grid">${by[u].sort((a,b)=>+a.setor-+b.setor).map(s=>{const l=LINKS.get(u+'|'+s.setor);
+      return `<div class="s ${l?'on':''}"><div class="t"><div><b>Setor ${esc(s.setor)}</b> ${l?'<span class="tag t-ok">Link ativo</span>':'<span class="tag t-no">Sem link</span>'}</div><small>${l?'desde '+fmtD(l.criado_em):''}${perfil==='admin'&&GV.get(u+'|'+s.setor)?'<br>GV: '+esc(GV.get(u+'|'+s.setor).split('@')[0]):''}</small></div>
+      <div class="a">${l?`<a class="btn wa" href="${esc(wa(u,s.setor,l.token))}" target="_blank" rel="noopener">WhatsApp</a><button class="btn" data-a="cp" data-t="${esc(l.token)}">Copiar link</button><button class="btn" data-a="new" data-u="${u}" data-s="${esc(s.setor)}">Gerar novo</button><button class="btn red" data-a="off" data-u="${u}" data-s="${esc(s.setor)}">Desativar</button>`
+        :`<button class="btn pri" data-a="new" data-u="${u}" data-s="${esc(s.setor)}">Gerar link</button>`}</div></div>`}).join('')}</div></div>`).join('')||'<div class="empty">Nenhum setor com esse número.</div>';
+}
+$('q').oninput=render;
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='cp'){try{await navigator.clipboard.writeText(url(b.dataset.t));b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar link',1500)}catch(err){prompt('Copie o link:',url(b.dataset.t))}return}
+  if(a==='new'&&LINKS.has(b.dataset.u+'|'+b.dataset.s)&&!confirm(`Gerar um novo link para o Setor ${b.dataset.s}? O link atual deixa de funcionar.`))return;
+  if(a==='off'&&!confirm(`Desativar o link do Setor ${b.dataset.s}? O vendedor perde o acesso até você gerar outro.`))return;
+  b.disabled=true;
+  try{
+    if(a==='new'){await PlannerAuth.call('links.generate',{unb:b.dataset.u,setor:b.dataset.s});say('ok',`Link do Setor ${esc(b.dataset.s)} gerado. Mande pelo WhatsApp.`)}
+    if(a==='off'){await PlannerAuth.call('links.disable',{unb:b.dataset.u,setor:b.dataset.s});say('ok',`Link do Setor ${esc(b.dataset.s)} desativado.`)}
+    await load();
+  }catch(err){say('err',esc(err.message));b.disabled=false}
+});
+$('all').onclick=async()=>{
+  const falta=SCOPE.filter(s=>!LINKS.has(s.unb+'|'+s.setor));if(!falta.length)return;
+  $('all').disabled=true;say('info',`Gerando ${falta.length} links…`);
+  try{const r=await PlannerAuth.call('links.generate',{setores:falta,soNovos:true});say('ok',`${r.links.length} links gerados.`);await load()}catch(err){say('err',esc(err.message));$('all').disabled=false}
+};
+load();
+}
+</script>
+</body>
+</html>

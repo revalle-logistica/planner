@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alterações / crítica | Revalle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="js/api.js"></script>
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--crit:#e879f9;--blue:#3b9eff;--org:#ff8a3d;--ok:#22c55e;--no:#ef4444;--r:14px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+header{position:sticky;top:0;z-index:3000;background:rgba(11,15,23,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hwrap{max-width:1480px;margin:0 auto;padding:14px 22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:1.1;margin-right:auto}
+.brand b{font-size:18px;font-weight:800;letter-spacing:-.02em}.brand b span{color:var(--crit)}
+.brand small{color:var(--mut);font-size:12px;margin-top:3px}
+.tabs{display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line);flex-wrap:wrap}
+.tab{border:0;background:transparent;color:var(--mut);padding:8px 14px;border-radius:9px;font:600 13px Inter;cursor:pointer}.tab:hover{color:var(--txt)}.tab.on{background:var(--pos);color:#111}
+select,input,textarea{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:9px 12px;border-radius:10px;font:500 13px Inter;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--pos)}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 13px;border-radius:10px;font:600 13px Inter;cursor:pointer;text-decoration:none;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.btn:hover{border-color:var(--pos)}.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}.btn.on{background:rgba(232,121,249,.16);border-color:var(--crit);color:#f5c2fb}
+.btn .dot{width:8px;height:8px;border-radius:50%;display:none}.btn.dirty .dot{display:inline-block;background:#fde047;box-shadow:0 0 0 3px rgba(253,224,71,.3)}
+main{max-width:1480px;margin:0 auto;padding:22px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;cursor:pointer;transition:.15s}
+.kpi:hover{border-color:#3a4560}.kpi.on{border-color:var(--pos)}
+.kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--k,var(--pos))}
+.kpi label{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;cursor:pointer}
+.kpi .v{font-size:28px;font-weight:800;letter-spacing:-.03em;margin-top:6px}.kpi .s{color:var(--mut);font-size:12px;margin-top:2px}
+.grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,2fr);gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:15px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.card h2 .n{background:var(--pos);color:#111;width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;font-size:12px}
+.card .sub{color:var(--mut);font-size:12.5px;margin-bottom:10px}
+.bars svg text{font-family:Inter}.bars g{cursor:pointer}.bars g:hover rect{opacity:.8}
+.tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}.tbar input{flex:1;min-width:200px}
+.scroll{max-height:calc(100vh - 330px);min-height:420px;overflow:auto;border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:9px 8px;border-bottom:1px solid var(--line);white-space:normal;position:sticky;top:0;background:var(--panel);z-index:2}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:hover td{background:var(--panel2)}
+td.j{min-width:180px;font-size:12.5px;line-height:1.45}
+td.j i{display:block;color:#93c5fd;margin-top:4px}
+.cli b{display:block}.cli small{color:var(--dim);font-family:'JetBrains Mono',monospace}
+.mono{font-family:'JetBrains Mono',monospace}
+.chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap;display:inline-block}
+.par{font-weight:800;border-radius:999px;padding:4px 10px;display:inline-block;font-size:11.5px;white-space:nowrap}
+.par.A{background:#22c55e22;color:#4ade80}.par.R{background:#ef444422;color:#f87171}.par.P{background:#f5b30122;color:#fcd34d}
+.edit select{width:120px}.edit textarea{width:100%;min-width:170px;margin-top:6px;font-size:12px;padding:6px 8px}
+.msg{border-radius:12px;padding:12px 16px;font-size:13px;margin-bottom:16px;display:none;line-height:1.5}
+.msg.ok{display:block;background:#22c55e18;border:1px solid #22c55e55;color:#86efac}.msg.err{display:block;background:#ef444418;border:1px solid #ef444455;color:#fca5a5}.msg.info{display:block;background:rgba(245,179,1,.08);border:1px solid rgba(245,179,1,.35);color:#f7d37a}
+.msg a{color:#fff}
+.empty{color:var(--dim);text-align:center;padding:50px 20px;line-height:1.6}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:5000;display:none;align-items:center;justify-content:center}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;width:min(560px,92vw)}
+.modal h3{margin:0 0 6px}.modal .sub{color:var(--mut);font-size:13px;line-height:1.5;margin-bottom:12px}
+.chk{display:flex;gap:6px;align-items:center;color:var(--mut);font-size:13px}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hwrap">
+  <div class="brand"><b>Alterações / <span>crítica</span></b><small id="vsub">Solicitações de Vendas e parecer da Logística</small></div>
+  <select id="ver"></select>
+  <a class="btn pri" id="mapBtn" href="critica.html">🗺️ Ver no mapa</a>
+  <button class="btn" id="editBtn">✍️ Dar parecer</button>
+  <button class="btn" id="pubBtn"><span class="dot"></span>💾 Salvar parecer</button>
+  <button class="btn" id="refBtn" title="Buscar as solicitações mais recentes">🔄 Atualizar</button>
+  <button class="btn" id="xlsBtn">⬇ Excel</button>
+  <input type="file" id="fi" accept=".xlsx,.xls,.xlsm" multiple style="display:none">
+</div>
+<div class="hwrap" style="padding-top:0"><div class="tabs" id="tabs"></div></div></header>
+<main>
+  <div class="msg" id="msg"></div>
+  <section class="kpis" id="tiles"></section>
+  <div class="grid">
+    <div>
+      <div class="card"><h2><span class="n">1</span>Solicitações por tipo de ajuste</h2><div class="sub">Clique numa barra para filtrar.</div><div class="bars" id="bTipo"></div></div>
+      <div class="card"><h2><span class="n">2</span>Solicitações por setor</h2><div class="sub">Setor de vendas no planner.</div><div class="bars" id="bSetor"></div></div>
+      <div class="card"><h2><span class="n">3</span>Solicitações por GV</h2><div class="bars" id="bGv"></div></div>
+    </div>
+    <div class="card">
+      <h2><span class="n">4</span>Solicitações e parecer</h2>
+      <div class="tbar"><input type="search" id="q" name="busca-alteracoes" autocomplete="off" placeholder="🔎 Cliente, código, setor ou justificativa…"><select id="fPar"><option value="">Todos os pareceres</option><option>Pendente</option><option>Aprovado</option><option>Reprovado</option></select><select id="fTipo"><option value="">Todos os tipos</option></select><select id="fGv"><option value="">Todos os GVs</option></select></div>
+      <div class="sub" id="cnt"></div>
+      <div class="scroll"><table id="tbl"></table></div>
+    </div>
+  </div>
+</main>
+<div class="modal" id="tokModal"><div class="box"><h3>Salvar parecer</h3><div class="sub">Informe o PIN da Logística para gravar o parecer no registro.</div>
+  <input type="password" id="tok" placeholder="PIN da Logística" style="width:100%" autocomplete="new-password" inputmode="numeric"><label class="chk" style="margin-top:8px"><input type="checkbox" id="rem" checked> Lembrar neste computador</label>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn" onclick="$('tokModal').style.display='none'">Cancelar</button><button class="btn pri" id="tokOk">Salvar</button></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>n.toLocaleString('pt-BR');
+const fmtD=d=>d?d.split('-').reverse().join('/'):'';
+const host=location.hostname.endsWith('github.io');
+const OWNER=host?location.hostname.split('.')[0]:'revalle-logistica',REPO=host?(location.pathname.split('/')[1]||'planner'):'planner';
+let IDX,V,REG={items:[]},PUB={items:[]},PEND=new Map(),S={vid:'',u:'ALL',edit:false,fT:'',fS:'',fG:'',par:''},DIRTY=false;
+const UNITS={};
+
+(async()=>{
+  IDX=await PlannerData.json('index.json');IDX.versions.sort((a,b)=>b.vig.localeCompare(a.vig));
+  const h=Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(x=>x.split('=').map(decodeURIComponent)));
+  $('ver').innerHTML=IDX.versions.map(v=>`<option value="${v.id}">${esc(v.label||'Planner '+fmtD(v.vig))}</option>`).join('');
+  $('ver').onchange=e=>load(e.target.value);
+$('fi').onchange=e=>{importFiles(e.target.files);e.target.value=''};
+  $('editBtn').onclick=()=>{if(S.edit&&PEND.size)publishAsk();S.edit=!S.edit;$('editBtn').classList.toggle('on',S.edit);$('editBtn').textContent=S.edit?'✓ Concluir parecer':'✍️ Dar parecer';$('editBtn').classList.toggle('pri',S.edit);renderTable()};
+  $('pubBtn').onclick=publishAsk;$('tokOk').onclick=publish;$('xlsBtn').onclick=exportXLS;$('refBtn').onclick=()=>refresh(true);
+  setInterval(()=>{if(!S.edit&&!DIRTY&&document.visibilityState==='visible')refresh(false)},60000);
+  ['q','fPar','fTipo','fGv'].forEach(id=>$(id).oninput=()=>{S.par=$('fPar').value;S.fT=$('fTipo').value;S.fG=$('fGv').value;render()});
+  try{$('tok').value=localStorage.getItem('plannerPin')||''}catch(e){}
+  window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue=''}});
+  await load(h.v&&IDX.versions.some(v=>v.id===h.v)?h.v:IDX.versions[0].id);
+})();
+async function load(vid){
+  S.vid=vid;$('ver').value=vid;
+  V=await PlannerData.json(`v/${vid}.json`);
+  for(const u of V.units)UNITS[u.id]=u;
+  $('vsub').textContent=`Solicitações de Vendas e parecer da Logística · planner com vigência ${fmtD(V.vig)}`;
+  PEND=new Map();setDirty(false);await refresh(true,true);
+  $('tabs').innerHTML=[['ALL','Todas'],...V.units.map(u=>[u.id,u.name])].map(([k,v])=>`<button class="tab ${S.u===k?'on':''}" data-u="${k}">${esc(v)}</button>`).join('');
+  $('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;S.u=b.dataset.u;S.fS='';document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));render()};
+  render();
+}
+async function refresh(show,silentRender){
+  if(!PlannerAPI.ok()){REG={items:[]};say('err','A conexão com o registro ainda não foi configurada.');if(!silentRender)render();return}
+  try{if(show)say('info','Buscando as solicitações…');const items=await PlannerAPI.list(S.vid);
+    for(const it of items){const p=PEND.get(it.id);if(p){it.parecer=p.parecer;it.obs=p.obs}}
+    REG={items};if(show)$('msg').className='msg';$('vsub').textContent=`Solicitações de Vendas e parecer da Logística · planner com vigência ${fmtD(V.vig)} · atualizado às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+  }catch(e){say('err','Não consegui ler o registro: '+esc(e.message)+'. <a href="#" onclick="refresh(true);return false">Tentar de novo</a>')}
+  if(!silentRender||true)render();
+}
+function setDirty(d){DIRTY=d;$('pubBtn').classList.toggle('dirty',d);$('pubBtn').textContent=d?`💾 Salvar parecer (${PEND.size})`:'💾 Salvar parecer'}
+function say(c,h){$('msg').className='msg '+c;$('msg').innerHTML=h}
+const parK=p=>/aprov/i.test(p)?'A':/reprov/i.test(p)?'R':'P';
+function rows(){const q=$('q').value.trim().toUpperCase();
+  return REG.items.filter(r=>(S.u==='ALL'||r.u===S.u)&&(!S.par||parK(r.parecer)===parK(S.par))&&(!S.fT||r.tipo===S.fT)&&(!S.fG||r.gv===S.fG)&&(!S.fS||String(r.s)===S.fS)
+    &&(!q||[r.code,r.n,r.s,r.sNovo,r.just,r.obs,r.tipo].join(' ').toUpperCase().includes(q)))}
+function render(){
+  const base=REG.items.filter(r=>S.u==='ALL'||r.u===S.u);
+  const fill=(id,arr,lab)=>{const cur=$(id).value;$(id).innerHTML=`<option value="">${lab}</option>`+[...new Set(arr)].filter(Boolean).sort().map(x=>`<option>${esc(x)}</option>`).join('');$(id).value=cur};
+  fill('fTipo',base.map(r=>r.tipo),'Todos os tipos');fill('fGv',base.map(r=>r.gv),'Todos os GVs');
+  const R=rows();
+  const ap=R.filter(r=>parK(r.parecer)==='A').length,pe=R.filter(r=>parK(r.parecer)==='P').length,rp=R.filter(r=>parK(r.parecer)==='R').length;
+  const setores=new Set(R.map(r=>r.s));
+  const kp=(l,v,sub,c,k)=>`<div class="kpi ${k&&S.par&&parK(S.par)===k?'on':''}" style="--k:${c}" ${k?`data-p="${k}"`:''}><label>${l}</label><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+  const pc=x=>R.length?Math.round(100*x/R.length)+'%':'—';
+  $('tiles').innerHTML=kp('Solicitações de Vendas',fmt(R.length),`${fmt(new Set(R.map(r=>r.u+'|'+r.code)).size)} PDVs`,'var(--pos)')+kp('Aprovadas pela Logística',pc(ap),`${fmt(ap)} solicitações`,'var(--ok)','A')+kp('Pendentes de parecer',fmt(pe),pc(pe)+' do total','#f59e0b','P')+kp('Reprovadas',fmt(rp),pc(rp)+' do total','var(--no)','R')+kp('Setores de vendas',fmt(setores.size),`${fmt(new Set(R.map(r=>r.gv).filter(Boolean)).size)} GVs`,'var(--blue)');
+  $('tiles').onclick=e=>{const t=e.target.closest('[data-p]');if(!t)return;const v={A:'Aprovado',P:'Pendente',R:'Reprovado'}[t.dataset.p];S.par=S.par===v?'':v;$('fPar').value=S.par;render()};
+  const cnt=f=>{const o={};R.forEach(r=>{const k=f(r)||'Não informado';o[k]=(o[k]||0)+1});return Object.entries(o).sort((a,b)=>b[1]-a[1])};
+  bars('bTipo',cnt(r=>r.tipo),'#3b9eff',k=>{S.fT=S.fT===k?'':k;$('fTipo').value=S.fT;render()},S.fT);
+  bars('bSetor',cnt(r=>String(r.s)).slice(0,16),'#ff8a3d',k=>{S.fS=S.fS===k?'':k;render()},S.fS);
+  bars('bGv',cnt(r=>r.gv),'#e879f9',k=>{S.fG=S.fG===k?'':k;$('fGv').value=S.fG;render()},S.fG);
+  $('cnt').textContent=`${fmt(R.length)} solicitações · ${ap} aprovadas · ${rp} reprovadas · ${pe} pendentes${S.fS?' · setor '+S.fS:''}`;
+  $('mapBtn').href=`critica.html#v=${S.vid}&u=${S.u==='ALL'?V.units[0].id:S.u}&reg=1`;
+  renderTable(R);
+}
+function bars(id,data,col,onClick,sel){
+  if(!data.length){$(id).innerHTML='<div class="empty" style="padding:20px">Sem dados</div>';return}
+  const W=520,H=200,pad=24,n=data.length,bw=Math.min(80,(W-20)/n*.72),gap=(W-20)/n,mx=Math.max(...data.map(d=>d[1]));
+  $(id).innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%">${data.map(([k,v],i)=>{const h=(H-pad*2-10)*v/mx,x=10+i*gap+(gap-bw)/2,y=H-pad-h;const lab=k.length>14?k.slice(0,13)+'…':k;
+    return `<g data-k="${esc(k)}"><rect x="${x}" y="${y}" width="${bw}" height="${h}" fill="${col}" opacity="${sel&&sel!==k?.3:1}" rx="4"><title>${esc(k)}: ${v}</title></rect><text x="${x+bw/2}" y="${y-5}" text-anchor="middle" font-size="11" fill="#c9d2e3">${v}</text><text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="${n>10?9.5:11}" fill="#8a94a8">${esc(lab)}</text></g>`}).join('')}</svg>`;
+  $(id).querySelectorAll('g[data-k]').forEach(g=>g.onclick=()=>onClick(g.dataset.k));
+}
+function renderTable(R){
+  R=R||rows();
+  if(!REG.items.length){$('tbl').innerHTML=`<tbody><tr><td style="border:0"><div class="empty">Nenhuma solicitação registrada para este planner ainda.<br>As críticas dos GVs são feitas em <a href="critica.html" style="color:var(--pos)">Crítica do planner</a>.<br><br>Quando o GV clicar em <b>📤 Enviar para a Logística</b>, as solicitações aparecem aqui.<br><br><a href="#" onclick="$('fi').click();return false" style="color:var(--dim);font-size:12px">Recebeu um Excel de GV? Importar para o registro</a></div></td></tr></tbody>`;return}
+  const all=S.u==='ALL';
+  $('tbl').innerHTML=`<thead><tr><th>Cliente</th>${all?'<th>Unid.</th>':''}<th>Setor</th><th>Tipo</th><th>Novo dia visita</th><th>Nova janela</th><th>Justificativa</th><th>Parecer</th></tr></thead><tbody>`+
+  R.map(r=>{const i=REG.items.indexOf(r);const k=parK(r.parecer);
+    const tc={'Carteira/vendedor':'#ff5d5d','Dia de visita':'#3b9eff','Visita e janela':'#b07cff','Janela de entrega':'#2dd4bf'}[r.tipo]||'#8a94a8';
+    return `<tr><td class="cli"><b>${esc(r.n)}</b><small>${esc(r.code)}</small></td>${all?`<td>${esc((UNITS[r.u]||{}).abbr||r.u)}</td>`:''}<td class="mono">${esc(r.s)}${r.sNovo&&r.sNovo!==r.s?`<br><b style="color:#f5c2fb">→ ${esc(r.sNovo)}</b>`:''}</td><td><span class="chip" style="background:${tc}22;color:${tc}">${esc(r.tipo)}</span></td><td>${esc(r.novoDia)}${r.novaFreq?`<br><span style="color:var(--mut);font-size:12px">${esc(r.novaFreq)}</span>`:''}</td><td>${esc(r.novaJanela)}</td>
+    <td class="j">${esc(r.just)||'<span style="color:var(--dim)">—</span>'}${!S.edit&&r.obs?`<i>Log: ${esc(r.obs)}</i>`:''}${r.gv?`<span style="display:block;color:var(--dim);text-transform:none;font-size:11.5px;margin-top:3px">GV: ${esc(r.gv)}</span>`:''}</td>
+    <td class="${S.edit?'edit':''}">${S.edit?`<select data-i="${i}" class="pp">${['Pendente','Aprovado','Reprovado'].map(x=>`<option ${parK(r.parecer)===parK(x)?'selected':''}>${x}</option>`).join('')}</select><textarea data-i="${i}" class="po" rows="2" placeholder="Observação da Logística">${esc(r.obs||'')}</textarea>`:`<span class="par ${k}">${esc(r.parecer||'Pendente')}</span>`}</td></tr>`}).join('')+'</tbody>';
+  const mark=it=>{PEND.set(it.id,{id:it.id,parecer:it.parecer,obs:it.obs||''});setDirty(true)};
+  if(S.edit){$('tbl').querySelectorAll('.pp').forEach(el=>el.onchange=()=>{const it=REG.items[+el.dataset.i];it.parecer=el.value;mark(it);render()});
+    $('tbl').querySelectorAll('.po').forEach(el=>el.onchange=()=>{const it=REG.items[+el.dataset.i];it.obs=el.value.trim();mark(it)})}
+}
+// ---- importação do Excel da crítica
+const DAYW=['SEG','TER','QUA','QUI','SEX','SAB','DOM'];
+function unitByName(n){n=String(n||'').toUpperCase();return V.units.find(u=>n.includes(u.name.toUpperCase())||n.includes(u.abbr)||(u.name==='Ribeira do Pombal'&&/POMBAL/.test(n))||(u.name==='Paulo Afonso'&&/PAULO/.test(n)))}
+async function importFiles(list){
+  let added=0,upd=0,skipped=[],notes=[];const BYGV={};
+  for(const f of list){
+    try{
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+      const sn=wb.SheetNames.find(n=>/solicita/i.test(n));if(!sn)throw new Error('sem aba "Solicitações"');
+      const A=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
+      const hr=A.findIndex(r=>r.some(v=>/tipo de ajuste/i.test(String(v))));if(hr<0)throw new Error('cabeçalho "Tipo de ajuste" não encontrado');
+      const H=A[hr].map(v=>String(v).trim());const fi=re=>H.findIndex(h=>re.test(h));
+      const iC=fi(/c[oó]d\.? cliente/i),iV=fi(/^c[oó]d\.? vendedor$/i),iN=fi(/nome cliente/i),iVi=fi(/^visita/i),iJa=fi(/^janela/i),iT=fi(/tipo de ajuste/i),iND=fi(/novo dia/i),iNJ=fi(/nova janela/i),iJu=fi(/justific/i),iP=fi(/parecer/i),iO=fi(/observa/i),iVN=fi(/vendedor novo/i),iNF=fi(/nova frequ/i),iG=fi(/^gv$/i),iU=fi(/^unidade$/i);
+      let gvInfo='',unInfo='';const info=wb.SheetNames.find(n=>/^info$/i.test(n));
+      if(info){for(const r of XLSX.utils.sheet_to_json(wb.Sheets[info],{header:1,defval:''})){if(/gerente/i.test(r[0]))gvInfo=String(r[1]);if(/unidade \(c/i.test(r[0]))unInfo=String(r[1])}}
+      const fileUnit=(unInfo&&UNITS[unInfo])||unitByName(f.name)||(S.u!=='ALL'?UNITS[S.u]:null);
+      const gvName=gvInfo||(f.name.match(/_([A-Za-z][\w]*?)\.xlsx?$/i)||[])[1]||'';
+      for(let i=hr+1;i<A.length;i++){const r=A[i];const code=parseInt(String(r[iC]).replace(/\D/g,''),10);if(!code)continue;
+        const un=(iU>=0&&unitByName(r[iU]))||fileUnit;if(!un){skipped.push(code);continue}
+        const it={u:un.id,code,n:String(r[iN]||'').trim(),s:String(r[iV]).trim(),sNovo:iVN>=0?String(r[iVN]).trim():'',visita:String(r[iVi]||'').trim(),janela:iJa>=0?String(r[iJa]).trim():'',
+          tipo:String(r[iT]||'').trim()||'Não informado',novoDia:iND>=0?String(r[iND]).trim():'',novaJanela:iNJ>=0?String(r[iNJ]).trim():'',novaFreq:iNF>=0?String(r[iNF]).trim():'',
+          just:iJu>=0?String(r[iJu]).trim():'',parecer:iP>=0&&String(r[iP]).trim()?String(r[iP]).trim():'Pendente',obs:iO>=0?String(r[iO]).trim():'',gv:(iG>=0&&String(r[iG]).trim())||gvName,origem:f.name,em:new Date().toISOString()};
+        if(!it.sNovo){const m=it.just.match(/SETOR\s+\d+\s+PARA\s+O?\s*(\d{3})|PARA\s+(?:O\s+)?SETOR\s+(\d{3})/i);if(m&&it.tipo==='Carteira/vendedor')it.sNovo=m[1]||m[2]}
+        it.un=(UNITS[it.u]||{}).name||'';(BYGV[it.gv||'Sem nome']=BYGV[it.gv||'Sem nome']||[]).push(it)}
+      notes.push(`✓ ${esc(f.name)}`);
+    }catch(e){notes.push(`✗ ${esc(f.name)}: ${esc(e.message)}`)}
+  }
+  for(const [gv,items] of Object.entries(BYGV)){try{const r=await PlannerAPI.post({action:'submit',v:S.vid,gv,units:[...new Set(items.map(x=>x.u))],items});added+=r.added;upd+=r.updated}catch(e){notes.push(`✗ GV ${esc(gv)}: ${esc(e.message)}`)}}
+  await refresh(false);
+  say('info',`${notes.join('<br>')}<br><b>${added}</b> novas · <b>${upd}</b> atualizadas no registro${skipped.length?` · ${skipped.length} sem unidade identificada (escolha a aba da unidade e importe de novo)`:''}.`);
+}
+// ---- salvar parecer no registro
+function publishAsk(){if(!PEND.size){say('info','Nenhum parecer novo para salvar.');return}if($('tok').value.trim())publish();else $('tokModal').style.display='flex'}
+async function publish(){
+  $('tokModal').style.display='none';const pin=$('tok').value.trim();if(!pin){$('tokModal').style.display='flex';return}
+  try{say('info','Salvando parecer…');const r=await PlannerAPI.post({action:'parecer',pin,updates:[...PEND.values()]});
+    try{if($('rem').checked)localStorage.setItem('plannerPin',pin)}catch(e){}
+    PEND=new Map();setDirty(false);say('ok',`✓ ${r.updated} parecer(es) salvos. O time e os GVs já veem.`);await refresh(false);
+  }catch(e){if(/PIN/i.test(e.message)){$('tok').value='';try{localStorage.removeItem('plannerPin')}catch(x){}}say('err','Não consegui salvar: '+esc(e.message))}
+}
+function exportXLS(){
+  const R=rows();if(!R.length){say('info','Nada para exportar.');return}
+  const head=['Unidade','Cód. Cliente','Cód. Vendedor','Nome Cliente','Visita','Janela','Tipo de ajuste','Novo dia visita','Nova janela','Cód. Vendedor novo','Nova frequência','Justificativa','GV','Parecer','Observação Logística'];
+  const aoa=[['Alterações / crítica — '+(V.label||'Planner '+fmtD(V.vig))],[],head].concat(R.map(r=>[(UNITS[r.u]||{}).name||r.u,r.code,r.s,r.n,r.visita,r.janela,r.tipo,r.novoDia,r.novaJanela,r.sNovo,r.novaFreq,r.just,r.gv,r.parecer,r.obs]));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[14,9,9,28,18,10,18,16,14,10,18,60,18,11,40].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Solicitações');XLSX.writeFile(wb,`Alteracoes_Critica_${V.vig}.xlsx`);
+}
+</script>
+</body>
+</html>

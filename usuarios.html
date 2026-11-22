@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Usuários e equipes | Revalle Logística</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--up:#22c55e;--down:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+header{border-bottom:1px solid var(--line);background:rgba(11,15,23,.9)}
+.hw{max-width:1280px;margin:0 auto;padding:14px 22px}
+.brand b{font-size:18px;font-weight:800}.brand b span{color:var(--pos)}.brand small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+main{max-width:1280px;margin:0 auto;padding:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+h2{margin:0 0 4px;font-size:15px;display:flex;gap:10px;align-items:center}
+h2 .cnt{background:var(--pos);color:#111;border-radius:999px;font-size:11.5px;padding:2px 8px}
+.sub{color:var(--mut);font-size:12.5px;margin-bottom:14px;line-height:1.5}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:9px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+td small{color:var(--mut)}
+select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:9px;font:500 13px Inter}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:8px 12px;border-radius:9px;font:600 12.5px Inter;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--pos)}.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}.btn.red{color:#fca5a5}.btn:disabled{opacity:.4;cursor:default}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.t-ok{background:#22c55e22;color:#4ade80}.t-pend{background:#f5b30122;color:#fcd34d}.t-off{background:#ef444422;color:#f87171}.t-adm{background:#e879f922;color:#f0abfc}.t-gv{background:#3b9eff22;color:#60a5fa}
+.pend{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.pc{border:1px solid #f5b30155;background:rgba(245,179,1,.05);border-radius:12px;padding:14px}
+.pc b{display:block;font-size:14px}.pc small{color:var(--mut)}
+.pc .a{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:8px}
+.un{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)}
+.un .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.un .h b{font-size:13.5px}
+.chk{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:4px}
+.chk label{display:flex;gap:6px;align-items:center;font-size:12.5px;padding:5px 6px;border-radius:7px;cursor:pointer}
+.chk label:hover{background:rgba(255,255,255,.04)}
+.chk label em{font-style:normal;color:var(--dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chk label.other em{color:#fcd34d}
+.free{display:flex;flex-wrap:wrap;gap:6px}
+.free span{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px}
+.msg{padding:12px 14px;border-radius:10px;font-size:13px;margin-top:12px;display:none;line-height:1.5}
+.msg.ok{display:block;background:#22c55e18;border:1px solid #22c55e55;color:#86efac}
+.msg.err{display:block;background:#ef444418;border:1px solid #ef444455;color:#fca5a5}
+.msg.info{display:block;background:#3b9eff18;border:1px solid #3b9eff55;color:#93c5fd}
+.empty{color:var(--mut);font-size:13px;padding:8px 0}
+@media(max-width:700px){td:nth-child(3),th:nth-child(3){display:none}}
+</style>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hw"><div class="brand"><b>Usuários <span>e equipes</span></b><small>Revalle Logística · acesso ao sistema e setores de cada GV</small></div></div></header>
+<main>
+  <div class="card"><h2>Pedidos de acesso <span class="cnt" id="pc" hidden></span></h2><div class="sub">Quem pediu acesso pela tela de entrada. Aprove como GV ou como administrador.</div><div id="pend"><div class="empty">Carregando…</div></div></div>
+
+  <div class="card"><h2>Usuários</h2><div class="sub">Troque o perfil ou bloqueie o acesso a qualquer momento. Para os GVs, use <b>Equipe</b> para definir os setores.</div><div id="users"></div><div class="msg" id="msgU"></div></div>
+
+  <div class="card" id="eqCard" hidden>
+    <h2>Equipe de <span id="eqName"></span></h2>
+    <div class="sub">Marque os setores do GV, em quantas unidades precisar. Um setor tem um GV só: se marcar um setor de outro GV (em amarelo), ele é transferido.</div>
+    <div class="eq" id="eq"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn pri" id="eqSave">Salvar equipe</button><button class="btn" id="eqClose">Fechar</button><span class="sub" id="eqSum" style="margin:8px 0 0"></span></div>
+    <div class="msg" id="msgE"></div>
+  </div>
+
+  <div class="card"><h2>Setores sem GV</h2><div class="sub">Setores do planner publicado que ainda não estão na equipe de nenhum GV.</div><div id="free"><div class="empty">Carregando…</div></div></div>
+
+  <div class="card"><h2>Dados no Drive</h2><div class="sub">Arquivos do sistema guardados no Drive da Logística. Na primeira vez, traga os planners que ainda estão no site.</div>
+    <div id="files"></div>
+    <div style="margin-top:12px"><button class="btn" id="mig">Trazer os planners do site para o Drive</button></div>
+    <div class="msg" id="msgM"></div></div>
+</main>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDT=s=>s?new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
+const say=(id,c,h)=>{$(id).className='msg '+c;$(id).innerHTML=h};
+const ORDEM=['1031287','1031295','826588','983616'];
+let U=[],EQ=[],SET=new Map(),UN={},cur=null;const me=PlannerAuth.user()||{};
+
+async function load(){
+  try{const j=await PlannerAuth.call('users.list');U=j.users;EQ=j.equipes}catch(e){say('msgU','err',esc(e.message));return}
+  try{const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];
+    const V=await PlannerData.json(`v/${v.id}.json`);SET=new Map();UN={};
+    for(const u of V.units){UN[u.id]=u.name;SET.set(u.id,new Set())}
+    for(const c of V.clients){if(c[7]&&c[9])SET.get(c[0])&&SET.get(c[0]).add(String(c[7]))}
+  }catch(e){SET=new Map()}
+  render();files();
+}
+const gvName=e=>{const u=U.find(x=>x.email===e);return u?u.nome.split(' ')[0]:e};
+function render(){
+  const pend=U.filter(u=>u.status==='pendente');
+  $('pc').hidden=!pend.length;$('pc').textContent=pend.length;
+  $('pend').innerHTML=pend.length?`<div class="pend">${pend.map(u=>`<div class="pc"><b>${esc(u.nome)}</b><small>${esc(u.email)} · ${esc(u.area||'')} · pediu em ${fmtDT(u.criado)}</small>
+    <div class="a"><button class="btn pri" data-a="ap" data-e="${esc(u.email)}" data-p="gv">Aprovar como GV</button><button class="btn" data-a="ap" data-e="${esc(u.email)}" data-p="admin">Aprovar como administrador</button><button class="btn red" data-a="st" data-e="${esc(u.email)}" data-s="recusado">Recusar</button></div></div>`).join('')}</div>`:'<div class="empty">Nenhum pedido aguardando.</div>';
+  const lst=U.filter(u=>u.status!=='pendente'&&u.status!=='recusado').sort((a,b)=>a.nome.localeCompare(b.nome));
+  $('users').innerHTML=lst.length?`<table><thead><tr><th>Nome</th><th>Perfil</th><th>Último acesso</th><th>Equipe</th><th>Situação</th></tr></thead><tbody>${lst.map(u=>{const n=EQ.filter(e=>e.gv===u.email);const nu=new Set(n.map(e=>e.unb)).size;
+    return `<tr><td><b>${esc(u.nome)}</b><br><small>${esc(u.email)}</small></td>
+    <td><select data-a="pf" data-e="${esc(u.email)}" ${u.email===me.email?'disabled':''}><option value="gv" ${u.perfil==='gv'?'selected':''}>GV</option><option value="admin" ${u.perfil==='admin'?'selected':''}>Administrador</option></select></td>
+    <td><small>${fmtDT(u.ultimo_acesso)||'—'}</small></td>
+    <td>${u.perfil==='gv'?`<button class="btn" data-a="eq" data-e="${esc(u.email)}">Equipe · ${n.length} setores${nu>1?` em ${nu} unidades`:''}</button>`:'<small>vê tudo</small>'}</td>
+    <td>${u.status==='ativo'?`<span class="tag t-ok">Ativo</span> ${u.email!==me.email?`<button class="btn red" data-a="st" data-e="${esc(u.email)}" data-s="bloqueado">Bloquear</button>`:''}`:`<span class="tag t-off">Bloqueado</span> <button class="btn" data-a="st" data-e="${esc(u.email)}" data-s="ativo">Reativar</button>`}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">Nenhum usuário ativo.</div>';
+  // setores sem GV
+  const own=new Set(EQ.map(e=>e.unb+'|'+e.setor));
+  const free=ORDEM.filter(u=>SET.has(u)).map(u=>[u,[...SET.get(u)].filter(s=>!own.has(u+'|'+s)).sort((a,b)=>+a-+b)]).filter(x=>x[1].length);
+  $('free').innerHTML=!SET.size?'<div class="empty">Sem planner publicado no Drive ainda (veja "Dados no Drive" abaixo).</div>':free.length?free.map(([u,l])=>`<div style="margin-bottom:10px"><b style="font-size:13px">${esc(UN[u])}</b> <small style="color:var(--mut)">${l.length} setores</small><div class="free" style="margin-top:6px">${l.map(s=>`<span>Setor ${esc(s)}</span>`).join('')}</div></div>`).join(''):'<div class="empty">✓ Todos os setores têm GV.</div>';
+  if(cur)drawEq();
+}
+function drawEq(){
+  const u=U.find(x=>x.email===cur);$('eqCard').hidden=false;$('eqName').textContent=u.nome;
+  const owner=new Map(EQ.map(e=>[e.unb+'|'+e.setor,e.gv]));
+  $('eq').innerHTML=ORDEM.filter(x=>SET.has(x)).map(un=>{const l=[...SET.get(un)].sort((a,b)=>+a-+b);
+    return `<div class="un"><div class="h"><b>${esc(UN[un])}</b><button class="btn" data-a="all" data-u="${un}">Marcar todos</button></div><div class="chk">${l.map(s=>{const o=owner.get(un+'|'+s);const mine=o===cur;
+      return `<label class="${o&&!mine?'other':''}"><input type="checkbox" data-u="${un}" value="${esc(s)}" ${mine?'checked':''}> Setor ${esc(s)}${o&&!mine?` <em>${esc(gvName(o))}</em>`:''}</label>`}).join('')}</div></div>`}).join('')||'<div class="empty">Sem planner publicado para listar os setores.</div>';
+  sum();$('eqCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function sum(){const c=[...document.querySelectorAll('#eq input:checked')];const us=new Set(c.map(x=>x.dataset.u));$('eqSum').textContent=`${c.length} setores marcados${us.size?` em ${us.size} unidade${us.size>1?'s':''}`:''}`}
+document.addEventListener('change',async e=>{
+  if(e.target.closest('#eq'))sum();
+  const t=e.target.closest('[data-a="pf"]');if(t){try{await PlannerAuth.call('users.set',{email:t.dataset.e,perfil:t.value});say('msgU','ok','Perfil atualizado.');await load()}catch(err){say('msgU','err',esc(err.message))}}
+});
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='ap'||a==='st'){b.disabled=true;try{const r=await PlannerAuth.call('users.set',a==='ap'?{email:b.dataset.e,status:'ativo',perfil:b.dataset.p}:{email:b.dataset.e,status:b.dataset.s});say('msgU','ok',r.email===true?`Atualizado. E-mail enviado para <b>${esc(b.dataset.e)}</b>.`:r.email===false?'Atualizado, mas o e-mail não foi enviado (avise a pessoa por outro meio).':'Atualizado.');await load()}catch(err){say('msgU','err',esc(err.message));b.disabled=false}}
+  if(a==='eq'){cur=b.dataset.e;$('msgE').className='msg';drawEq()}
+  if(a==='all'){const bs=[...document.querySelectorAll(`#eq input[data-u="${b.dataset.u}"]`)];const on=bs.some(x=>!x.checked);bs.forEach(x=>x.checked=on);b.textContent=on?'Desmarcar todos':'Marcar todos';sum()}
+});
+$('eqClose').onclick=()=>{cur=null;$('eqCard').hidden=true};
+$('eqSave').onclick=async()=>{
+  const sel=[...document.querySelectorAll('#eq input:checked')].map(x=>({unb:x.dataset.u,setor:x.value}));
+  const tr=sel.filter(s=>EQ.some(e=>e.unb===s.unb&&e.setor===s.setor&&e.gv!==cur));
+  if(tr.length&&!confirm(`${tr.length} setor(es) são de outro GV e serão transferidos:\n`+tr.map(s=>`${UN[s.unb]} · Setor ${s.setor} (${gvName(EQ.find(e=>e.unb===s.unb&&e.setor===s.setor).gv)})`).join('\n')+'\n\nTransferir?'))return;
+  $('eqSave').disabled=true;
+  try{const r=await PlannerAuth.call('equipes.set',{gv:cur,setores:sel});say('msgE','ok',`Equipe salva: ${r.setores} setores${r.transferidos.length?`, ${r.transferidos.length} transferido(s)`:''}.`);await load()}
+  catch(err){say('msgE','err',esc(err.message))}finally{$('eqSave').disabled=false}
+};
+async function files(){
+  try{const f=await PlannerData.list('');$('files').innerHTML=f.length?`<table><thead><tr><th>Arquivo</th><th>Tamanho</th><th>Atualizado</th></tr></thead><tbody>${f.sort((a,b)=>a.nome.localeCompare(b.nome)).map(x=>`<tr><td>${esc(x.nome)}</td><td><small>${(x.bytes/1024).toLocaleString('pt-BR',{maximumFractionDigits:0})} KB</small></td><td><small>${fmtDT(x.atualizado)} · ${esc(x.por)}</small></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum arquivo no Drive ainda.</div>'}
+  catch(e){$('files').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
+}
+$('mig').onclick=async()=>{
+  $('mig').disabled=true;
+  try{say('msgM','info','Lendo os planners do site…');
+    const ix=await fetch('data/index.json?t='+Date.now()).then(r=>{if(!r.ok)throw new Error('não há planners no site (já foram migrados?)');return r.json()});
+    for(const v of ix.versions){say('msgM','info',`Copiando ${v.label||v.id}…`);const t=await fetch(`data/v/${v.id}.json?t=`+Date.now()).then(r=>r.text());await PlannerData.put(`v/${v.id}.json`,t)}
+    await PlannerData.put('index.json',JSON.stringify(ix,null,1));
+    say('msgM','ok',`✓ ${ix.versions.length} versão(ões) copiada(s) para o Drive. Agora os arquivos da pasta <b>data/</b> podem sair do repositório.`);await load();
+  }catch(e){say('msgM','err','Não consegui copiar: '+esc(e.message))}finally{$('mig').disabled=false}
+};
+load();
+}
+</script>
+</body>
+</html>

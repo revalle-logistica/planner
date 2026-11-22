@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crítica do planner | Revalle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="js/api.js"></script>
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--pre:#7c879c;--up:#22c55e;--down:#ef4444;--crit:#e879f9}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+header{position:sticky;top:0;z-index:3000;background:rgba(11,15,23,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hw{max-width:1600px;margin:0 auto;padding:12px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{margin-right:auto}.brand b{font-size:18px;font-weight:800}.brand b span{color:var(--crit)}.brand small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+select,input,textarea{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:10px;font:500 13.5px Inter;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--crit)}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 13px;border-radius:10px;font:700 13px Inter;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:#3a4560}.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--crit);border-color:var(--crit);color:#1a0420}
+.btn.xl{background:#16a34a;border-color:#16a34a;color:#fff}
+.btn.on{background:rgba(232,121,249,.16);border-color:var(--crit);color:#f5c2fb}
+main{max-width:1600px;margin:0 auto;padding:16px 20px;display:grid;grid-template-columns:1fr 400px;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+h2{margin:0 0 4px;font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+.sub{color:var(--mut);font-size:12.5px;line-height:1.45}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.tog{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tog button{background:none;border:0;color:var(--mut);font:700 12.5px Inter;padding:7px 11px;border-radius:7px;cursor:pointer}
+.tog button.on{background:var(--line);color:var(--txt)}
+.tog.view button.on[data-k=crit]{background:rgba(232,121,249,.2);color:#f5c2fb}
+.maps{display:grid;grid-template-columns:1fr;gap:8px;position:relative}
+.maps.cmp{grid-template-columns:1fr 1fr}
+.mapbox{position:relative}
+.mapbox .lbl{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:600;background:rgba(18,24,38,.92);border:1px solid var(--line);padding:5px 12px;border-radius:999px;font-weight:800;font-size:12px;pointer-events:none}
+.mapbox .lbl.c{color:#f5c2fb;border-color:#e879f988}
+.map{height:calc(100vh - 240px);min-height:520px;border-radius:12px;border:1px solid var(--line);background:#dfe3e8}
+.map.lasso{cursor:crosshair}
+.leg{position:absolute;bottom:12px;left:12px;z-index:600;background:rgba(18,24,38,.94);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:12px;max-height:45%;overflow:auto;min-width:170px}
+.leg div{display:flex;gap:6px;align-items:center;padding:1.5px 0;white-space:nowrap}
+.leg .n{margin-left:auto;padding-left:10px;font-family:'JetBrains Mono',monospace;color:var(--mut)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.hint{position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:700;background:#e879f9;color:#1a0420;font-weight:800;font-size:12.5px;padding:7px 14px;border-radius:999px;display:none;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.side{display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 100px);overflow:auto;position:sticky;top:84px}
+.selbox{border:1px solid #e879f966;background:rgba(232,121,249,.06)}
+.big{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.kv{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--line);padding:4px 9px;border-radius:999px;font-size:12px;color:var(--mut)}
+.pill b{color:var(--txt)}
+.form{display:grid;gap:8px;margin-top:10px}
+.form label{display:grid;gap:4px;font-size:11.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.form select,.form textarea{width:100%}
+.batch{border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:8px;background:var(--panel2)}
+.batch .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.batch b{font-size:13px}
+.batch .d{color:var(--mut);font-size:12px;margin-top:3px;line-height:1.4}
+.batch button{background:none;border:0;color:var(--mut);cursor:pointer;font-size:12px;font-weight:700}
+.batch button:hover{color:#f87171}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{color:var(--mut);font-weight:600;text-align:right;padding:5px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:5px 4px;border-bottom:1px solid #1f2738;text-align:right;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.tbl th:first-child,.tbl td:first-child{text-align:left;font-family:Inter}
+.up{color:var(--up)}.down{color:#f87171}.eq{color:var(--dim)}
+.empty{color:var(--dim);font-size:12.5px;text-align:center;padding:14px}
+.leaflet-popup-content{font:13px Inter}
+.jan{display:flex;gap:5px;flex-wrap:wrap}.jan button{flex:1;min-width:44px;background:var(--panel2);border:1px solid var(--line);color:var(--mut);padding:7px 0;border-radius:8px;font:700 12px Inter;cursor:pointer}.jan button.on{background:rgba(232,121,249,.2);border-color:var(--crit);color:#f5c2fb}
+.srch{position:relative;flex:1;min-width:230px;max-width:340px}.srch input{width:100%}
+.sug{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;max-height:320px;overflow:auto;z-index:2500;display:none;box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.sug div{padding:8px 11px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.sug div:hover,.sug div.on{background:var(--line)}.sug small{color:var(--mut)}
+.warn{background:#f5b30118;border:1px solid #f5b30155;color:#fcd34d;border-radius:10px;padding:8px 10px;font-size:12px;margin-top:8px;line-height:1.4}
+@media(max-width:1100px){main{grid-template-columns:1fr}.side{position:static;max-height:none}.maps.cmp{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hw">
+  <div class="brand"><b>Crítica do <span>planner</span></b><small id="vsub">Revalle Logística</small></div>
+  <input id="gv" placeholder="Seu nome (GV)" style="width:190px">
+  <select id="unit"></select>
+  <select id="fsel" style="max-width:280px"></select>
+</div></header>
+<main>
+  <section>
+    <div class="card">
+      <div class="bar">
+        <button class="btn" id="lassoBtn">✏️ Laço</button>
+        <button class="btn" id="clearSel" disabled>Limpar seleção</button>
+        <div class="srch"><input id="q" placeholder="🔎 Cód. cliente ou nome (vários: 123, 456)" autocomplete="off"><div class="sug" id="sug"></div></div>
+        <span style="width:8px"></span>
+        <div class="tog view" id="viewTog"><button data-k="plan" class="on">Planner</button><button data-k="crit">Com a crítica</button><button data-k="cmp">Antes × depois</button></div>
+        <span class="sub" style="margin-left:6px">Colorir por</span>
+        <div class="tog" id="colTog"><button data-k="sel" class="on">Vendedor</button><button data-k="day">Dia</button><button data-k="freq">Frequência</button></div>
+        <label class="sub" style="display:flex;gap:6px;align-items:center;margin-left:auto"><input type="checkbox" id="onlyChg"> Só alterados</label>
+      </div>
+      <div class="maps" id="maps">
+        <div class="mapbox" id="boxA"><div class="lbl" id="lblA">Planner</div><div class="map" id="mapA"></div><div class="leg" id="legA"></div><div class="hint" id="hint">Desenhe em volta dos PDVs · Esc para sair</div></div>
+        <div class="mapbox" id="boxB" style="display:none"><div class="lbl c">Com a crítica</div><div class="map" id="mapB"></div><div class="leg" id="legB"></div></div>
+      </div>
+      <div class="sub" style="margin-top:8px">Dica: <b>Laço</b> seleciona os PDVs dentro do desenho (soma à seleção atual). Clique num ponto para incluir ou tirar da seleção. Pontos com <b style="color:#f5c2fb">borda rosa</b> já têm alteração.</div>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="card selbox">
+      <h2>🎯 Seleção</h2>
+      <div id="selInfo"><div class="sub">Use o laço no mapa para selecionar PDVs.</div></div>
+      <div class="form">
+        <label>Vendedor destino<select id="tSel"></select></label>
+        <label>Dia de visita<select id="tDay"><option value="">Manter</option><option value="0">Segunda</option><option value="1">Terça</option><option value="2">Quarta</option><option value="3">Quinta</option><option value="4">Sexta</option><option value="5">Sábado</option></select></label>
+        <label>Frequência<select id="tFreq"><option value="">Manter</option><option value="S">Semanal</option><option value="Q13">Quinzenal · semanas S1 e S3</option><option value="Q24">Quinzenal · semanas S2 e S4</option></select></label>
+        <label>Nova janela de entrega<div class="jan" id="tJan"><button data-d="0">Seg</button><button data-d="1">Ter</button><button data-d="2">Qua</button><button data-d="3">Qui</button><button data-d="4">Sex</button><button data-d="5">Sáb</button></div></label>
+        <label>Justificativa (opcional)<textarea id="tJust" rows="2" placeholder="Ex.: PDVs no mesmo bairro do Reinan, encaixa na sexta"></textarea></label>
+        <div id="tWarn"></div>
+        <button class="btn pri" id="apply" disabled>Aplicar alteração</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>📝 Solicitações <span id="nchg" style="color:var(--mut)"></span></h2><button class="btn xl" id="xls">⬇ Excel</button></div>
+      <button class="btn pri" id="send" style="width:100%;justify-content:center;margin-top:10px;padding:11px">📤 Enviar para a Logística</button>
+      <div class="sub" id="sendInfo" style="margin-top:6px;text-align:center"></div>
+      <div id="batches"><div class="empty">Nenhuma alteração ainda.</div></div>
+    </div>
+    <div class="card">
+      <h2>⚖️ Impacto por vendedor</h2>
+      <div class="sub">Clientes por dia: planner → com a crítica (só vendedores afetados).</div>
+      <div id="impact" style="overflow:auto;margin-top:8px"><div class="empty">—</div></div>
+    </div>
+  </aside>
+</main>
+<script>
+const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const FREQ={S:'Semanal',Q:'Quinzenal',M:'Mensal'};
+const DAYCOL=['#3b9eff','#22c55e','#f5b301','#ff8a3d','#ff5d5d','#b07cff','#f472b6'];
+const FCOL={S:'#f5b301',Q:'#3b9eff',M:'#b07cff'};
+const PAL=['#f5b301','#3b9eff','#ff5d5d','#22c55e','#b07cff','#2dd4bf','#ff8a3d','#f472b6','#a3e635','#60a5fa','#facc15','#fb7185','#34d399','#c084fc','#38bdf8','#fdba74','#e879f9','#4ade80','#93c5fd','#fca5a5','#d9f99d','#67e8f9','#fde047','#a78bfa'];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const title=s=>String(s||'').toLowerCase().replace(/(^|\s)\S/g,t=>t.toUpperCase()).replace(/\b(De|Da|Do|Dos|Das|E)\b/g,m=>m.toLowerCase());
+const fmt=(n,d=0)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+let V,ALL=[],C=[],S={u:'',f:'',view:'plan',col:'sel',lasso:false,only:false},SEL=new Set(),B=[],EFF=new Map(),JAN=new Map(),SCOL={};
+let REGD={items:[]},REGF='';
+const isReq=code=>EFF.has(code)||JAN.has(code);
+let mA,mB,lyA,lyB;
+
+(async()=>{
+  const idx=await PlannerData.json('index.json');
+  idx.versions.sort((a,b)=>b.vig.localeCompare(a.vig));
+  const h=Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(x=>x.split('=').map(decodeURIComponent)));
+  const vid=h.v&&idx.versions.some(v=>v.id===h.v)?h.v:idx.versions[0].id;
+  V=await PlannerData.json(`v/${vid}.json`);
+  $('vsub').textContent=`Planner com vigência ${V.vig.split('-').reverse().join('/')} · selecione PDVs no mapa e defina o destino`;
+  for(const r of V.clients){const[u,code,n,st,sa,pa,ma,sb,pb,mb,lat,lon,city]=r;if(!mb)continue;
+    ALL.push({u,code,n:n.trim(),st,sb,pb,mb,lat,lon,city,addr:r[15]||'',vol:r[18]})}
+  try{$('gv').value=localStorage.getItem('criticaGV')||''}catch(e){}
+  $('gv').oninput=()=>{try{localStorage.setItem('criticaGV',$('gv').value)}catch(e){}};
+  $('unit').innerHTML=V.units.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
+  S.u=h.u&&V.units.some(x=>x.id===h.u)?h.u:V.units[0].id;$('unit').value=S.u;
+  $('unit').onchange=e=>{S.u=e.target.value;S.f='';loadUnit()};
+  $('fsel').onchange=e=>{S.f=e.target.value;SEL.clear();draw(true)};
+  S.reg=!!h.reg;
+  if(S.reg){try{REGD={items:await PlannerAPI.list(V.id)}}catch(e){REGD={items:[]}}
+    regUI()}
+  initMaps();
+  document.querySelectorAll('#viewTog button').forEach(b=>b.onclick=()=>{S.view=b.dataset.k;setView()});
+  document.querySelectorAll('#colTog button').forEach(b=>b.onclick=()=>{S.col=b.dataset.k;document.querySelectorAll('#colTog button').forEach(x=>x.classList.toggle('on',x===b));draw()});
+  $('onlyChg').onchange=e=>{S.only=e.target.checked;draw()};
+  $('lassoBtn').onclick=()=>setLasso(!S.lasso);
+  $('clearSel').onclick=()=>{SEL.clear();draw();selInfo()};
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')setLasso(false)});
+  ['tSel','tDay','tFreq'].forEach(id=>$(id).onchange=checkForm);
+  $('tJan').onclick=e=>{const b=e.target.closest('button');if(!b)return;e.preventDefault();b.classList.toggle('on');checkForm()};
+  $('apply').onclick=apply;
+  initSearch();
+  $('xls').onclick=exportXLS;$('send').onclick=sendAll;
+  loadUnit();
+})();
+const key=()=>`critica:${V.id}:${S.u}`+(S.reg?':reg':'');
+function sname(s){return (V.sellers[S.u]||{})[s]||('Setor '+s)}
+function slabel(s){return `${s} - ${title(sname(s))}`}
+function loadUnit(){
+  history.replaceState(null,'',`#v=${V.id}&u=${S.u}`);
+  C=ALL.filter(c=>c.u===S.u);
+  if(S.reg)B=regBatches();else try{B=JSON.parse(localStorage.getItem(key())||'[]')}catch(e){B=[]}
+  const sellers=[...new Set(C.map(c=>c.sb))].sort((a,b)=>+a-+b||a.localeCompare(b));
+  SCOL={};sellers.forEach((s,i)=>SCOL[s]=PAL[i%PAL.length]);
+  $('fsel').innerHTML='<option value="">Todos os vendedores</option>'+sellers.map(s=>`<option value="${s}">${esc(slabel(s))}</option>`).join('');
+  $('tSel').innerHTML='<option value="">Manter</option>'+sellers.map(s=>`<option value="${s}">${esc(slabel(s))}</option>`).join('');
+  SEL.clear();recompute();draw(true);selInfo();
+}
+// ---- dados efetivos
+function daysOf(m){const s=[];for(let d=0;d<7;d++)for(let w=0;w<4;w++)if(m[w*7+d]==='1'){s.push(d);break}return s}
+function weeksOf(m){const w=[];for(let k=0;k<4;k++)if(m.slice(k*7,k*7+7).includes('1'))w.push(k);return w}
+function dayTxt(m){const d=daysOf(m);return d.length?d.map(x=>DAYS[x]).join('/'):'—'}
+function wkTxt(m){const w=weeksOf(m);return w.length===4?'Todas':w.length?w.map(x=>'S'+(x+1)).join('/'):'—'}
+function buildMask(days,weeks){let m='';for(let w=0;w<4;w++)for(let d=0;d<7;d++)m+=(weeks.includes(w)&&days.includes(d))?'1':'0';return m}
+function applyT(cur,t){
+  const r={...cur};if(t.s)r.s=t.s;
+  let days=daysOf(cur.m),weeks=weeksOf(cur.m),f=cur.p;
+  if(t.d!=='')days=[+t.d];
+  if(t.dd&&t.dd.length)days=t.dd;
+  if(t.ww&&t.ww.length){weeks=t.ww;f=t.pp||(t.ww.length===4?'S':t.ww.length===2?'Q':'M')}
+  if(t.f){if(t.f==='S'){f='S';weeks=[0,1,2,3]}else{f='Q';weeks=t.f==='Q13'?[0,2]:[1,3]}}
+  else if(t.d!==''&&!weeks.length)weeks=[0,1,2,3];
+  if(t.d!==''||t.f||(t.dd&&t.dd.length)||(t.ww&&t.ww.length)){if(!weeks.length)weeks=[0,1,2,3];r.m=buildMask(days,weeks);r.p=f}
+  return r}
+function compute(){
+  EFF=new Map();
+  for(const b of B)for(const code of b.codes){const c=C.find(x=>x.code===code);if(!c)continue;
+    const cur=EFF.get(code)||{s:c.sb,p:c.pb,m:c.mb};EFF.set(code,applyT(cur,b.t))}
+  for(const [code,e] of EFF){const c=C.find(x=>x.code===code);if(e.s===c.sb&&e.p===c.pb&&e.m===c.mb)EFF.delete(code)}
+  JAN=new Map();for(const b of B)if(b.t.j)for(const code of b.codes)JAN.set(code,b.t.j);
+}
+function recompute(){
+  compute();
+  if(!S.reg)try{localStorage.setItem(key(),JSON.stringify(B))}catch(e){}
+  renderBatches();renderImpact();
+}
+function eff(c,view){if(view==='crit'&&EFF.has(c.code)){const e=EFF.get(c.code);return{s:e.s,p:e.p,m:e.m}}return{s:c.sb,p:c.pb,m:c.mb}}
+function visible(c){if(c.lat==null)return false;if(S.only&&!isReq(c.code))return false;
+  if(S.f){const e=EFF.get(c.code);return c.sb===S.f||(e&&e.s===S.f)}return true}
+// ---- mapas
+function base(){return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19})}
+function initMaps(){
+  mA=L.map('mapA',{preferCanvas:true});base().addTo(mA);lyA=L.layerGroup().addTo(mA);
+  mB=L.map('mapB',{preferCanvas:true});base().addTo(mB);lyB=L.layerGroup().addTo(mB);
+  L.control.scale({imperial:false}).addTo(mA);
+  let lock=false;const sync=(a,b)=>a.on('move',()=>{if(lock||$('boxB').style.display==='none')return;lock=true;b.setView(a.getCenter(),a.getZoom(),{animate:false});lock=false});
+  sync(mA,mB);sync(mB,mA);
+  initLasso(mA);initLasso(mB);
+}
+function setView(){
+  document.querySelectorAll('#viewTog button').forEach(b=>b.classList.toggle('on',b.dataset.k===S.view));
+  const cmp=S.view==='cmp';$('maps').classList.toggle('cmp',cmp);$('boxB').style.display=cmp?'':'none';
+  $('lblA').textContent=S.view==='crit'?'Com a crítica':'Planner';$('lblA').classList.toggle('c',S.view==='crit');
+  setTimeout(()=>{mA.invalidateSize();mB.invalidateSize();if(cmp)mB.setView(mA.getCenter(),mA.getZoom(),{animate:false});draw()},50);
+}
+function colorOf(e){if(S.col==='sel')return SCOL[e.s]||'#888';if(S.col==='freq')return FCOL[e.p]||'#888';const d=daysOf(e.m);return d.length===1?DAYCOL[d[0]]:d.length?'#ffffff':'#555'}
+function draw(fit){
+  const vA=S.view==='cmp'?'plan':S.view;
+  paint(lyA,vA,'legA');if(S.view==='cmp')paint(lyB,'crit','legB');
+  if(fit){const pts=C.filter(visible);if(pts.length){const la=pts.map(p=>p.lat).sort((a,b)=>a-b),lo=pts.map(p=>p.lon).sort((a,b)=>a-b),q=(x,f)=>x[Math.min(x.length-1,Math.floor(x.length*f))];mA.fitBounds([[q(la,.01),q(lo,.01)],[q(la,.99),q(lo,.99)]],{padding:[20,20]})}}
+  $('clearSel').disabled=!SEL.size;
+}
+function paint(ly,view,legId){
+  ly.clearLayers();const cnt={};
+  const pts=C.filter(visible).sort((a,b)=>(isReq(a.code)?1:0)-(isReq(b.code)?1:0)+(SEL.has(a.code)?1:0)-(SEL.has(b.code)?1:0));
+  for(const c of pts){const e=eff(c,view);const col=colorOf(e);const ch=isReq(c.code),sel=SEL.has(c.code);
+    const k=S.col==='sel'?e.s:S.col==='freq'?e.p:(daysOf(e.m).length===1?daysOf(e.m)[0]:daysOf(e.m).length?'m':'x');cnt[k]=(cnt[k]||0)+1;
+    const m=L.circleMarker([c.lat,c.lon],{radius:sel?7:ch?6.5:5,weight:sel?3:ch?2.5:1,color:sel?'#111':ch?'#e879f9':'#fff',fillColor:col,fillOpacity:.95,dashArray:ch&&view==='plan'?'3 2':null});
+    m.on('click',ev=>{if(S.lasso)return;if(ev.originalEvent.shiftKey||true){SEL.has(c.code)?SEL.delete(c.code):SEL.add(c.code);draw();selInfo()}});
+    m.bindTooltip(()=>tip(c),{direction:'top',offset:[0,-6]});
+    m.addTo(ly)}
+  // legenda com comparação
+  const other={};if(view==='crit'||S.view==='cmp'){for(const c of C.filter(visible)){const e=eff(c,view==='crit'?'plan':'crit');const k=S.col==='sel'?e.s:S.col==='freq'?e.p:(daysOf(e.m).length===1?daysOf(e.m)[0]:daysOf(e.m).length?'m':'x');other[k]=(other[k]||0)+1}}
+  let rows;
+  if(S.col==='sel')rows=Object.keys({...cnt,...other}).sort((a,b)=>+a-+b).map(k=>[SCOL[k],`${k} ${title(sname(k)).split(' ')[0]}`,k]);
+  else if(S.col==='freq')rows=['S','Q','M'].filter(k=>cnt[k]||other[k]).map(k=>[FCOL[k],FREQ[k],k]);
+  else rows=[...[0,1,2,3,4,5].map(d=>[DAYCOL[d],DAYS[d],String(d)]),['#ffffff','2+ dias','m']].filter(r=>cnt[r[2]]||other[r[2]]);
+  $(legId).innerHTML=`<div style="color:var(--mut);font-weight:700;margin-bottom:3px">${fmt(pts.length)} PDVs</div>`+rows.map(([col,l,k])=>{const n=cnt[k]||0,o=other[k];const d=view==='crit'&&o!=null?n-o:null;
+    return `<div><span class="dot" style="background:${col}"></span>${esc(l)}<span class="n">${n}${d?` <span class="${d>0?'up':'down'}">${d>0?'+':''}${d}</span>`:''}</span></div>`}).join('');
+}
+function tip(c){const p=eff(c,'plan'),e=eff(c,'crit'),ch=EFF.has(c.code);const jn=JAN.get(c.code);
+  const row=(l,a,b)=>`<tr><td style="color:#8a94a8;padding-right:8px">${l}</td><td>${esc(a)}</td>${ch?`<td style="padding:0 6px">→</td><td style="color:#c026d3;font-weight:700">${esc(b)}</td>`:''}</tr>`;
+  return `<b>${esc(c.n)}</b> <span style="color:#888">${c.code}</span><br><span style="color:#888">${esc(c.city)}${c.vol!=null?' · vol '+fmt(c.vol,0)+'/mês':''}</span><table style="font-size:12px;margin-top:4px">${row('Vendedor',slabel(p.s),slabel(e.s))}${row('Dia',dayTxt(p.m),dayTxt(e.m))}${row('Freq.',(FREQ[p.p]||p.p)+' '+wkTxt(p.m),(FREQ[e.p]||e.p)+' '+wkTxt(e.m))}</table>${jn?`<div style="margin-top:4px;color:#c026d3;font-weight:700">Nova janela de entrega: ${esc(jn)}</div>`:''}`}
+// ---- laço
+function initLasso(map){
+  const el=map.getContainer();let pts=null,line=null;
+  const ll=ev=>{const t=ev.touches?ev.touches[0]:ev;const r=el.getBoundingClientRect();return map.containerPointToLatLng([t.clientX-r.left,t.clientY-r.top])};
+  const down=ev=>{if(!S.lasso)return;ev.preventDefault();pts=[ll(ev)];line=L.polyline(pts,{color:'#e879f9',weight:3,dashArray:'6 4'}).addTo(map)};
+  const move=ev=>{if(!pts)return;ev.preventDefault();pts.push(ll(ev));line.setLatLngs(pts)};
+  const up=()=>{if(!pts)return;const poly=pts;pts=null;map.removeLayer(line);
+    if(poly.length>2){const P=poly.map(p=>[p.lng,p.lat]);let n=0;for(const c of C.filter(visible))if(inside([c.lon,c.lat],P)){SEL.add(c.code);n++}
+      draw();selInfo()}};
+  el.addEventListener('mousedown',down);el.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+  el.addEventListener('touchstart',down,{passive:false});el.addEventListener('touchmove',move,{passive:false});el.addEventListener('touchend',up);
+}
+function inside(p,poly){let x=p[0],y=p[1],r=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))r=!r}return r}
+function setLasso(on){S.lasso=on;$('lassoBtn').classList.toggle('on',on);$('hint').style.display=on?'block':'none';
+  for(const m of [mA,mB]){on?m.dragging.disable():m.dragging.enable();m.getContainer().classList.toggle('lasso',on)}}
+// ---- busca por código / nome
+function initSearch(){
+  const q=$('q'),sg=$('sug');let list=[],hi=0;
+  const codes=v=>v.split(/[\s,;]+/).map(x=>x.replace(/\D/g,'')).filter(Boolean);
+  const show=()=>{sg.innerHTML=list.length?list.map((c,i)=>`<div data-i="${i}" class="${i===hi?'on':''}"><span><b>${c.code}</b> · ${esc(c.n)}</span><small>${esc(slabel(eff(c,'crit').s).split(' - ')[0])} · ${dayTxt(eff(c,'crit').m)} · ${esc(c.city)}</small></div>`).join(''):'<div><small>Nenhum cliente encontrado nesta unidade</small></div>';sg.style.display='block'};
+  q.oninput=()=>{const v=q.value.trim();if(!v){sg.style.display='none';return}const cs=codes(v);hi=0;
+    if(cs.length>1){const set=new Set(cs.map(Number));list=C.filter(c=>set.has(c.code));sg.innerHTML=`<div class="on" data-all="1"><span>Selecionar <b>${list.length}</b> de ${cs.length} códigos</span><small>Enter</small></div>`;sg.style.display='block';return}
+    const V2=v.toUpperCase();list=C.filter(c=>String(c.code).startsWith(v.replace(/\D/g,'')||'§')||c.n.toUpperCase().includes(V2)).sort((a,b)=>(String(a.code)===v?-1:0)-(String(b.code)===v?-1:0)||a.code-b.code).slice(0,30);show()};
+  q.onkeydown=e=>{if(sg.style.display!=='block')return;if(e.key==='ArrowDown'){hi=Math.min(hi+1,list.length-1);show();e.preventDefault()}else if(e.key==='ArrowUp'){hi=Math.max(hi-1,0);show();e.preventDefault()}
+    else if(e.key==='Enter'){e.preventDefault();if(sg.querySelector('[data-all]'))pickMany(list);else if(list[hi])pick(list[hi])}else if(e.key==='Escape')sg.style.display='none'};
+  sg.onclick=e=>{const d=e.target.closest('div[data-i],div[data-all]');if(!d)return;if(d.dataset.all)pickMany(list);else pick(list[+d.dataset.i])};
+  document.addEventListener('click',e=>{if(!e.target.closest('.srch'))sg.style.display='none'});
+  function pick(c){sg.style.display='none';q.value='';
+    if(c.lat==null){alert('Este cliente não tem coordenada no mapa.');return}
+    if(S.f&&!visible(c)){S.f='';$('fsel').value=''}
+    if(S.only&&!isReq(c.code)){S.only=false;$('onlyChg').checked=false}
+    SEL.add(c.code);draw();selInfo();mA.setView([c.lat,c.lon],Math.max(mA.getZoom(),15));
+    setTimeout(()=>{L.popup({offset:[0,-4]}).setLatLng([c.lat,c.lon]).setContent(tip(c)).openOn(mA)},250)}
+  function pickMany(arr){sg.style.display='none';q.value='';if(!arr.length)return;S.f='';$('fsel').value='';
+    arr.forEach(c=>SEL.add(c.code));draw();selInfo();const pts=arr.filter(c=>c.lat!=null).map(c=>[c.lat,c.lon]);if(pts.length)mA.fitBounds(pts,{padding:[40,40],maxZoom:15})}
+}
+// ---- seleção e formulário
+function selInfo(){
+  const s=C.filter(c=>SEL.has(c.code));
+  if(!s.length){$('selInfo').innerHTML='<div class="sub">Clique em <b>✏️ Laço</b> e desenhe em volta dos PDVs no mapa.</div>';checkForm();return}
+  const by=(f)=>{const m={};for(const c of s){const k=f(c);m[k]=(m[k]||0)+1}return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+  const vol=s.reduce((a,c)=>a+(c.vol||0),0);
+  $('selInfo').innerHTML=`<div class="big">${fmt(s.length)} <span style="font-size:14px;color:var(--mut);font-weight:600">PDVs selecionados</span></div>${vol?`<div class="sub">Volume: <b style="color:var(--txt)">${fmt(vol,0)}</b>/mês</div>`:''}
+  <div class="kv">${by(c=>eff(c,'crit').s).slice(0,6).map(([k,n])=>`<span class="pill"><span class="dot" style="background:${SCOL[k]}"></span>${esc(k)} ${esc(title(sname(k)).split(' ')[0])} <b>${n}</b></span>`).join('')}</div>
+  <div class="kv">${by(c=>dayTxt(eff(c,'crit').m)).map(([k,n])=>`<span class="pill">${esc(k)} <b>${n}</b></span>`).join('')}${by(c=>FREQ[eff(c,'crit').p]||'—').map(([k,n])=>`<span class="pill">${esc(k)} <b>${n}</b></span>`).join('')}</div>`;
+  checkForm();
+}
+function target(){const j=[...$('tJan').querySelectorAll('button.on')].map(b=>DAYS[+b.dataset.d].toUpperCase().replace('SÁB','SAB')).join('/');return{s:$('tSel').value,d:$('tDay').value,f:$('tFreq').value,j}}
+function checkForm(){const t=target();const any=t.s||t.d!==''||t.f||t.j;$('apply').disabled=!SEL.size||!any;
+  $('apply').textContent=SEL.size?`Aplicar aos ${SEL.size} PDVs`:'Aplicar alteração';
+  const multi=t.d!==''?C.filter(c=>SEL.has(c.code)&&daysOf(eff(c,'crit').m).length>1).length:0;
+  $('tWarn').innerHTML=multi?`<div class="warn">⚠️ ${multi} PDV(s) da seleção têm visita em mais de um dia. Ao escolher um dia, eles passam a ter visita só nesse dia.</div>`:''}
+function parseDays(txt){const out=[];const t=String(txt||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');['SEG','TER','QUA','QUI','SEX','SAB','DOM'].forEach((d,i)=>{if(t.split('(')[0].includes(d))out.push(i)});return out}
+function parseWeeks(txt){const t=String(txt||'').toUpperCase();if(/TODA|SEMANAL|TODAS/.test(t))return[0,1,2,3];const m=[...t.matchAll(/S([1-4])/g)].map(x=>+x[1]-1);return m}
+const parK=p=>/aprov/i.test(p)?'A':/reprov/i.test(p)?'R':'P';
+function regBatches(){
+  const sellers=new Set(ALL.filter(c=>c.u===S.u).map(c=>c.sb));
+  return REGD.items.filter(it=>it.u===S.u&&(!REGF||parK(it.parecer)===REGF)).map((it,i)=>{
+    if(it.alvo&&it.alvo.m){const a=it.alvo;return{id:i,t:{s:a.s||'',d:'',f:'',j:a.j||it.novaJanela||'',dd:daysOf(a.m),ww:weeksOf(a.m),pp:a.p},codes:[+it.code],just:it.just,when:it.parAt||it.upd||it.em,par:it.parecer||'Pendente',gv:it.gv,obs:it.obs,tipo:it.tipo}}
+    const t={s:sellers.has(String(it.sNovo))?String(it.sNovo):'',d:'',f:'',j:it.novaJanela||''};
+    const dd=parseDays(it.novoDia);if(dd.length)t.dd=dd;
+    const ww=parseWeeks(it.novaFreq)||[];const ww2=parseWeeks((String(it.novoDia).match(/\((.*)\)/)||[])[1]);const w=ww.length?ww:ww2;
+    if(w.length){t.ww=w;t.pp=/quinz/i.test(it.novaFreq)?'Q':/mens/i.test(it.novaFreq)?'M':/sema/i.test(it.novaFreq)?'S':undefined}
+    return{id:i,t,codes:[+it.code],just:it.just,when:it.parAt||it.em||new Date().toISOString(),par:it.parecer||'Pendente',gv:it.gv,obs:it.obs,tipo:it.tipo}})}
+function regUI(){
+  document.querySelector('.selbox').style.display='none';
+  const box=document.createElement('div');box.className='card';box.style.borderColor='#3b82f6';
+  box.innerHTML=`<h2>📋 Solicitações registradas</h2><div class="sub">Você está vendo no mapa as solicitações do registro de <b>Alterações / crítica</b>. Use <b>Antes × depois</b> para comparar.</div>
+  <div class="tog" id="regTog" style="margin-top:10px"><button data-k="" class="on">Todas</button><button data-k="A">Aprovadas</button><button data-k="P">Pendentes</button><button data-k="R">Reprovadas</button></div>
+  <div style="margin-top:10px;display:flex;gap:8px"><a class="btn" href="alteracoes.html#v=${V.id}">← Registro</a><a class="btn" href="critica.html#v=${V.id}&u=${S.u}" onclick="setTimeout(()=>location.reload(),50)">Fazer nova crítica</a></div>`;
+  document.querySelector('.side').prepend(box);
+  $('regTog').onclick=e=>{const b=e.target.closest('button');if(!b)return;REGF=b.dataset.k;$('regTog').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));B=regBatches();recompute();draw();};
+  document.querySelector('.brand b').innerHTML='Crítica do <span>planner</span> <span style="color:#93c5fd;font-size:13px;font-weight:700">· registro</span>';
+}
+function describe(t){const p=[];if(t.s)p.push('→ '+slabel(t.s));if(t.d!=='')p.push(DAYS[+t.d]);if(t.f)p.push(t.f==='S'?'Semanal':t.f==='Q13'?'Quinzenal S1/S3':'Quinzenal S2/S4');if(t.j)p.push('Janela '+t.j);return p.join(' · ')}
+function apply(){
+  const t=target();const codes=[...SEL];
+  B.push({id:Date.now(),t,codes,just:$('tJust').value.trim(),when:new Date().toISOString()});
+  SEL.clear();$('tJust').value='';$('tJan').querySelectorAll('button.on').forEach(b=>b.classList.remove('on'));recompute();draw();selInfo();
+}
+function renderBatches(){
+  sendStatus();
+  const nreq=new Set([...EFF.keys(),...JAN.keys()]).size;$('nchg').textContent=nreq?`(${nreq} PDVs)`:'';const tot=totalReq();$('xls').disabled=false;$('xls').style.opacity=tot?1:.6;$('xls').title=tot?`Baixar as ${tot} solicitações de todas as unidades`:'Nenhuma solicitação ainda';$('xls').textContent=tot?`⬇ Excel (${tot})`:'⬇ Excel';
+  $('batches').innerHTML=B.length?B.map((b,i)=>`<div class="batch"><div class="t"><b>${S.reg?esc((C.find(c=>c.code===b.codes[0])||{}).n||b.codes[0])+' · '+esc(b.tipo||''):`${i+1}. ${b.codes.length} PDVs`} ${esc(describe(b.t))}</b>${S.reg?`<span style="font-size:11px;font-weight:800;color:${parK(b.par)==='A'?'#4ade80':parK(b.par)==='R'?'#f87171':'#fcd34d'}">${esc(b.par)}</span>`:`<button data-i="${i}" title="Desfazer">✕ desfazer</button>`}</div>${S.reg&&b.gv?`<div class="d">GV: ${esc(b.gv)}${b.obs?' · Log: '+esc(b.obs):''}</div>`:''}${b.just?`<div class="d">“${esc(b.just)}”</div>`:''}<div class="d">${new Date(b.when).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</div></div>`).join('')+(S.reg?'':`<div style="margin-top:10px;display:flex;justify-content:flex-end"><button class="btn" id="clrAll">Limpar tudo</button></div>`):'<div class="empty">Nenhuma alteração ainda. Selecione PDVs, escolha o destino e clique em Aplicar.</div>';
+  $('batches').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{B.splice(+b.dataset.i,1);recompute();draw();selInfo()});
+  const ca=$('clrAll');if(ca)ca.onclick=()=>{if(confirm('Apagar todas as solicitações desta unidade?')){B=[];recompute();draw();selInfo()}};
+}
+// percorre cada unidade com solicitações (rascunho salvo neste navegador) trocando o contexto temporariamente
+// ---- envio para a Logística (registro compartilhado)
+const sentKey=()=>`critica-sent:${V.id}`;
+function draftStamp(){let h=0;for(const u of V.units){const x=localStorage.getItem(`critica:${V.id}:${u.id}`)||'';for(let i=0;i<x.length;i++)h=(h*31+x.charCodeAt(i))|0}return h}
+function sendStatus(){
+  if(S.reg){$('send').style.display='none';$('sendInfo').style.display='none';return}
+  let st=null;try{st=JSON.parse(localStorage.getItem(sentKey())||'null')}catch(e){}
+  const tot=totalReq();const dirty=!st||st.stamp!==draftStamp();
+  $('send').disabled=false;$('send').style.opacity=tot||st?1:.6;
+  $('sendInfo').innerHTML=!PlannerAPI.ok()?'<span style="color:#fcd34d">Conexão com a Logística ainda não configurada.</span>':st?(dirty?`<span style="color:#fcd34d">⚠️ Há alterações não enviadas.</span> Último envio: ${new Date(st.at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:`<span style="color:#4ade80">✓ Enviado para a Logística em ${new Date(st.at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</span>`):(tot?'<span style="color:#fcd34d">Ainda não enviado.</span>':'');
+}
+async function sendAll(){
+  if(!PlannerAPI.ok()){alert('A conexão com a Logística ainda não foi configurada.');return}
+  const gv=$('gv').value.trim();if(!gv){alert('Informe seu nome (GV) no topo antes de enviar.');$('gv').focus();return}
+  const units=V.units.filter(u=>localStorage.getItem(`critica:${V.id}:${u.id}`)!==null).map(u=>u.id);
+  if(!units.includes(S.u))units.push(S.u);
+  const items=[];forEachUnit(u=>{for(const r of requests())items.push({u:u.id,un:u.name,code:r.c.code,n:r.c.n,s:r.p.s,sNovo:r.p.s!==r.e.s?r.e.s:'',visita:visitTxt(r.p.m),janela:'',tipo:r.tipo,
+    novoDia:r.p.m!==r.e.m?visitTxt(r.e.m):'',novaJanela:r.j,novaFreq:r.p.p!==r.e.p||wkTxt(r.p.m)!==wkTxt(r.e.m)?(FREQ[r.e.p]||r.e.p)+' '+wkTxt(r.e.m):'',just:r.just,alvo:{s:r.e.s,p:r.e.p,m:r.e.m,j:r.j}})});
+  if(!items.length&&!confirm('Você não tem solicitações. Enviar assim vai retirar da Logística as suas solicitações pendentes destas unidades. Continuar?'))return;
+  const b=$('send');b.disabled=true;const o=b.textContent;b.textContent='Enviando…';
+  try{const r=await PlannerAPI.post({action:'submit',v:V.id,gv,units,items});
+    localStorage.setItem(sentKey(),JSON.stringify({at:new Date().toISOString(),stamp:draftStamp(),n:items.length}));
+    alert(`✓ Enviado para a Logística!\n\n${items.length} PDVs com solicitação.\n${r.added} novos · ${r.updated} atualizados${r.removed?` · ${r.removed} retirados`:''}${r.kept?`\n${r.kept} já tinham parecer e foram mantidos.`:''}`);
+  }catch(e){alert('Não consegui enviar: '+e.message+'\n\nSeu trabalho continua salvo aqui. Tente de novo em instantes.')}
+  finally{b.textContent=o;b.disabled=false;sendStatus()}
+}
+function forEachUnit(fn){
+  const keep={u:S.u,C,B,EFF,JAN};const out=[];
+  for(const u of V.units){let bb;if(u.id===keep.u)bb=keep.B;else{try{bb=JSON.parse(localStorage.getItem(`critica:${V.id}:${u.id}`+(S.reg?':reg':''))||'[]')}catch(e){bb=[]}}
+    if(!bb.length)continue;S.u=u.id;C=ALL.filter(c=>c.u===u.id);B=bb;compute();out.push(fn(u))}
+  S.u=keep.u;C=keep.C;B=keep.B;EFF=keep.EFF;JAN=keep.JAN;return out}
+function totalReq(){if(S.reg)return new Set([...EFF.keys(),...JAN.keys()]).size;return forEachUnit(()=>new Set([...EFF.keys(),...JAN.keys()]).size).reduce((a,b)=>a+b,0)}
+function sellerStats(view){const M={};for(const c of C){const e=eff(c,view);const x=M[e.s]||(M[e.s]={n:0,d:Array(7).fill(0),v:0});x.n++;x.v+=c.vol||0;for(const d of daysOf(e.m))x.d[d]++}return M}
+function renderImpact(){
+  if(!EFF.size){$('impact').innerHTML='<div class="empty">—</div>';return}
+  const P=sellerStats('plan'),K=sellerStats('crit');
+  const aff=new Set();for(const[code,e]of EFF){const c=C.find(x=>x.code===code);aff.add(c.sb);aff.add(e.s)}
+  const z={n:0,d:Array(7).fill(0),v:0};
+  const cell=(a,b)=>a===b?`<span class="eq">${a}</span>`:`${a}→<b class="${b>a?'up':'down'}">${b}</b>`;
+  $('impact').innerHTML=`<table class="tbl"><thead><tr><th>Vendedor</th><th>Clientes</th>${DAYS.slice(0,6).map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>`+
+    [...aff].sort((a,b)=>+a-+b).map(s=>{const p=P[s]||z,k=K[s]||z;return `<tr><td><span class="dot" style="background:${SCOL[s]};margin-right:5px"></span>${esc(s)} ${esc(title(sname(s)).split(' ')[0])}</td><td>${cell(p.n,k.n)}</td>${[0,1,2,3,4,5].map(d=>`<td>${cell(p.d[d],k.d[d])}</td>`).join('')}</tr>`}).join('')+'</tbody></table>';
+}
+// ---- Excel
+function visitTxt(m){if(!m)return'';const d=daysOf(m).map(x=>DAYS[x].toUpperCase().replace('SÁB','SAB')).join('/');const w=weeksOf(m);return `${d} (${w.length===4?'Toda semana':w.map(x=>'S'+(x+1)).join(' e ')})`}
+function tipoOf(p,e,j){const vd=p.s!==e.s,vv=p.m!==e.m||p.p!==e.p;if(vd)return'Carteira/vendedor';if(vv&&j)return'Visita e janela';if(vv)return'Dia de visita';if(j)return'Janela de entrega';return'Não informado'}
+function requests(){
+  const lote=new Map();B.forEach((b,i)=>b.codes.forEach(c=>{const o=lote.get(c)||{i:[],just:[]};o.i.push(i+1);if(b.just&&!o.just.includes(b.just))o.just.push(b.just);lote.set(c,o)}));
+  return [...new Set([...EFF.keys(),...JAN.keys()])].map(code=>{const c=C.find(x=>x.code===code),p=eff(c,'plan'),e=eff(c,'crit'),j=JAN.get(code)||'',l=lote.get(code)||{i:[],just:[]};
+    return{c,p,e,j,tipo:tipoOf(p,e,j),just:l.just.join(' | '),lote:l.i.join(',')}}).sort((a,b)=>(+a.e.s-+b.e.s)||a.c.code-b.c.code)}
+function exportXLS(){
+  if(!totalReq()){alert(SEL.size?`Você selecionou ${SEL.size} PDVs, mas ainda não aplicou a alteração.\n\nEscolha o destino (vendedor, dia, frequência ou janela) no painel "Seleção" e clique em "Aplicar". Depois baixe o Excel.`:'Ainda não há solicitações.\n\n1. Selecione PDVs com o Laço, a busca ou clicando nos pontos.\n2. Escolha o destino no painel "Seleção".\n3. Clique em "Aplicar".\nDepois baixe o Excel.');return}
+  const gv=$('gv').value.trim();if(!gv){alert('Informe seu nome (GV) no topo antes de exportar.');$('gv').focus();return}
+  const vig=V.vig.split('-').reverse().join('/');
+  const head=['Unidade','Cód. Cliente','Cód. Vendedor','Nome Cliente','Visita','Janela','Tipo de ajuste','Novo dia visita','Nova janela','Justificativa','Parecer','Observação Logística','Cód. Vendedor novo','Nova frequência','GV'];
+  const sol=[],rows=[],res=[],lotes=[];
+  const units=forEachUnit(u=>{const Q=requests();
+    Q.forEach(r=>sol.push([u.name,r.c.code,+r.p.s||r.p.s,r.c.n,visitTxt(r.p.m),'',r.tipo,r.p.m!==r.e.m?visitTxt(r.e.m):'',r.j,r.just,'Pendente','',r.p.s!==r.e.s?(+r.e.s||r.e.s):'',r.p.p!==r.e.p||wkTxt(r.p.m)!==wkTxt(r.e.m)?(FREQ[r.e.p]||r.e.p)+' '+wkTxt(r.e.m):'',gv]));
+    Q.forEach(({c,p,e,j,tipo,just,lote})=>rows.push({'Unidade':u.name,'Código cliente':c.code,'Cliente':c.n,'Cidade':c.city,'Endereço':c.addr,'Tipo de ajuste':tipo,
+      'Cód. vendedor (planner)':+p.s||p.s,'Vendedor (planner)':title(sname(p.s)),'Cód. vendedor (solicitado)':+e.s||e.s,'Vendedor (solicitado)':title(sname(e.s)),
+      'Dia (planner)':dayTxt(p.m),'Dia (solicitado)':dayTxt(e.m),'Frequência (planner)':FREQ[p.p]||p.p,'Frequência (solicitada)':FREQ[e.p]||e.p,
+      'Semanas (planner)':wkTxt(p.m),'Semanas (solicitadas)':wkTxt(e.m),'Nova janela de entrega':j,
+      'Volume/mês':c.vol!=null?Math.round(c.vol*10)/10:'','Justificativa':just,'Lote':lote,'Latitude':c.lat,'Longitude':c.lon}));
+    const P=sellerStats('plan'),K=sellerStats('crit');const z={n:0,d:Array(7).fill(0),v:0};
+    const aff=new Set();for(const r of Q){aff.add(r.p.s);aff.add(r.e.s)}
+    [...aff].sort((a,b)=>+a-+b).forEach(sv=>{const p=P[sv]||z,k=K[sv]||z;const o={'Unidade':u.name,'Cód. vendedor':+sv||sv,'Vendedor':title(sname(sv)),'Clientes (planner)':p.n,'Clientes (crítica)':k.n,'Δ clientes':k.n-p.n};
+      DAYS.slice(0,6).forEach((d,i)=>{o[`${d} (planner)`]=p.d[i];o[`${d} (crítica)`]=k.d[i]});o['Volume/mês (planner)']=Math.round(p.v);o['Volume/mês (crítica)']=Math.round(k.v);res.push(o)});
+    B.forEach((b,i)=>lotes.push([u.name,i+1,b.codes.length,describe(b.t),b.just]));
+    return{name:u.name,n:Q.length}});
+  if(!sol.length){alert('Nenhuma solicitação para exportar.');return}
+  const info=[['Crítica do planner — todas as unidades'],[],['Gerente de vendas',gv],['Planner (vigência)',vig],['Versão',V.id],['Gerado em',new Date().toLocaleString('pt-BR')],['PDVs com solicitação',sol.length],[],['Unidade','PDVs']].concat(units.map(x=>[x.name,x.n])).concat([[],['Unidade','Lote','PDVs','Alteração','Justificativa']]).concat(lotes);
+  const wb=XLSX.utils.book_new();
+  const ws0=XLSX.utils.aoa_to_sheet([['Solicitações de alteração do planner — vigência '+vig+' — GV '+gv],[],head].concat(sol));
+  ws0['!cols']=[14,8,9,26,18,10,18,16,14,50,11,30,10,18,18].map(w=>({wch:w}));ws0['!autofilter']={ref:XLSX.utils.encode_range({s:{r:2,c:0},e:{r:2+sol.length,c:head.length-1}})};
+  const ws1=XLSX.utils.json_to_sheet(rows);ws1['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.min(40,Math.max(10,k.length+2))}));ws1['!autofilter']={ref:ws1['!ref']};
+  const ws2=XLSX.utils.json_to_sheet(res);ws2['!cols']=Object.keys(res[0]||{x:1}).map(k=>({wch:Math.max(9,k.length+1)}));
+  const ws3=XLSX.utils.aoa_to_sheet(info);ws3['!cols']=[{wch:22},{wch:30},{wch:12},{wch:50},{wch:50}];
+  XLSX.utils.book_append_sheet(wb,ws0,'Solicitações');XLSX.utils.book_append_sheet(wb,ws1,'Antes x Depois');XLSX.utils.book_append_sheet(wb,ws2,'Resumo por vendedor');XLSX.utils.book_append_sheet(wb,ws3,'Info');
+  const slug=x=>x.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_');
+  XLSX.writeFile(wb,`Critica_Planner_${V.vig.split('-').reverse().join('.')}_${slug(gv)}.xlsx`);
+}
+</script>
+</body>
+</html>

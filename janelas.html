@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Janelas BEES | Revalle Logística</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/janelas-core.js"></script>
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--up:#22c55e;--down:#ef4444;--blue:#3b9eff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+header{border-bottom:1px solid var(--line);background:rgba(11,15,23,.9)}
+.hw{max-width:1280px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:14px}
+.brand{margin-right:auto}.brand b{font-size:18px;font-weight:800}.brand b span{color:var(--pos)}.brand small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+main{max-width:1280px;margin:0 auto;padding:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+h2{margin:0 0 4px;font-size:15px;display:flex;gap:10px;align-items:center}
+h2 .n{background:var(--pos);color:#111;width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;font-size:12px}
+.sub{color:var(--mut);font-size:12.5px;margin-bottom:14px;line-height:1.5}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut);font-weight:600}
+input,select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:10px;font:500 14px Inter;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--pos)}
+textarea{width:100%;min-height:96px;resize:vertical}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.how{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+.how div{background:var(--panel2);border-radius:10px;padding:12px;font-size:12.5px;color:var(--mut);line-height:1.45}
+.how b{display:block;color:var(--txt);margin-bottom:4px;font-size:13px}
+.zone{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:6px;align-items:center}
+.zone:hover,.zone.drag{border-color:var(--pos);background:rgba(245,179,1,.05)}
+.zone b{font-size:14px}.zone small{color:var(--mut);font-size:12px}
+.zone .pick{background:var(--pos);color:#111;border:0;border-radius:9px;padding:8px 14px;font:700 12.5px Inter;cursor:pointer;margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:9px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.t-file{background:#22c55e22;color:#4ade80}.t-reuse{background:#3b9eff22;color:#60a5fa}.t-miss{background:#ef444422;color:#f87171}.t-keep{background:#2a3142;color:#9aa3b5}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 14px;border-radius:10px;font:600 13px Inter;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--pos)}.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}.btn:disabled{opacity:.4;cursor:default}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+.msg{padding:12px 14px;border-radius:10px;font-size:13px;margin-top:12px;display:none;line-height:1.5}
+.msg.ok{display:block;background:#22c55e18;border:1px solid #22c55e55;color:#86efac}
+.msg.err{display:block;background:#ef444418;border:1px solid #ef444455;color:#fca5a5}
+.msg.info{display:block;background:#3b9eff18;border:1px solid #3b9eff55;color:#93c5fd}
+details{color:var(--mut);font-size:12.5px;line-height:1.6;margin-top:10px}
+details summary{cursor:pointer;color:var(--txt);font-weight:600}
+ol{padding-left:18px;margin:8px 0}
+.files{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.file{background:var(--panel2);border-radius:8px;padding:5px 9px;font-size:12px}
+.file .err{color:var(--down)}
+.biq{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:rgba(255,255,255,.02)}
+.biq.pend{border-color:#f5b30188;background:rgba(245,179,1,.05)}
+.biq .opts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.biq .opts .btn.on{background:var(--pos);color:#111;border-color:var(--pos)}
+.chk{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;margin-top:8px}
+.chk label{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--txt)}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.qgrid .q b{display:block;margin-bottom:6px;font-size:13px}
+.qgrid .q .qa{display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:6px}
+.qgrid .q small{color:var(--mut);font-size:12px}
+.un{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,.02)}
+.un .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.un h3{margin:0;font-size:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
+.k{background:var(--panel2);border-radius:10px;padding:10px 12px}
+.k b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.k small{color:var(--mut);font-size:11.5px}
+.k.al b{color:#f87171}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}
+.d{position:relative;overflow:hidden;background:var(--panel2);border-radius:9px;padding:8px 4px;text-align:center}
+.d i{position:absolute;left:0;right:0;bottom:0;background:var(--blue);opacity:.25}
+.d b{position:relative;display:block;font-size:14px;font-variant-numeric:tabular-nums}
+.d small{position:relative;color:var(--mut);font-size:11px}
+.lst summary{font-size:12.5px}.lst.al summary{color:#fca5a5}
+.codes{color:var(--mut);font-size:12px;word-break:break-word;margin:6px 0}
+.hist td .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--txt);text-decoration:none}
+.chip:hover{border-color:var(--pos)}
+.warn{background:#f5b30114;border:1px solid #f5b30155;color:#fde68a;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-top:12px}
+@media(max-width:800px){.how{grid-template-columns:1fr 1fr}}
+</style>
+<script src="js/api.js"></script>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hw"><div class="brand"><b>Janelas <span>BEES</span></b><small>Revalle Logística · arquivo semanal de importação das janelas de entrega</small></div></div></header>
+<main>
+  <div class="card">
+    <h2>Como funciona</h2>
+    <div class="how">
+      <div><b>1. Semana</b>Escolha a semana da importação. Cada semana fica salva no histórico.</div>
+      <div><b>2. Arquivos</b>Solte o arquivo atual do BEES, o cadastro de clientes (CPF/CNPJ) e o gabarito de janelas, se houver um novo.</div>
+      <div><b>3. Quinzenais</b>Diga se mantém os quinzenais que já estão no BEES e informe os novos.</div>
+      <div><b>4. Gerar e salvar</b>Baixe um CSV por unidade para importar no BEES e salve a semana no histórico.</div>
+    </div>
+    <div class="warn">⚠️ Não abra no Excel o CSV gerado nem o arquivo baixado do BEES: ao salvar, o Excel transforma CNPJ em <b>5,19E+13</b> e corta os dígitos. Use direto do download.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">1</span>Semana da importação</h2>
+    <div class="sub">Se a semana já estiver no histórico, salvar de novo <b>atualiza</b> as unidades geradas agora.</div>
+    <div class="row">
+      <label class="f">Semana (segunda-feira)<input type="date" id="sem"></label>
+      <label class="f">Data de referência dos novos quinzenais<input id="ref" placeholder="dd/mm/aaaa" inputmode="numeric" style="width:170px"></label>
+      <div id="mode" style="padding-bottom:10px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span>Arquivos</h2>
+    <div class="sub">Pode soltar todos de uma vez: o tipo e a unidade de cada arquivo são reconhecidos pelo conteúdo. A <b>base</b> das janelas vem do gabarito que você soltar; sem gabarito, usa as janelas pós do planner publicado (quando houver).</div>
+    <div class="zone" id="drop"><b>Arraste os arquivos aqui</b><small>Arquivo atual de janelas do BEES · Cadastro de clientes 01.20.11 (CPF/CNPJ) · Gabarito visão entrega 2ª janela · Lista de quinzenais (Unidade;Codigo)</small><button class="pick">Escolher arquivos</button></div>
+    <input type="file" id="fi" multiple accept=".csv,.txt" style="display:none"><input type="file" id="fq" multiple accept=".csv,.txt" style="display:none">
+    <div class="files" id="files"></div>
+    <div id="units" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span>Quinzenais</h2>
+    <div class="sub">Quinzenais mantidos ficam com a data de referência que já têm no BEES. Semanais saem com a data vazia.</div>
+    <div id="bi"></div>
+    <div class="row" style="justify-content:space-between;margin:6px 0 10px"><b style="font-size:13px">Novos quinzenais por unidade</b><button class="btn sm" id="rep" disabled>↺ Repetir os novos quinzenais da última semana salva</button></div>
+    <div class="qgrid" id="quinz"><div class="sub">Solte os arquivos para informar os quinzenais.</div></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">4</span>Gerar e salvar</h2>
+    <div class="row"><button class="btn pri" id="gerar" disabled>Gerar arquivos</button><span id="st" class="sub" style="margin:0 0 10px"></span></div>
+    <div id="res" style="margin-top:14px"></div>
+    <div id="saveBox" style="display:none;border-top:1px solid var(--line);margin-top:6px;padding-top:14px">
+      <div class="sub">Salvar grava os CSVs e o resumo da semana no Drive da Logística (fora do site público, porque os arquivos têm CPF/CNPJ).</div>
+      <div class="row">
+        <button class="btn pri" id="save">💾 Salvar semana no histórico</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Histórico de importações</h2>
+    <div class="sub">Semanas salvas, com os arquivos que foram para o BEES.</div>
+    <div id="hist"><div class="sub">Carregando…</div></div>
+  </div>
+</main>
+<script>
+{
+const J=JanelasCore;const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('pt-BR');const br=iso=>iso?iso.split('-').reverse().join('/'):'';
+const NOME={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};
+const ORDEM=['1031287','1031295','826588','983616'];
+const A=[];            // arquivos: {nome,tipo,ddc,p,mapa}
+const quinzTxt={},biResp={},res={};
+let HIST={semanas:[]},VER=null;
+
+(async()=>{
+  $('sem').value=nextMonday();$('ref').value=br($('sem').value);
+  try{HIST=await PlannerData.json('janelas/index.json')}catch(e){HIST={semanas:[]}}
+  try{const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];if(v)VER=await PlannerData.json(`v/${v.id}.json`)}catch(e){}
+  drawHist();modo();render();
+})();
+function nextMonday(){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7));return d.toISOString().slice(0,10)}
+function modo(){const s=$('sem').value,ex=HIST.semanas.find(x=>x.id===s);$('mode').innerHTML=s?(ex?`<span class="tag t-reuse">Atualizar semana ${br(s)}</span>`:`<span class="tag t-file">Nova semana</span>`):'';$('rep').disabled=!ultimaSalva()}
+$('sem').onchange=()=>{const old=$('ref').dataset.auto!=='0';if(old)$('ref').value=br($('sem').value);modo()};
+$('ref').oninput=()=>{$('ref').dataset.auto='0'};
+function ultimaSalva(){return HIST.semanas.filter(x=>x.id!==$('sem').value).sort((a,b)=>b.id.localeCompare(a.id))[0]}
+
+// ---------- arquivos
+async function ler(f){const b=await f.arrayBuffer();try{return new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(e){return new TextDecoder('windows-1252').decode(b)}}
+function addQuinz(u,cods){quinzTxt[u]=[...new Set([...J.parseCodigos(quinzTxt[u]),...cods])].join('\n')}
+function atribuirCadastros(){
+  for(const a of A.filter(x=>x.tipo==='cadastro')){let best='',n=0;
+    for(const pl of A.filter(x=>x.tipo==='planner')){let k=0;for(const r of pl.p.rows)if(a.mapa.has(String(r.ERP_POC_ID).trim()))k++;if(k>n){n=k;best=pl.ddc}}
+    a.ddc=best||J.unidadeDe(a.nome);}
+}
+async function addFiles(list){
+  for(const f of list){
+    try{
+      const p=J.parseCSV(await ler(f)),c=J.classificar(p);
+      if(c.tipo==='quinzenais'){const q=J.quinzPorUnidade(p,c.iu,c.ic);for(const u in q)addQuinz(u,q[u]);A.push({nome:f.name,tipo:'quinzenais',ddc:'',p,info:Object.entries(q).map(([u,v])=>`${NOME[u]}: ${v.length}`).join(' · ')});continue}
+      const it={nome:f.name,tipo:c.tipo,ddc:c.ddc,p};if(c.tipo==='cadastro')it.mapa=J.mapaCadastro(p);
+      const i=A.findIndex(a=>c.tipo!=='cadastro'&&c.tipo!=='desconhecido'&&a.tipo===c.tipo&&a.ddc===c.ddc);
+      if(i>=0)A[i]=it;else A.push(it);
+    }catch(e){A.push({nome:f.name,tipo:'erro',ddc:'',p:{rows:[]}})}
+  }
+  atribuirCadastros();render();
+}
+const drop=$('drop');
+drop.onclick=()=>$('fi').click();
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('drag')};drop.ondragleave=()=>drop.classList.remove('drag');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('drag');addFiles(e.dataTransfer.files)};
+$('fi').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+let fqU='';$('fq').onchange=async e=>{for(const f of e.target.files)addQuinz(fqU,J.codigosDeArquivo(await ler(f)));e.target.value='';render()};
+
+const TIPO={planner:'BEES atual',cadastro:'Cadastro CPF/CNPJ',gabarito:'Gabarito de janelas',quinzenais:'Quinzenais'};
+function unidades(){return ORDEM.filter(u=>A.some(a=>a.ddc===u&&(a.tipo==='planner'||a.tipo==='gabarito')))}
+function arq(t,u){return A.find(a=>a.tipo===t&&a.ddc===u)}
+function baseDe(u){
+  const g=arq('gabarito',u);if(g)return{rows:g.p.rows,src:['file','Gabarito: '+g.nome]};
+  const m=J.baseDaVersao(VER,u);if(m.size)return{rows:m,src:['reuse',`Janelas pós do planner ${br(VER.vig)}`]};
+  return null;
+}
+function render(){
+  $('files').innerHTML=A.map(a=>`<span class="file">${a.tipo in TIPO?`<b>${TIPO[a.tipo]}</b>`:'<b class="err">Não reconhecido</b>'} ${esc(NOME[a.ddc]||'')} · ${esc(a.nome)}${a.info?' · '+esc(a.info):''}</span>`).join('');
+  const us=unidades();
+  $('units').innerHTML=us.length?`<table><thead><tr><th>Unidade</th><th>Base das janelas</th><th>Arquivo atual do BEES</th><th>Cadastro CPF/CNPJ</th></tr></thead><tbody>${us.map(u=>{const b=baseDe(u),p=arq('planner',u),c=arq('cadastro',u);
+    return `<tr><td><b>${NOME[u]}</b></td><td>${b?`<span class="tag t-${b.src[0]}">${esc(b.src[1])}</span>`:'<span class="tag t-miss">Falta o gabarito</span>'}</td><td>${p?`<span class="tag t-file">${fmt(p.p.rows.length)} PDVs</span>`:'<span class="tag t-miss">Falta</span>'}</td><td>${c?`<span class="tag t-file">${fmt(c.mapa.size)} documentos</span>`:'<span class="tag t-keep">Sem cadastro — documentos quebrados ficam de fora</span>'}</td></tr>`}).join('')}</tbody></table>`:'';
+  // quinzenais já no BEES
+  const bh=[];
+  for(const u of us){const p=arq('planner',u);if(!p)continue;const m=J.quinzenaisBees(p.p.rows);if(!m.size){delete biResp[u];continue}
+    const st=biResp[u],refs=[...new Set(m.values())].filter(Boolean).map(esc).join(', ')||'sem data';
+    bh.push(`<div class="biq ${st?'':'pend'}"><b>${NOME[u]}</b>: ${fmt(m.size)} clientes já estão <b>quinzenais</b> no BEES (referência ${refs}). Deseja manter?
+      <div class="opts"><button class="btn bi ${st&&st.r==='manter'?'on':''}" data-u="${u}" data-r="manter">Manter quinzenais</button><button class="btn bi ${st&&st.r==='semanal'?'on':''}" data-u="${u}" data-r="semanal">Passar para semanal</button></div>
+      ${st&&st.r==='manter'?`<details><summary>Escolher quais manter (<span id="bc${u}">${fmt(st.s.size)}</span> de ${fmt(m.size)})</summary><div class="chk">${[...m].map(([c,d])=>`<label><input type="checkbox" class="bic" data-u="${u}" value="${c}" ${st.s.has(c)?'checked':''}> ${c} <small style="color:var(--mut)">${esc(d)}</small></label>`).join('')}</div></details>`:''}</div>`)}
+  $('bi').innerHTML=bh.join('');
+  document.querySelectorAll('.bic').forEach(x=>x.onchange=()=>{const s=biResp[x.dataset.u].s;x.checked?s.add(x.value):s.delete(x.value);$('bc'+x.dataset.u).textContent=fmt(s.size)});
+  $('quinz').innerHTML=us.length?us.map(u=>`<div class="q"><b>${NOME[u]} <small>DDC ${u}</small></b><textarea data-u="${u}" placeholder="Códigos dos novos quinzenais, um por linha">${esc(quinzTxt[u]||'')}</textarea><div class="qa"><small id="qc${u}">${J.parseCodigos(quinzTxt[u]).length} códigos</small><span><button class="btn sm ld" data-u="${u}">Carregar arquivo</button> <button class="btn sm lp" data-u="${u}">Limpar</button></span></div></div>`).join(''):'<div class="sub">Solte os arquivos para informar os quinzenais.</div>';
+  document.querySelectorAll('#quinz textarea').forEach(t=>t.oninput=()=>{quinzTxt[t.dataset.u]=t.value;$('qc'+t.dataset.u).textContent=J.parseCodigos(t.value).length+' códigos'});
+  const prontas=us.filter(u=>arq('planner',u)&&baseDe(u));
+  const falta=us.filter(u=>!prontas.includes(u)).map(u=>`${NOME[u]}: falta ${arq('planner',u)?'o gabarito de janelas':'o arquivo atual do BEES'}`);
+  const pend=prontas.filter(u=>!biResp[u]&&J.quinzenaisBees(arq('planner',u).p.rows).size).map(u=>`${NOME[u]}: responda sobre os quinzenais`);
+  $('gerar').disabled=!prontas.length||pend.length>0;
+  $('st').innerHTML=[...falta,...pend].map(esc).join(' · ')||(prontas.length?`${prontas.length} unidade(s) prontas`:'');
+  $('st').style.color=falta.length||pend.length?'#fca5a5':'';
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.classList.contains('bi')){const u=b.dataset.u;biResp[u]={r:b.dataset.r,s:b.dataset.r==='manter'?new Set(J.quinzenaisBees(arq('planner',u).p.rows).keys()):new Set()};render()}
+  if(b.classList.contains('ld')){fqU=b.dataset.u;$('fq').click()}
+  if(b.classList.contains('lp')){quinzTxt[b.dataset.u]='';render()}
+  if(b.classList.contains('cp'))copiar(b.dataset.t,b);
+  if(b.classList.contains('dl'))baixar(res[b.dataset.u].nome,res[b.dataset.u].csv);
+});
+document.addEventListener('click',async e=>{const a=e.target.closest('a.hdl');if(!a)return;e.preventDefault();
+  try{const t=await PlannerData.text(a.dataset.p);baixar(a.dataset.p.split('/').pop(),t)}catch(err){alert('Não consegui baixar: '+err.message)}});
+$('rep').onclick=()=>{const w=ultimaSalva();if(!w)return;for(const x of w.unidades)if(x.quinzenaisNovos&&x.quinzenaisNovos.length)addQuinz(x.id,x.quinzenaisNovos);render()};
+function baixar(nome,txt){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+async function copiar(t,b){try{await navigator.clipboard.writeText(t);const o=b.textContent;b.textContent='Copiado';setTimeout(()=>b.textContent=o,1500)}catch(e){}}
+
+// ---------- gerar
+function lista(t,it,al,fn){if(!it.length)return'';return `<details class="lst ${al?'al':''}"><summary>${t} (${fmt(it.length)})</summary><div class="codes">${esc(it.map(fn||(x=>x)).join(', '))}</div><button class="btn sm cp" data-t="${esc(it.map(x=>typeof x==='string'?x:x.cod).join('\n'))}">Copiar códigos</button></details>`}
+$('gerar').onclick=()=>{
+  const ref=$('ref').value.trim();
+  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ref)){$('st').textContent='Data de referência no formato dd/mm/aaaa';$('st').style.color='#fca5a5';return}
+  for(const k in res)delete res[k];
+  const html=[];
+  for(const u of unidades()){
+    const p=arq('planner',u),b=baseDe(u),c=arq('cadastro',u);if(!p||!b)continue;
+    const r=J.gerarUnidade(u,b.rows,p.p.rows,J.parseCodigos(quinzTxt[u]),ref,c&&c.mapa,biResp[u]&&biResp[u].s);
+    const nome=`Janelas_BEES_${NOME[u].replace(/[^A-Za-z0-9]+/g,'_')}_${br($('sem').value).replace(/\//g,'.')}.csv`;
+    res[u]={...r,nome,baseSrc:b.src[1]};const mx=Math.max(1,...r.cont.dias);
+    html.push(`<div class="un"><div class="hd"><h3>${NOME[u]} <small style="color:var(--mut);font-weight:500">DDC ${u} · base: ${esc(b.src[1])}</small></h3><span><button class="btn pri sm dl" data-u="${u}">⬇ Baixar CSV</button></span></div>
+      <div class="kpis">
+        <div class="k"><b>${fmt(r.cont.total)}</b><small>linhas no arquivo</small></div>
+        <div class="k"><b>${fmt(r.cont.base)}</b><small>da base, com janela</small></div>
+        <div class="k"><b>${fmt(r.cont.fora)}</b><small>fora da base, tudo NO</small></div>
+        <div class="k"><b>${fmt(r.cont.incluidos)}</b><small>da base fora do BEES, incluídos</small></div>
+        <div class="k"><b>${fmt(r.cont.quinzNovo)} + ${fmt(r.cont.quinzMantido)}</b><small>quinzenais novos + mantidos</small></div>
+        <div class="k"><b>${fmt(r.cont.recuperados)}</b><small>documentos completados pelo cadastro</small></div>
+        <div class="k ${r.docInvalido.length+r.baseSemBees.length?'al':''}"><b>${fmt(r.docInvalido.length+r.baseSemBees.length)}</b><small>de fora: sem CPF/CNPJ válido</small></div>
+      </div>
+      <div class="week">${J.DIAS_PT.map((d,i)=>`<div class="d"><i style="height:${Math.round(r.cont.dias[i]/mx*100)}%"></i><b>${fmt(r.cont.dias[i])}</b><small>${d.slice(0,3)}</small></div>`).join('')}</div>
+      ${lista('Sem CPF/CNPJ válido no BEES nem no cadastro — não entraram',r.docInvalido,1,x=>`${x.cod} (${x.doc})`)}
+      ${lista('Da base, fora do BEES e sem CPF/CNPJ no cadastro — não entraram',r.baseSemBees,1)}
+      ${lista('Quinzenais informados que não estão na base',r.quinzForaBase,1)}
+      ${lista('Incluídos: estavam na base e não no BEES (semanal)',r.incluidos)}
+      ${lista('Quinzenais mantidos do BEES',r.mantidos)}
+    </div>`);
+  }
+  $('res').innerHTML=html.join('');$('saveBox').style.display=html.length?'block':'none';$('msg').className='msg';
+};
+
+// ---------- salvar no histórico (Drive)
+function say(c,h){$('msg').className='msg '+c;$('msg').innerHTML=h}
+$('save').onclick=async()=>{
+  const us=Object.keys(res);if(!us.length)return;
+  const sem=$('sem').value;$('save').disabled=true;
+  try{
+    const resumo=[];
+    for(const u of us){const r=res[u],path=`janelas/${sem}/${r.nome}`;
+      say('info',`Gravando ${NOME[u]}…`);
+      await PlannerData.put(path,r.csv);
+      resumo.push({id:u,nome:NOME[u],arquivo:path,base:r.baseSrc,total:r.cont.total,comJanela:r.cont.base,foraBase:r.cont.fora,incluidos:r.cont.incluidos,
+        quinzNovo:r.cont.quinzNovo,quinzMantido:r.cont.quinzMantido,recuperados:r.cont.recuperados,semDocumento:r.docInvalido.length+r.baseSemBees.length,dias:r.cont.dias,
+        quinzenaisNovos:J.parseCodigos(quinzTxt[u]),quinzenaisMantidos:r.mantidos});}
+    say('info','Atualizando o histórico…');
+    let ix={semanas:[]};try{ix=JSON.parse(await PlannerData.text('janelas/index.json'))}catch(e){}
+    const old=ix.semanas.find(x=>x.id===sem);const now=new Date().toISOString();
+    const w={id:sem,ref:$('ref').value.trim(),criado:old?old.criado:now,atualizado:now,unidades:[...(old?old.unidades.filter(x=>!us.includes(x.id)):[]),...resumo].sort((a,b)=>ORDEM.indexOf(a.id)-ORDEM.indexOf(b.id))};
+    ix.semanas=ix.semanas.filter(x=>x.id!==sem).concat([w]).sort((a,b)=>b.id.localeCompare(a.id));
+    await PlannerData.put('janelas/index.json',JSON.stringify(ix,null,1));
+    HIST=ix;drawHist();modo();
+    say('ok',`✓ Semana <b>${br(sem)}</b> salva no histórico (${us.map(u=>NOME[u]).join(', ')}).`);
+  }catch(e){say('err','Não consegui salvar: '+esc(e.message))}
+  finally{$('save').disabled=false}
+};
+
+// ---------- histórico
+function drawHist(){
+  const s=[...HIST.semanas].sort((a,b)=>b.id.localeCompare(a.id));
+  $('hist').innerHTML=s.length?`<table class="hist"><thead><tr><th>Semana</th><th>Unidades e arquivos</th><th>Quinzenais</th><th>Salvo em</th></tr></thead><tbody>${s.map(w=>`<tr><td><b>${br(w.id)}</b>${w.ref?`<br><small style="color:var(--mut)">ref. novos: ${esc(w.ref)}</small>`:''}</td>
+    <td><div class="chips">${w.unidades.map(x=>`<a class="chip hdl" href="#" data-p="${esc(x.arquivo)}" title="${fmt(x.total)} linhas · ${fmt(x.comJanela)} com janela · base: ${esc(x.base||'')}">⬇ ${esc(x.nome)} <small style="color:var(--mut)">${fmt(x.comJanela)} c/ janela</small></a>`).join('')}</div></td>
+    <td>${w.unidades.filter(x=>x.quinzNovo||x.quinzMantido).map(x=>`${esc(x.nome)}: ${fmt(x.quinzNovo)} novos, ${fmt(x.quinzMantido)} mantidos`).join('<br>')||'<span style="color:var(--mut)">—</span>'}</td>
+    <td style="color:var(--mut)">${new Date(w.atualizado).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</td></tr>`).join('')}</tbody></table>`:'<div class="sub">Nenhuma semana salva ainda.</div>';
+}
+}
+</script>
+</body>
+</html>

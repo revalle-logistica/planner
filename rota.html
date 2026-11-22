@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#0b0f17">
+<title>Minha rota | Revalle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<script src="vendor/leaflet.js"></script>
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--pre:#7c879c;--up:#22c55e;--down:#ef4444;--blue:#3b9eff;--red:#ff5d5d;--pur:#b07cff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px Inter,system-ui,sans-serif}
+header{position:sticky;top:0;z-index:2000;background:rgba(11,15,23,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hw{max-width:980px;margin:0 auto;padding:12px 16px}
+.top{display:flex;align-items:center;gap:10px}
+.top b{font-size:18px;font-weight:800;margin-right:auto}.top b span{color:var(--pos)}
+.top a{color:var(--mut);font-size:13px;text-decoration:none}
+.sel{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:10px}
+select{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:11px 12px;border-radius:11px;font:600 14px Inter;outline:none}
+select:focus{border-color:var(--pos)}
+.tabs{display:flex;gap:4px;margin-top:10px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
+.tab{flex:1;border:0;background:none;color:var(--mut);padding:10px 6px;border-radius:9px;font:700 13px Inter;cursor:pointer}
+.tab.on{background:var(--pos);color:#111}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 4px;font-size:16px;font-weight:800}
+.sub{color:var(--mut);font-size:13px;line-height:1.45}
+.hello{display:flex;gap:12px;align-items:center}
+.av{width:46px;height:46px;border-radius:50%;background:var(--pos);color:#111;display:grid;place-items:center;font-weight:800;font-size:16px;flex:none}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.st{background:var(--panel2);border-radius:11px;padding:10px;text-align:center}
+.st b{display:block;font-size:20px;font-weight:800}.st small{color:var(--mut);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+/* calendar */
+.cal{display:grid;grid-template-columns:44px repeat(6,1fr);gap:6px;margin-top:12px}
+.cal .h{color:var(--mut);font-size:11.5px;font-weight:700;text-align:center;padding:4px 0;text-transform:uppercase}
+.cal .wk{color:var(--mut);font-size:11px;font-weight:700;display:flex;flex-direction:column;justify-content:center;align-items:center;line-height:1.2}
+.cal .wk small{color:var(--dim);font-weight:600}
+.cd{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 4px;text-align:center;cursor:pointer;min-height:62px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.cd:hover{border-color:var(--pos)}
+.cd .dt{font-size:11px;color:var(--mut);font-weight:600}
+.cd .n{font-size:19px;font-weight:800}
+.cd .d{font-size:10.5px;font-weight:700}
+.cd.zero{opacity:.45}.cd.today{border:2px solid var(--pos)}.cd.on{background:rgba(245,179,1,.14);border-color:var(--pos)}
+.up{color:var(--up)}.down{color:var(--down)}.eq{color:var(--dim)}
+/* day */
+.dayhd{display:flex;align-items:center;gap:10px}
+.dayhd h2{flex:1;text-align:center;margin:0}
+.nav{background:var(--panel2);border:1px solid var(--line);color:var(--txt);width:42px;height:42px;border-radius:11px;font-size:18px;cursor:pointer}
+#map{height:46vh;min-height:300px;border-radius:12px;border:1px solid var(--line);margin-top:12px;background:#dfe3e8}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.chip{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--panel2);color:var(--mut);white-space:nowrap}
+.chip.y{background:#f5b30122;color:var(--pos)}.chip.b{background:#3b9eff22;color:#7fbaff}.chip.r{background:#ff5d5d22;color:#ff8f8f}.chip.p{background:#b07cff22;color:#c9a6ff}.chip.g{background:#22c55e22;color:#6ee7a0}
+.stop{display:flex;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.stop:last-child{border:0}
+.stop .o{width:30px;height:30px;border-radius:50%;background:var(--pos);color:#111;font-weight:800;font-size:13px;display:grid;place-items:center;flex:none;margin-top:1px}
+.stop .o.nq{background:var(--panel2);color:var(--mut)}
+.stop .i{flex:1;min-width:0}
+.stop .nm{font-weight:700}.stop .nm small{color:var(--dim);font-weight:600;margin-left:6px}
+.stop .ad{color:var(--mut);font-size:12.5px;margin-top:2px}
+.stop .chips{margin-top:6px}
+.go{align-self:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--txt);text-decoration:none;font-size:12px;font-weight:700;white-space:nowrap}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:10px;font:700 13px Inter;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* changes */
+.sec{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.chg{padding:12px 0;border-bottom:1px solid var(--line)}
+.chg:last-child{border:0}
+.chg .r1{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.chg .ft{font-size:13px;margin-top:4px;color:var(--mut)}
+.chg .ft b{color:var(--txt)}
+.msg{background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:#cfd6e4;margin-top:8px;line-height:1.45;white-space:pre-wrap}
+.cp{background:#25d36622;color:#4ade80;border:1px solid #25d36655;border-radius:9px;padding:7px 10px;font:700 12px Inter;cursor:pointer;white-space:nowrap}
+.tog{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px}
+.tog button{background:none;border:0;color:var(--mut);font:700 12px Inter;padding:6px 10px;border-radius:7px;cursor:pointer}
+.tog button.on{background:var(--line);color:var(--txt)}
+.empty{color:var(--dim);text-align:center;padding:30px 10px;font-size:14px}
+.leaflet-popup-content{font:13px Inter}
+.pin{background:var(--pos);color:#111;border:2px solid #fff;border-radius:50%;font:800 11px Inter;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.pin.new{background:#ff5d5d;color:#fff}.pin.mv{background:#3b9eff;color:#fff}
+.note{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.45}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}.cal{grid-template-columns:34px repeat(6,1fr);gap:4px}.cd .n{font-size:16px}.cd{min-height:56px}.sel{grid-template-columns:1fr}}
+</style>
+<script src="js/api.js"></script>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hw">
+  <div class="top"><b>Minha <span>rota</span></b></div>
+  <div class="sel"><select id="unit"></select><select id="seller"></select></div>
+  <div class="tabs"><button class="tab on" data-t="sem">📅 Semana</button><button class="tab" data-t="dia">🧭 Roteiro do dia</button><button class="tab" data-t="chg">💬 Avisar clientes</button></div>
+</div></header>
+<main id="main"><div class="empty">Carregando…</div></main>
+<script>
+const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const DLONG=['segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado','domingo'];
+const DPLUR=['segundas','terças','quartas','quintas','sextas','sábados','domingos'];
+const FREQ={S:'Semanal',Q:'Quinzenal',M:'Mensal'};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const title=s=>String(s||'').toLowerCase().replace(/(^|\s)\S/g,t=>t.toUpperCase()).replace(/\b(De|Da|Do|Dos|Das|E)\b/g,m=>m.toLowerCase());
+const first=s=>title(s).split(' ')[0];
+const fmtD=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+let V,C=[],S={u:'',s:'',tab:'sem',date:null,tone:'inf'};let map,lay;
+
+(async()=>{try{
+  const idx=await PlannerData.json('index.json');
+  idx.versions.sort((a,b)=>b.vig.localeCompare(a.vig));
+  const h=Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(x=>x.split('=').map(decodeURIComponent)));
+  const vid=h.v&&idx.versions.some(v=>v.id===h.v)?h.v:idx.versions[0].id;
+  V=await PlannerData.json(`v/${vid}.json`);
+  V.names=V.sellers;
+  for(const r of V.clients){const[u,code,n,st,sa,pa,ma,sb,pb,mb,lat,lon,city,qa,qb,addr,ult,jan]=r;
+    if(!mb)continue;C.push({u,code,n:n.trim(),st,sa,pa,ma,sb,pb,mb,lat,lon,city,qa,qb:qb||[],addr,ult,jan,vol:r[18],ent:r[19]})}
+  let saved={};try{saved=JSON.parse(localStorage.getItem('minhaRota')||'{}')}catch(e){}
+  if(V.link){h.u=V.link.unb;h.s=V.link.setor;document.querySelector('.sel').style.display='none'}
+  S.u=h.u||saved.u||V.units[0].id;if(!V.units.some(x=>x.id===S.u))S.u=V.units[0].id;
+  S.s=h.s||saved.s||'';
+  $('unit').innerHTML=V.units.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
+  $('unit').onchange=e=>{S.u=e.target.value;S.s='';fillSellers();go()};
+  $('seller').onchange=e=>{S.s=e.target.value;go()};
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;go()});
+  $('unit').value=S.u;fillSellers();
+  const t=today();S.date=t<vigDate()?vigDate():t;
+  go();
+}catch(e){$('main').innerHTML=`<div class="card"><h2>Não foi possível abrir a rota</h2><div class="sub">${esc(e.message)}</div></div>`;document.querySelector('.sel')&&(document.querySelector('.sel').style.display='none')}})();
+function sname(s){return 'Setor '+s} // vendedor identificado só pelo código do setor
+function fillSellers(){
+  const set=new Set();for(const c of C)if(c.u===S.u){if(c.sb)set.add(c.sb);if(c.sa)set.add(c.sa)}
+  const list=[...set].sort((a,b)=>+a-+b||a.localeCompare(b));
+  if(!list.includes(S.s))S.s='';
+  $('seller').innerHTML='<option value="">Escolha o seu setor…</option>'+list.map(s=>`<option value="${s}">Setor ${s}</option>`).join('');
+  $('seller').value=S.s;
+}
+// datas e ciclo
+function ymd(s){const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c,12)}
+function today(){const d=new Date();d.setHours(12,0,0,0);return d}
+function monday(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+function vigDate(){return ymd(V.vig)}
+function cycleWeek(d){const w=Math.round((monday(d)-monday(vigDate()))/(7*864e5));return(((w+((V.s1||1)-1))%4)+4)%4}
+function dayIdx(d){return(d.getDay()+6)%7}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+function visitsOn(d,side='b'){const w=cycleWeek(d),di=dayIdx(d),bit=w*7+di;
+  return C.filter(c=>c.u===S.u&&(side==='b'?c.sb===S.s&&c.mb[bit]==='1':c.sa===S.s&&c.ma&&c.ma[bit]==='1'))}
+function nextVisits(c,n=2){const out=[];let d=monday(vigDate());for(let i=0;i<70&&out.length<n;i++){const x=addDays(d,i);if(x<vigDate())continue;const bit=cycleWeek(x)*7+dayIdx(x);if(c.mb[bit]==='1')out.push(x)}return out}
+function daysOf(m){const s=[];if(m)for(let d=0;d<7;d++)for(let w=0;w<4;w++)if(m[w*7+d]==='1'){s.push(d);break}return s}
+function dayTxt(m){const d=daysOf(m);return d.length?d.map(x=>DAYS[x]).join('/'):'—'}
+function sinceDays(br){if(!br)return null;const[a,b,c]=br.split('/').map(Number);return Math.round((today()-new Date(c,b-1,a,12))/864e5)}
+function perVisit(c,m){if(!c.vol||!m)return 0;let k=0;for(const x of m)if(x==='1')k++;return k?(c.vol*12/52)*4/k:0}
+const f1=v=>v==null?'—':(Math.round(v*(v<10?10:1))/(v<10?10:1)).toLocaleString('pt-BR');
+function hav(a,b){const R=6371,t=x=>x*Math.PI/180;const dl=t(b[0]-a[0]),dn=t(b[1]-a[1]);const h=Math.sin(dl/2)**2+Math.cos(t(a[0]))*Math.cos(t(b[0]))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+
+function go(){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
+  try{localStorage.setItem('minhaRota',JSON.stringify({u:S.u,s:S.s}))}catch(e){}
+  history.replaceState(null,'',`#v=${V.id}&u=${S.u}${S.s?'&s='+S.s:''}`);
+  if(map){map.remove();map=null}
+  if(!S.s){$('main').innerHTML=`<div class="card"><h2>Bem-vindo 👋</h2><div class="sub">Escolha a unidade e o seu setor lá em cima para ver a sua semana, o roteiro de cada dia e os clientes que você precisa avisar sobre o planner novo (vigência ${fmtD(vigDate())}).</div></div>`;return}
+  ({sem:renderWeek,dia:renderDay,chg:renderChanges})[S.tab]();
+  window.scrollTo({top:0});
+}
+function hello(){
+  const mine=C.filter(c=>c.u===S.u&&c.sb===S.s),before=C.filter(c=>c.u===S.u&&c.sa===S.s);
+  const novos=mine.filter(c=>c.sa!==S.s).length,sairam=before.filter(c=>c.sb!==S.s).length;
+  const mud=mine.filter(c=>c.sa===S.s&&(dayTxt(c.ma)!==dayTxt(c.mb)||c.pa!==c.pb||c.ma!==c.mb)).length;
+  const nm=title(sname(S.s));
+  return `<div class="card"><div class="hello"><div class="av">${esc(S.s)}</div><div><h2>Olá! 👋</h2><div class="sub">Setor ${esc(S.s)} · planner com vigência em <b style="color:var(--txt)">${fmtD(vigDate())}</b></div></div></div>
+  <div class="stats"><div class="st"><b>${mine.length}</b><small>Clientes</small></div><div class="st"><b class="up">+${novos}</b><small>Novos</small></div><div class="st"><b class="down">−${sairam}</b><small>Saíram</small></div><div class="st"><b style="color:var(--blue)">${mud}</b><small>Mudaram</small></div></div>${mine.some(c=>c.vol!=null)?`<div class="sub" style="margin-top:10px">Volume da sua carteira: <b style="color:var(--txt)">${f1(mine.reduce((a,c)=>a+(c.vol||0),0))}</b>/mês (antes ${f1(before.reduce((a,c)=>a+(c.vol||0),0))}) · média de ago a out</div>`:''}</div>`;
+}
+function renderWeek(){
+  const m0=monday(S.date<vigDate()?vigDate():monday(today())<monday(vigDate())?vigDate():today());
+  const t=today();
+  let h='<div class="h"></div>'+DAYS.slice(0,6).map(d=>`<div class="h">${d}</div>`).join('');
+  for(let w=0;w<4;w++){const wm=addDays(m0,w*7);
+    h+=`<div class="wk">S${cycleWeek(wm)+1}<small>${fmtD(wm)}</small></div>`;
+    for(let d=0;d<6;d++){const dt=addDays(wm,d);const n=visitsOn(dt).length,a=visitsOn(dt,'a').length,df=n-a;
+      h+=`<div class="cd ${n?'':'zero'} ${+dt===+t?'today':''}" data-t="${+dt}"><div class="dt">${fmtD(dt)}</div><div class="n">${n}</div><div class="d ${df>0?'up':df<0?'down':'eq'}">${df?(df>0?'+':'')+df:'='}</div></div>`}}
+  // load by weekday
+  const per=DAYS.slice(0,6).map((_,d)=>{let k=0,a=0;for(const c of C){if(c.u!==S.u)continue;if(c.sb===S.s&&daysOf(c.mb).includes(d))k++;if(c.sa===S.s&&daysOf(c.ma).includes(d))a++}return[k,a]});
+  const mx=Math.max(1,...per.flat());
+  $('main').innerHTML=hello()+`<div class="card"><h2>📅 Próximas 4 semanas</h2><div class="sub">Número de clientes a visitar em cada dia. Embaixo, a diferença para o planner anterior. Toque num dia para ver o roteiro.</div><div class="cal" id="cal">${h}</div>
+  <div class="note">S1–S4 = semana do ciclo do planner. Considerei que a semana de ${fmtD(vigDate())} é a S${V.s1||1}.</div></div>
+  <div class="card"><h2>⚖️ Carteira por dia da semana</h2><div class="sub">Clientes com visita em cada dia (em ao menos uma semana do ciclo): antes × depois.</div>
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:150px;margin-top:14px">${per.map(([k,a],d)=>`<div style="display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end"><div style="display:flex;gap:3px;align-items:flex-end;height:110px;width:100%;justify-content:center"><div title="Antes ${a}" style="width:38%;height:${a/mx*100}%;background:var(--pre);border-radius:4px 4px 1px 1px"></div><div title="Depois ${k}" style="width:38%;height:${k/mx*100}%;background:var(--pos);border-radius:4px 4px 1px 1px"></div></div><div style="font-size:12px;font-weight:700;margin-top:6px">${DAYS[d]}</div><div style="font-size:11px;color:var(--mut)">${a}→<b style="color:var(--txt)">${k}</b></div></div>`).join('')}</div></div>`;
+  $('cal').onclick=e=>{const x=e.target.closest('.cd');if(!x)return;S.date=new Date(+x.dataset.t);S.tab='dia';go()};
+}
+function renderDay(){
+  let d=S.date;if(dayIdx(d)===6)d=S.date=addDays(d,1);
+  const di=dayIdx(d);
+  const list=visitsOn(d).sort((a,b)=>(a.qb[di]||999)-(b.qb[di]||999)||a.code-b.code);
+  const before=visitsOn(d,'a').length;
+  const pts=list.filter(c=>c.lat!=null);let km=0;for(let i=1;i<pts.length;i++)km+=hav([pts[i-1].lat,pts[i-1].lon],[pts[i].lat,pts[i].lon]);
+  const cities=[...new Set(list.map(c=>c.city).filter(Boolean))];
+  const tag=c=>{const t=[];if(c.sa!==S.s)t.push(`<span class="chip r">Novo · era do ${esc(c.sa?sname(c.sa):'—')}</span>`);
+    else if(!(c.ma&&c.ma[cycleWeek(d)*7+di]==='1'))t.push(`<span class="chip b">Dia novo · era ${dayTxt(c.ma)}</span>`);
+    if(c.pa&&c.pa!==c.pb)t.push(`<span class="chip p">${FREQ[c.pa]||c.pa} → ${FREQ[c.pb]||c.pb}</span>`);
+    else t.push(`<span class="chip">${FREQ[c.pb]||c.pb}</span>`);
+    const sd=sinceDays(c.ult);if(sd!=null)t.push(`<span class="chip ${sd>30?'r':sd>15?'y':'g'}">Última compra ${sd<=0?'hoje':sd===1?'ontem':'há '+sd+' dias'}</span>`);else t.push('<span class="chip">Sem compra registrada</span>');
+    if(c.vol)t.push(`<span class="chip b">${f1(c.vol)}/mês · drop ${c.ent?f1(c.vol/c.ent):'—'}</span>`);
+    if(c.jan)t.push(`<span class="chip y">Janela ${esc(c.jan)}</span>`);
+    if(c.st==='B')t.push('<span class="chip r">Bloqueado</span>');return t.join('')};
+  const gm=c=>`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lon}`;
+  const legs=[];for(let i=0;i<pts.length;i+=10){const seg=pts.slice(i,i+10);const dest=seg[seg.length-1];const wp=seg.slice(0,-1).map(c=>`${c.lat},${c.lon}`).join('|');legs.push(`<a class="btn" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lon}${wp?'&waypoints='+encodeURIComponent(wp):''}&travelmode=driving">🗺️ ${i+1}–${i+seg.length}</a>`)}
+  $('main').innerHTML=`<div class="card"><div class="dayhd"><button class="nav" id="prev">‹</button><h2>${DLONG[di][0].toUpperCase()+DLONG[di].slice(1)}, ${fmtD(d)}<div class="sub" style="font-weight:600">Semana S${cycleWeek(d)+1} do ciclo</div></h2><button class="nav" id="next">›</button></div>
+    <div class="stats"><div class="st"><b>${list.length}</b><small>Clientes</small></div><div class="st"><b style="color:var(--mut)">${before}</b><small>Antes</small></div><div class="st"><b>${pts.length>1?Math.round(km):'—'}</b><small>km linha reta</small></div><div class="st"><b>${list.some(c=>c.vol!=null)?f1(list.reduce((a,c)=>a+perVisit(c,c.mb),0)):cities.length}</b><small>${list.some(c=>c.vol!=null)?'Vol. previsto':cities.length===1?'Cidade':'Cidades'}</small></div></div>
+    ${cities.length?`<div class="chips">${cities.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>`:''}
+    ${list.length?`<div id="map"></div>${legs.length?`<div class="btns"><span class="sub" style="align-self:center">Abrir no Google Maps (trechos de 10):</span>${legs.join('')}</div>`:''}`:''}</div>
+  <div class="card"><h2>Ordem de visita</h2><div class="sub" style="margin-bottom:6px">Na sequência do planner. Toque no cliente para ver no mapa.</div>
+  ${list.length?list.map((c,i)=>`<div class="stop" data-i="${i}"><div class="o ${c.qb[di]?'':'nq'}">${i+1}</div><div class="i"><div class="nm">${esc(c.n)}<small>${c.code}</small></div><div class="ad">${esc([c.addr,c.city].filter(Boolean).join(' · ')||'Sem endereço')}</div><div class="chips">${tag(c)}</div></div>${c.lat!=null?`<a class="go" target="_blank" href="${gm(c)}">Ir ↗</a>`:''}</div>`).join(''):'<div class="empty">Sem visitas neste dia 🎉</div>'}</div>`;
+  $('prev').onclick=()=>{let x=addDays(d,-1);if(dayIdx(x)===6)x=addDays(x,-1);S.date=x;go()};
+  $('next').onclick=()=>{let x=addDays(d,1);if(dayIdx(x)===6)x=addDays(x,1);S.date=x;go()};
+  if(!list.length)return;
+  map=L.map('map',{zoomControl:true});
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+  if(pts.length>1)L.polyline(pts.map(c=>[c.lat,c.lon]),{color:'#f5b301',weight:4,opacity:.85,dashArray:'6 6'}).addTo(map);
+  const mk={};
+  list.forEach((c,i)=>{if(c.lat==null)return;const cls=c.sa!==S.s?'new':!(c.ma&&c.ma[cycleWeek(d)*7+di]==='1')?'mv':'';
+    mk[i]=L.marker([c.lat,c.lon],{icon:L.divIcon({className:'',html:`<div class="pin ${cls}" style="width:26px;height:26px">${i+1}</div>`,iconSize:[26,26],iconAnchor:[13,13]})}).addTo(map)
+      .bindPopup(`<b>${i+1}. ${esc(c.n)}</b><br>${esc(c.addr||'')}${c.addr?'<br>':''}${esc(c.city)}<br><a target="_blank" href="${gm(c)}">Abrir no Google Maps ↗</a>`)});
+  if(pts.length)map.fitBounds(pts.map(c=>[c.lat,c.lon]),{padding:[30,30],maxZoom:16});
+  document.querySelectorAll('.stop').forEach(el=>el.onclick=e=>{if(e.target.closest('a'))return;const m=mk[+el.dataset.i];if(m){$('map').scrollIntoView({behavior:'smooth',block:'center'});map.setView(m.getLatLng(),16);m.openPopup()}});
+}
+function renderChanges(){
+  const me=title(sname(S.s)),vd=fmtD(vigDate());
+  const mine=C.filter(c=>c.u===S.u&&c.sb===S.s),before=C.filter(c=>c.u===S.u&&c.sa===S.s);
+  const novos=mine.filter(c=>c.sa!==S.s);
+  const mud=mine.filter(c=>c.sa===S.s&&(dayTxt(c.ma)!==dayTxt(c.mb)||c.pa!==c.pb||c.ma!==c.mb));
+  const sairam=before.filter(c=>c.sb!==S.s);
+  const inf=S.tone==='inf';
+  const quando=c=>{const d=daysOf(c.mb);const nv=nextVisits(c);const dias=d.map(x=>DPLUR[x]).join(' e ');
+    const fq=c.pb==='S'?'toda semana':c.pb==='Q'?'a cada 15 dias':c.pb==='M'?'uma vez por mês':'';
+    return `às ${dias}, ${fq}${nv.length?` (próximas: ${nv.map(fmtD).join(' e ')})`:''}`};
+  const cli=c=>title(c.n);
+  const msgNovo=c=>inf?`Olá, ${cli(c)}! Tudo bem? Aqui é da Revalle. A partir de ${vd} eu passo a atender vocês, ${quando(c)}. Qualquer coisa é só me chamar aqui! 🍻`
+    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} o seu atendimento pela Revalle passa a ter visitas ${quando(c)}, com um novo vendedor. Permanecemos à disposição.`;
+  const msgMud=c=>inf?`Olá, ${cli(c)}! Aqui é da Revalle. A partir de ${vd} minha visita aí muda: passo a ir ${quando(c)}. Antes era ${dayTxt(c.ma)}${c.pa!==c.pb?` (${(FREQ[c.pa]||'').toLowerCase()})`:''}. Até lá! 👊`
+    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} as visitas da Revalle passam a ocorrer ${quando(c)}, em substituição ao dia ${dayTxt(c.ma)}. Seu vendedor continua o mesmo.`;
+  const msgSaiu=c=>{const nn=title(sname(c.sb));return inf?`Olá, ${cli(c)}! Aqui é da Revalle. Passando para avisar que a partir de ${vd} vocês passam a ser atendidos por outro vendedor, ${quando(c)}. Foi um prazer, conte sempre comigo! 🙏`
+    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} o seu atendimento pela Revalle passa a ser feito por outro vendedor, com visitas ${quando(c)}. Agradecemos a parceria.`};
+  const block=(id,ttl,sub,arr,fn,info)=>`<div class="card"><div class="sec"><div><h2>${ttl} <span style="color:var(--mut)">(${arr.length})</span></h2><div class="sub">${sub}</div></div>${arr.length?`<button class="cp" data-all="${id}">📋 Copiar todas</button>`:''}</div>
+    ${arr.length?arr.map((c,i)=>`<div class="chg"><div class="r1"><div><b>${esc(c.n)}</b> <span style="color:var(--dim);font-size:12px">${c.code}</span><div class="ft">${info(c)}</div></div><button class="cp" data-id="${id}" data-i="${i}">Copiar</button></div><div class="msg" id="${id}${i}">${esc(fn(c))}</div></div>`).join(''):'<div class="empty">Nenhum cliente nesta lista.</div>'}</div>`;
+  $('main').innerHTML=hello()+`<div class="card"><div class="sec"><div><h2>💬 Mensagens prontas</h2><div class="sub">Copie e cole no WhatsApp do cliente. As datas das próximas visitas já vêm calculadas.</div></div><div class="tog" id="tone"><button data-t="inf" class="${inf?'on':''}">Informal</button><button data-t="for" class="${inf?'':'on'}">Formal</button></div></div></div>`
+    +block('n','🆕 Novos na sua carteira','Clientes que passam a ser seus. Vale pedir ao colega um resumo de cada um.',novos,msgNovo,c=>`Era do <b>${esc(c.sa?sname(c.sa):'—')}</b> · agora <b>${dayTxt(c.mb)}</b> · ${FREQ[c.pb]||c.pb}${c.vol?` · <b style="color:#7fbaff">${f1(c.vol)}</b>/mês`:''}`)
+    +block('m','🔄 Mudaram de dia ou frequência','Seus clientes que continuam com você, mas em outro dia ou ritmo.',mud,msgMud,c=>`<b>${dayTxt(c.ma)}</b> ${FREQ[c.pa]?'('+FREQ[c.pa]+')':''} → <b style="color:var(--pos)">${dayTxt(c.mb)}</b> (${FREQ[c.pb]||c.pb})`)
+    +block('s','👋 Saíram da sua carteira','Clientes que passam para outro vendedor.',sairam,msgSaiu,c=>`Vai para o <b>${esc(sname(c.sb))}</b> · ${dayTxt(c.mb)}`);
+  const arrs={n:novos,m:mud,s:sairam};
+  $('tone').onclick=e=>{const b=e.target.closest('button');if(b){S.tone=b.dataset.t;renderChanges()}};
+  $('main').querySelectorAll('.cp').forEach(b=>b.onclick=async()=>{
+    let txt;if(b.dataset.all){const id=b.dataset.all;txt=arrs[id].map((c,i)=>`*${c.n}* (${c.code})\n${$(id+i).textContent}`).join('\n\n')}else txt=$(b.dataset.id+b.dataset.i).textContent;
+    try{await navigator.clipboard.writeText(txt)}catch(e){const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
+    const o=b.textContent;b.textContent='✓ Copiado';setTimeout(()=>b.textContent=o,1500)});
+}
+</script>
+</body>
+</html>
