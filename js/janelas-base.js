@@ -47,7 +47,13 @@
     };
   }
   function contagem(g, c, excl) { const n = [0, 0, 0, 0, 0, 0, 0]; for (const p of g.perto(c, excl)) for (const i of abertos(p.d)) n[i]++; return n; }
-  function sugestao(n) { let best = -1; for (let i = 0; i < 7; i++) if (n[i] >= MIN && (best < 0 || n[i] > n[best])) best = i; return best; }
+  /* Sinergia = o carro não ir à mesma região em dois dias diferentes.
+     Um dia d do PDV tem sinergia se: tem MIN vizinhos naquele dia, OU nenhum outro dia da região
+     (fora os dias do próprio PDV) tem mais clientes que d. Região sem nenhum outro cliente = isolado (ok). */
+  function okDia(n, d, proprios) { if (n[d] >= MIN) return true; for (let i = 0; i < 7; i++) if (i !== d && !proprios.includes(i) && n[i] > n[d]) return false; return true; }
+  function total(n) { return n.reduce((a, b) => a + b, 0); }
+  function diaRegiao(n, proprios) { let b = -1; for (let i = 0; i < 7; i++) if (!(proprios || []).includes(i) && n[i] > 0 && (b < 0 || n[i] > n[b])) b = i; return b; }
+  function sugestao(n) { let best = -1; for (let i = 0; i < 7; i++) if (n[i] >= MIN && (best < 0 || n[i] > n[best])) best = i; if (best < 0 && total(n)) { best = diaRegiao(n, []); if (best >= 0 && !okDia(n, best, [])) best = -1; } return best; }
 
   /* Análise da semana. Não altera a base.
      ent: { base, ativos:[[cod,status,setor]], coords:{cod:[lat,lon]}, ajustes:[{pedido,cod,dias[7],...}], bees: rows do arquivo do BEES }
@@ -82,14 +88,14 @@
       const c = C[k] || null, n = c ? contagem(g, c, k) : null, s = n ? sugestao(n) : -1;
       const bd = beesDias[k] && beesDias[k].includes('1') ? beesDias[k] : null;
       novos.push({ cod: k, tipo, status: a[1], setor: a[2], coord: c, cont: n, sug: s, desde: pend ? pend.desde : hoje(), pendente: !!pend,
-        motivo: !c ? 'sem coordenada' : s < 0 ? 'nenhum dia com ' + MIN + ' vizinhos em ' + RAIO + ' km' : '',
-        beesDias: bd, beesSemSinergia: bd && n ? abertos(bd).filter(i => n[i] < MIN).map(i => DIAS[i]) : [],
+        motivo: !c ? 'sem coordenada' : s < 0 ? (total(n) ? 'região dividida entre dias, sem dia dominante' : 'isolado: nenhum cliente da base em ' + RAIO + ' km (confira a coordenada)') : '',
+        beesDias: bd, beesSemSinergia: bd && n ? abertos(bd).filter(i => !okDia(n, i, abertos(bd))).map(i => DIAS[i]) : [],
         antes: B.inat[k] ? B.inat[k].d : null });
     }
     // 4) aviso: clientes da base cujos dias abertos ficaram sem sinergia (ex.: coordenada mudou)
     const semSinergia = [];
-    for (const p of pts) { const n = contagem(g, p.c, p.cod); const fr = abertos(p.d).filter(i => n[i] < MIN); if (fr.length && fr.length === abertos(p.d).length) semSinergia.push({ cod: p.cod, d: p.d, cont: n }); }
-    const ajSemSin = ajustes.filter(r => r.aplicar && C[r.item.cod]).map(r => { const n = contagem(g, C[r.item.cod], r.item.cod); return { r, fr: abertos(mask(r.item.dias)).filter(i => n[i] < MIN).map(i => DIAS[i]) }; }).filter(x => x.fr.length);
+    for (const p of pts) { const n = contagem(g, p.c, p.cod), ab = abertos(p.d); const fr = ab.filter(i => !okDia(n, i, ab)); if (fr.length && fr.length === ab.length) semSinergia.push({ cod: p.cod, d: p.d, cont: n, regiao: diaRegiao(n, ab) }); }
+    const ajSemSin = ajustes.filter(r => r.aplicar && C[r.item.cod]).map(r => { const n = contagem(g, C[r.item.cod], r.item.cod), ab = abertos(mask(r.item.dias)); return { r, fr: ab.filter(i => !okDia(n, i, ab)).map(i => DIAS[i]) }; }).filter(x => x.fr.length);
     ajSemSin.forEach(x => { x.r.semSinergia = x.fr; });
     return { cli, ajustes, inativos, novos, semSinergia, comCoord: pts.length, temAtivos: ativos.size > 0 };
   }
@@ -114,6 +120,6 @@
   // mapa código → [7 bool] para o gerador do CSV
   function mapa(base) { const m = new Map(); for (const k in base.clientes) m.set(k, [...base.clientes[k].d].map(c => c === '1')); return m; }
 
-  const api = { RAIO, MIN, DIAS, vazia, deGabarito, deVersao, analisar, aplicar, mapa, txtDias, abertos, km };
+  const api = { RAIO, MIN, DIAS, okDia, diaRegiao, vazia, deGabarito, deVersao, analisar, aplicar, mapa, txtDias, abertos, km };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.JanelasBase = api;
 })(typeof window !== 'undefined' ? window : globalThis);

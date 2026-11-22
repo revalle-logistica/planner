@@ -143,7 +143,7 @@ a.map{color:#93c5fd;font-size:12px}
 
   <div class="card">
     <h2><span class="n">2</span>Revisão da semana</h2>
-    <div class="sub">Sinergia: pelo menos <b>5 PDVs</b> da base com janela no mesmo dia num raio de <b>3 km</b>. PDV novo ou reativado sem sinergia fica <b>fechado e pendente</b> até você escolher o dia.</div>
+    <div class="sub">Sinergia: o carro não ir à mesma região (<b>3 km</b>) em dois dias. Tem sinergia o dia com <b>5 PDVs</b> da base ou o dia que domina a região. PDV novo ou reativado sem sinergia, ou isolado, fica <b>fechado e pendente</b> até você escolher o dia.</div>
     <div class="tabs" id="tabs"></div>
     <div id="rev"><div class="sub">Carregando…</div></div>
   </div>
@@ -267,7 +267,7 @@ function revisao(u){
       <td>${r.aplicar?`${r.antes?JB.txtDias(r.antes):'—'} → <b>${JB.txtDias(r.item.dias.map(x=>x?'1':'0').join(''))}</b>`:'—'}</td>
       <td>${r.aplicar?(r.semSinergia&&r.semSinergia.length?`<span class="tg p">Aplica · sem sinergia: ${r.semSinergia.join('/')}</span>`:'<span class="tg g">Aplica</span>'):`<span class="tg x">${esc(r.motivo)}</span>`}</td></tr>`).join('')}</tbody></table>`:'<div class="sub" style="margin:0">Nenhum ajuste no arquivo da Central.</div>'}</div></details>
     <details class="sec"><summary>Inativados <small>${A.inativos.length} saem da base e ficam NO em todos os dias</small></summary><div class="in">${A.inativos.length?`<div class="codes">${A.inativos.map(x=>`${esc(x.cod)} (${JB.txtDias(x.d)})`).join(', ')}</div>`:'<div class="sub" style="margin:0">Nenhum.</div>'}</div></details>
-    <details class="sec"><summary>Aviso: clientes da base sem sinergia <small>${A.semSinergia.length} · não muda nada, só para conferir</small></summary><div class="in"><div class="sub" style="margin:0 0 8px">Nenhum dia de janela desses clientes tem 5 vizinhos em 3 km. Pode ser coordenada errada ou área isolada. Base de cálculo: ${fmt(A.comCoord)} clientes com coordenada${o.coordSrc?' ('+esc(o.coordSrc)+')':''}.</div>${A.semSinergia.length?`<div class="codes">${A.semSinergia.map(x=>`${esc(x.cod)} (${JB.txtDias(x.d)})`).join(', ')}</div>`:''}</div></details>`;
+    <details class="sec"><summary>Aviso: clientes da base sem sinergia <small>${A.semSinergia.length} · não muda nada, só para conferir</small></summary><div class="in"><div class="sub" style="margin:0 0 8px">O carro já vai à região (3 km) em outro dia com mais clientes, e o dia deste cliente não tem 5 vizinhos. Cliente isolado (sem outro cliente perto) não entra aqui. Formato: código (dia dele → dia da região). Base de cálculo: ${fmt(A.comCoord)} clientes com coordenada${o.coordSrc?' ('+esc(o.coordSrc)+')':''}.</div>${A.semSinergia.length?`<div class="codes">${A.semSinergia.map(x=>`${esc(x.cod)} (${JB.txtDias(x.d)}${x.regiao>=0?' → '+DIAS[x.regiao]+' '+x.cont[x.regiao]:''})`).join(', ')}</div>`:''}</div></details>`;
 }
 function quinzenais(us){
   const bh=[];
