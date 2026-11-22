@@ -6,11 +6,11 @@ const GRUPOS={
   mon:{t:'Monitor',ids:['mon']},
   ind:{t:'Indicadores',ids:['ind','kdia','chk','res']},
   buf:{t:'Buffer',ids:['buf']},
-  analise:{t:'Análise do planner',ids:['etapas','todos','setor','dia','pdvvol','num','alt']},
+  analise:{t:'Análise do planner',ids:['todos','setor','dia','pdvvol','num','alt']},
   opp:{t:'Oportunidades',ids:['opp']},
   pa:{t:'Plano de ação',ids:['pa']},
   imp:{t:'Bases da rotina',ids:['imp']}};
-let M=new URLSearchParams(location.search).get('m')||'sem';if(!GRUPOS[M])M='sem';
+let M=new URLSearchParams(location.search).get('m')||'sem';if(M==='opp')location.replace('oportunidades.html');if(!GRUPOS[M])M='sem';
 const EU=(window.PlannerAuth&&PlannerAuth.user())||{};
 const IS_ADMIN=EU.perfil==='admin';
 let LSO={};

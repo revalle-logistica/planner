@@ -14,7 +14,7 @@ const SHEETS = {
   Links: ['token', 'unb', 'setor', 'ativo', 'criado_por', 'criado_em', 'desativado_em'],
   Arquivos: ['nome', 'file_id', 'atualizado', 'por', 'bytes'],
   Log: ['quando', 'email', 'acao', 'detalhe'],
-  Notas: ['id', 'tipo', 'unidade', 'planner', 'pdv', 'setor', 'texto', 'status', 'autor', 'autor_nome', 'criado', 'atualizado', 'excluida']
+  Notas: ['id', 'tipo', 'unidade', 'planner', 'pdv', 'setor', 'texto', 'status', 'autor', 'autor_nome', 'criado', 'atualizado', 'excluida', 'categoria', 'regiao']
 };
 
 // ---------- infraestrutura
@@ -372,7 +372,7 @@ const ACTIONS = {
     if (!itens.length) throw new Error('Nada para registrar');
     const out = locked(() => itens.map(it => {
       const texto = String(it.texto || '').trim().slice(0, 4000); if (!texto) throw new Error('Texto vazio');
-      const n = { id: uid('n'), tipo: String(it.tipo || 'opp'), unidade: String(it.unidade || ''), planner: String(it.planner || ''), pdv: String(it.pdv || '').replace(/\D/g, ''), setor: String(it.setor || '').replace(/\D/g, ''),
+      const n = { id: uid('n'), tipo: String(it.tipo || 'opp'), unidade: String(it.unidade || ''), planner: String(it.planner || ''), pdv: String(it.pdv || '').replace(/\D/g, ''), setor: String(it.setor || '').replace(/\D/g, ''), categoria: String(it.categoria || '').slice(0, 60), regiao: String(it.regiao || '').slice(0, 120),
         texto, status: 'aberta', autor: u.email, autor_nome: u.nome, criado: now(), atualizado: now(), excluida: '' };
       append('Notas', n); return n;
     }));
@@ -385,8 +385,10 @@ const ACTIONS = {
       if (u.perfil !== 'admin' && n.autor !== u.email) throw new Error('Só quem escreveu (ou a Logística) pode mudar esta anotação');
       const p = { atualizado: now() };
       if (b.excluir) p.excluida = 'sim';
-      if (b.status) { if (['aberta', 'andamento', 'feita'].indexOf(b.status) < 0) throw new Error('Situação inválida'); p.status = b.status; }
+      if (b.status) { if (['aberta', 'andamento', 'feita', 'descartada'].indexOf(b.status) < 0) throw new Error('Situação inválida'); p.status = b.status; }
       if (b.texto != null) p.texto = String(b.texto).trim().slice(0, 4000);
+      ['categoria', 'regiao', 'unidade'].forEach(k => { if (b[k] != null) p[k] = String(b[k]).slice(0, 120); });
+      ['pdv', 'setor'].forEach(k => { if (b[k] != null) p[k] = String(b[k]).replace(/\D/g, ''); });
       update('Notas', n._row, p); log(u.email, 'notas.set', n.id + (b.excluir ? ' excluída' : ' ' + (b.status || 'texto')));
       return { nota: notaPub_(Object.assign(n, p)) };
     });

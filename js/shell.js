@@ -36,6 +36,7 @@
     { id: 'painel', href: 'painel.html', ic: 'chart', t: 'Antes × Depois' },
     { id: 'rota', href: 'rota.html', ic: 'route', t: 'Minha rota', cls: 'rota' },
     { id: 'r-analise', href: 'rotina.html?m=analise', ic: 'kpi', t: 'Análise do planner' },
+    { id: 'opp', href: 'oportunidades.html', ic: 'star', t: 'Oportunidades' },
     { sec: 'Crítica do planner' },
     { id: 'critica', href: 'critica.html', ic: 'pen', t: 'Crítica (GV)' },
     { id: 'alteracoes', href: 'alteracoes.html', ic: 'list', t: 'Alterações', badge: true },
@@ -48,7 +49,6 @@
     { id: 'r-ind', href: 'rotina.html?m=ind', ic: 'kpi', t: 'Indicadores' },
     { id: 'r-buf', href: 'rotina.html?m=buf', ic: 'box', t: 'Buffer' },
     { sec: 'Ações' },
-    { id: 'r-opp', href: 'rotina.html?m=opp', ic: 'star', t: 'Oportunidades' },
     { id: 'r-pa', href: 'rotina.html?m=pa', ic: 'check', t: 'Plano de ação' },
     { sec: 'Administração' },
     { id: 'relatorios', href: 'relatorios.html', ic: 'file', t: 'Central de relatórios', badge2: true },
@@ -61,7 +61,7 @@
 
   function current() {
     var p = location.pathname.split('/').pop() || 'index.html';
-    var m = { 'index.html': 'home', 'painel.html': 'painel', 'rota.html': 'rota', 'critica.html': 'critica', 'alteracoes.html': 'alteracoes', 'importar.html': 'importar', 'janelas.html': 'janelas', 'links.html': 'links', 'usuarios.html': 'usuarios', 'relatorios.html': 'relatorios' };
+    var m = { 'index.html': 'home', 'painel.html': 'painel', 'rota.html': 'rota', 'critica.html': 'critica', 'alteracoes.html': 'alteracoes', 'importar.html': 'importar', 'janelas.html': 'janelas', 'links.html': 'links', 'usuarios.html': 'usuarios', 'relatorios.html': 'relatorios', 'oportunidades.html': 'opp' };
     if (p === 'critica.html' && /reg=1/.test(location.hash)) return 'alteracoes';
     if (p === 'rotina.html') return 'r-' + (new URLSearchParams(location.search).get('m') || 'sem');
     return m[p] || '';

@@ -56,6 +56,16 @@ main{max-width:1320px;margin:0 auto;padding:28px 28px 60px}
 h2{font-size:15px;font-weight:800;margin:34px 0 14px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
 h2 small{color:var(--mut);font-weight:500;font-size:12.5px}
 h2 .ln{flex:1;height:1px;background:var(--line)}
+.etp{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;counter-reset:e}
+@media(max-width:1100px){.etp{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.etp{grid-template-columns:1fr}}
+.et{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit}
+a.et:hover{border-color:rgba(245,179,1,.55);transform:translateY(-2px)}
+.et .n{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font:800 14px Inter;background:var(--c);color:#111}
+.et h4{margin:0;font-size:14.5px;font-weight:800;line-height:1.25}
+.et p{margin:0;color:var(--mut);font-size:12.5px;line-height:1.45;flex:1}
+.et .ow{display:flex;gap:5px;flex-wrap:wrap}.et .ow span{font:700 10.5px Inter;padding:3px 8px;border-radius:999px;background:var(--panel2);color:var(--txt)}
+.et .ow .L{background:rgba(245,179,1,.16);color:#fcd34d}.et .ow .G{background:rgba(96,165,250,.16);color:#93c5fd}.et .ow .T{background:rgba(45,212,191,.16);color:#5eead4}
+.et .fase{font:700 10px Inter;text-transform:uppercase;letter-spacing:.07em;color:var(--mut)}
 
 /* Unidades */
 .units{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
@@ -136,6 +146,9 @@ footer{margin-top:40px;color:var(--dim);font-size:12px;text-align:center}
   <h2>Unidades <small id="uSub"></small><span class="ln"></span></h2>
   <div class="units" id="units"></div>
 
+  <h2>Etapas do planner <small>do início ao fim de cada ciclo</small><span class="ln"></span></h2>
+  <div class="etp" id="etapas"></div>
+
   <h2>Módulos <span class="ln"></span></h2>
   <div class="mods" id="mods"></div>
 
@@ -179,15 +192,29 @@ const MODS=[
   {h:'janelas.html',ic:'truck',c:'#60a5fa',t:'Janelas BEES',d:'Gera o arquivo semanal de importação das janelas de entrega no BEES e guarda o histórico das semanas.',w:['Logística']}
 ];
 const SOON=[];
-MODS.splice(2,0,{h:'rotina.html?m=analise',ic:'kpi',c:'#a78bfa',t:'Análise do planner',d:'Etapas, carteira por dia, balanceamento por setor, PDVs e volume e os números do planner.',w:['Todos']});
+const ETAPAS=[
+ ['Construção','Base do pré-planner','01.02.78.03 e relatório de clientes com coordenada: identifica PDVs novos e inativados. A carteira final tem exatamente esses PDVs.',['L'],''],
+ ['Construção','Segmentação e dimensionamento','Rota × segmentado e quantidade de setores por unidade.',['G'],''],
+ ['Construção','Roteirização das visitas','Até 38 visitas/dia na rota. Semanal × quinzenal pelo volume, quinzenais em S1/S2 por região. A visita segue a janela de entrega.',['L'],''],
+ ['Construção','Janelas de entrega','Janela fixa por região e 2ª janela para drop size, com sinergia (5 PDVs em 3 km) nos pares seg/qui, ter/sex, qua/sáb.',['L'],''],
+ ['Construção','Crítica com Vendas','Os GVs pedem ajustes de visita na Crítica do planner e a Logística dá o parecer: é o acordo Vendas × Logística.',['G','L'],'critica.html'],
+ ['Virada','Publicação e comunicação','Antes × Depois para o time, links da Minha rota para os vendedores e aviso aos clientes.',['L','G'],'painel.html'],
+ ['Virada','Cadastros','Frequência em lote e cadastros no Promax e no roteirizador.',['L'],''],
+ ['Virada','Virada do planner','Planner em vigor e janelas de entrega importadas no BEES.',['L'],'janelas.html'],
+ ['Rotina','Manutenção semanal','Janelas BEES da semana (ajustes, PDVs novos com sinergia, inativados). Visita muda na Crítica; janela, na TCD.',['L','G','T'],'janelas.html'],
+ ['Rotina','Acompanhamento pós-planner','Reunião semanal com os KPIs, plano de ação e oportunidades para o próximo planner.',['L','G'],'rotina.html?m=sem']];
+const OWN={L:'Logística',G:'GVs',T:'TCD'},FC={Construção:'#60a5fa',Virada:'#f5b301',Rotina:'#4ade80'};
+function renderEtapas(){const ok=h=>!h||!window.PlannerAuth||!PlannerAuth.configured()||PlannerAuth.can(h.split(/[?#]/)[0]);
+  $('etapas').innerHTML=ETAPAS.map(([f,t,d,o,h],i)=>{const tag=h&&ok(h)?'a':'div';return `<${tag} class="et" ${tag==='a'?`href="${h}"`:''} style="--c:${FC[f]}"><div style="display:flex;align-items:center;gap:10px"><span class="n">${i+1}</span><span class="fase">${f}</span></div><h4>${t}</h4><p>${d}</p><div class="ow">${o.map(k=>`<span class="${k}">${OWN[k]}</span>`).join('')}</div></${tag}>`}).join('')}
+MODS.splice(2,0,{h:'rotina.html?m=analise',ic:'kpi',c:'#a78bfa',t:'Análise do planner',d:'Carteira por dia, balanceamento por setor, PDVs e volume e os números do planner.',w:['Todos']});
 MODS.push(
   {h:'rotina.html?m=sem',ic:'meet',c:'#f5b301',t:'Reunião semanal',d:'KPIs da semana com semáforo, estratificação do gap, sugestões de ação e ata.',w:['Todos']},
   {h:'rotina.html?m=mon',ic:'radar',c:'#3b9eff',t:'Monitor',d:'Visitas e janelas de entrega semana a semana: o que mudou fora do planner.',w:['Todos']},
   {h:'rotina.html?m=ind',ic:'kpi',c:'#22c55e',t:'Indicadores',d:'KPIs mês a mês, por dia da semana e o checklist 3.4 (pré × pós).',w:['Todos']},
   {h:'rotina.html?m=buf',ic:'box',c:'#ff8a3d',t:'Buffer',d:'% buffer PDV e volume, estratificação e pedidos em aberto.',w:['Todos']},
-  {h:'rotina.html?m=opp',ic:'star',c:'#e879f9',t:'Oportunidades',d:'Anotações do time durante o processo do planner, por unidade, PDV ou setor.',w:['Todos']},
+  {h:'oportunidades.html',ic:'star',c:'#e879f9',t:'Oportunidades',d:'Anotações abertas do time (ponto de apoio, cadastro, janela, carteira) para usar no próximo planner.',w:['Todos']},
   {h:'rotina.html?m=pa',ic:'check',c:'#2dd4bf',t:'Plano de ação',d:'Ações da construção do planner e das reuniões de rotina.',w:['Todos']});
-function renderMods(pend){
+function renderMods(pend){renderEtapas();
   $('mods').innerHTML=MODS.filter(m=>!window.PlannerAuth||!PlannerAuth.configured()||PlannerAuth.can(m.h.split(/[?#]/)[0])).map(m=>`<a class="mod" href="${m.h}" style="--c:${m.c}"><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p><div class="who">${m.w.map(x=>`<span>${x}</span>`).join('')}</div>${m.badge&&pend?`<span class="bdg">${pend} aguardando</span>`:''}<span class="arrow">→</span></a>`).join('');
   $('soon').innerHTML=SOON.map(m=>`<div class="mod" style="--c:${m.c}"><span class="tagsoon">em breve</span><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join('');
   document.querySelectorAll('.mod').forEach(el=>el.addEventListener('mousemove',e=>{const r=el.getBoundingClientRect();el.style.setProperty('--mx',(e.clientX-r.left)+'px');el.style.setProperty('--my',(e.clientY-r.top)+'px')}));
