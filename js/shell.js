@@ -4,7 +4,7 @@
   var html = document.documentElement;
   var get = function (k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
   var set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
-  html.setAttribute('data-theme', get('plannerTheme', 'medio'));
+  html.setAttribute('data-theme', 'medio'); // tom único
   html.classList.add('has-side');
   if (get('plannerSideMini', '0') === '1') html.classList.add('side-mini');
 
@@ -97,7 +97,7 @@
     var paintTheme = function () {
       var t = html.getAttribute('data-theme');
       sb.querySelectorAll('[data-th]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-th') === t); });
-      var mc = document.querySelector('meta[name=theme-color]'); if (mc) mc.content = t === 'escuro' ? '#0b0f17' : '#152033';
+      var mc = document.querySelector('meta[name=theme-color]'); if (mc) mc.content = '#1e2d45';
     };
     sb.querySelectorAll('[data-th]').forEach(function (b) {
       b.onclick = function () { html.setAttribute('data-theme', b.getAttribute('data-th')); set('plannerTheme', b.getAttribute('data-th')); paintTheme(); };
