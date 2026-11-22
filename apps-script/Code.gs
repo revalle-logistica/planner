@@ -354,7 +354,7 @@ const ACTIONS = {
   // dados (planner, relatórios, janelas)
   'data.get'(b) {
     const u = session(b, ['admin', 'gv']), nome = String(b.name || '');
-    if (u.perfil !== 'admin' && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome))) throw new Error('Sem permissão para este arquivo');
+    if (u.perfil !== 'admin' && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome) || /^rel\/(index\.json|coord\/\d+\.json)$/.test(nome))) throw new Error('Sem permissão para este arquivo');
     return readFile(nome);
   },
   'data.put'(b) {

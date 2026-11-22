@@ -293,6 +293,7 @@
 .rt{--bg:#26385a;--slide:#304567;--ink:#f5f8fd;--muted:#b4c0d4;--line:rgba(255,255,255,.10);--hl:rgba(255,255,255,.08);--th:transparent;--th-ink:#9fb0cb;--zebra:rgba(255,255,255,.025);--mapbg:#26385a;--navy:#1d2c47;
   --side:#1d2c47;--side2:#26385a;--hd1:#1d2c47;--hd2:#26385a;--bgc:#26385a;--card:transparent;--blue:#7fb2ff;--good:#3ddc84;--bad:#ff6b6b;--warn:#f5b301;--orange:#ff8a3d;
   --f-body:Inter,system-ui,sans-serif;--f-title:Inter,system-ui,sans-serif;--f-tab:"Roboto Condensed","Arial Narrow",Inter,sans-serif}
+.rt .fid{color:#93c5fd!important}
 .rt th{font-size:11px!important;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid rgba(255,255,255,.14)!important}
 .rt td{border-bottom-color:rgba(255,255,255,.06)!important}
 .rt table td,.rt table tr{border-top-color:rgba(255,255,255,.06)!important;border-bottom-color:rgba(255,255,255,.06)!important}
@@ -404,7 +405,7 @@ async function iniciar(){
   if(M==='imp'&&!IS_ADMIN){location.replace('rotina.html?m=sem');return}
   document.getElementById('bImp').hidden=!IS_ADMIN||M==='imp';document.getElementById('bDir').hidden=!IS_ADMIN;
   document.title=GRUPOS[M].t+' · Planner Revalle';
-  try{const [ls,st]=await Promise.all([carregarLS(),carregarEstado()]);LSO=ls||{};if(st)ST=st}
+  try{const [ls,st]=await Promise.all([carregarLS(),carregarEstado()]);LSO=ls||{};if(st)ST=st;if(ST&&ST.units&&Object.keys(ST.units).length)await completar()}
   catch(e){carregando('Não consegui abrir os dados da rotina: '+esc(e.message));return}
   const G=GRUPOS[M];const sp=new URLSearchParams(location.search).get('s');
   let i=SLIDES.findIndex(x=>x.id===sp);
@@ -471,6 +472,23 @@ let ESTZ=null;
 async function desfazer(){const log=document.getElementById('impLog');if(!confirm('Voltar os dados da rotina para como estavam antes da última importação?'))return;
   log.innerHTML='Voltando…';try{const z=await PlannerData.text('rotina/estado-anterior.gz');ST=JSON.parse(await gunz(z));const r=await salvarEstado();render();document.getElementById('impLog').innerHTML=r.replace('Salvo no Drive','Dados voltaram para antes da última importação · salvo no Drive')}
   catch(e){log.innerHTML=`<div class="err">✗ Não há importação anterior para desfazer (${esc(e.message)})</div>`}}
+
+// ---- planners do "Importar planner" e clientes da Central de relatórios (sem importar de novo aqui)
+const UNB={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};
+function mascara(s){let m=0;s=String(s||'');for(let i=0;i<28;i++)if(s[i]==='1')m|=(1<<i);return m}
+async function completar(){
+  const nomeU=u=>{const n=UNB[u];if(!n)return null;return Object.keys(ST.units).find(k=>k.toLowerCase().includes(n.toLowerCase().split(' ').pop()))||n};
+  const tarefas=[];
+  tarefas.push((async()=>{try{const ix=await PlannerData.json('index.json');
+    await Promise.all((ix.versions||[]).map(async v=>{const V=await PlannerData.json('v/'+v.id+'.json');const [a,m,d]=v.vig.split('-');const key=`${d}.${m}.${a.slice(2)}`;
+      for(const un of V.units){const u=nomeU(un.id);if(!u)continue;const U=ST.units[u]||(ST.units[u]=emptyUnit());if(U.planners[key]&&U.planners[key].pre&&U.planners[key].pos)continue;
+        const cl=V.clients.filter(r=>r[0]===un.id);const vn=(V.sellers||{})[un.id]||{};
+        const pre=cl.filter(r=>r[6]).map(r=>[String(r[1]),String(r[4]||''),1,r[5],mascara(r[6]),String(r[2]||'').trim()]);
+        const pos=cl.filter(r=>r[9]).map(r=>[String(r[1]),String(r[7]||''),1,r[8],mascara(r[9]),String(r[2]||'').trim()]);
+        U.planners[key]={pre:{rows:pre,vn},pos:{rows:pos,vn},fonte:'Importar planner'}}}))}catch(e){}})());
+  for(const un in UNB)tarefas.push((async()=>{try{const o=JSON.parse(await PlannerData.text('rel/coord/'+un+'.json'));const u=nomeU(un);if(!u||!ST.units[u])return;const U=ST.units[u];
+    for(const c in o){const v=o[c];U.clients[String(+c)]=[+(+v[0]).toFixed(4),+(+v[1]).toFixed(4),v[2]||(U.clients[String(+c)]||[])[2]||'']}}catch(e){}})());
+  await Promise.all(tarefas)}
 
 
 /* =========================================================
@@ -1385,16 +1403,13 @@ R.imp=()=>{const Uu=U();const u=UI.u;const at=k=>{const t=(ST.impAt||{})[k+'|'+u
      ['Relatório de planos de ação','Relatório do sistema de gestão (.xlsx)','Ações das reuniões RLP, RPS, RNS e RPD','Plano de ação de rotina e reunião semanal',ST.acoes?ST.acoes.em.slice(0,10):null,'acoes',7]]},
    {f:'Mensal',sub:'Atualize no fechamento do mês',ic:'line',items:[
      ['Frota fixa','Frota Fixa Unidade 2026.xlsx (um arquivo por ano)','Carros ativos por mês · o ano vem do nome do arquivo','Utilização da frota',Uu.frota?null:null,'frota',31],
-     ['Relatório de clientes','Relatorio-cliente_Unidade.csv',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje)`,'Mapas, municípios e PDVs novos',null,'cli',31]]},
-   {f:'A cada planner',sub:'Específicos do planner + pacote completo (abaixo)',ic:'flow',pk:true,items:[
-     ['Pré-Planner e Pós-Planner','Pré-Planner_dd.mm.aa_Unidade.csv / Pós-Planner_dd.mm.aa_Unidade.csv',`Planner de visitas (${ds.map(d=>d.slice(0,5).replace('.','/')).join(', ')||'nenhum'})`,'Cenário anterior × pós, setor, dia, números do planner',null,'planner',null],
-     ['Crítica do planner','Critica_Planner_Unidade.xlsx (aba Solicitações)',`Pedidos de Vendas com parecer da Logística (${crit.map(d=>d.slice(0,5).replace('.','/')).join(', ')||'nenhuma'})`,'Alterações / crítica e KPI 3.6',null,'crit',null],
-     ['Formulário de alterações','Alterações Planner (formulário).xlsx',`Pedidos de ajuste após a virada (${fr.length} até ${fr.length?br(fr[fr.length-1]):'—'})`,'Alterações pós-planner e KPI 3.6',null,'form',null]]}];
+     ['Relatório de clientes','Vem da Central de relatórios',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje) · importado uma vez só, na Central`,'Mapas, municípios e PDVs novos',null,'cli',null]]},
+   {f:'Virada do planner',sub:'Os planners vêm do Importar planner. Aqui só a conferência do histórico para os KPIs pré × pós',ic:'flow',pk:true,items:[]}];
   const pack=()=>{const p=ds[ds.length-1];if(!p)return '';const pk=pd(p);const pdk=`${pk.y}-${String(pk.m).padStart(2,'0')}-${String(pk.d).padStart(2,'0')}`;const ant=addD(pdk,-1),ini=addD(pdk,-365);const firstDay=Object.keys(Uu.days).sort()[0],firstKm=mk.filter(o=>o.km>0&&o.d).map(o=>o.d).sort()[0],firstPv=mk.filter(o=>o.pv>0&&o.d).map(o=>o.d).sort()[0];const cov=(f,l)=>f&&l?`dados de ${br(f)} a ${br(l)}`:'sem dados';const W=windows(Uu,p,ds);
     const fm=Uu.frota&&frAct(Uu,`${pk.y}-${String(pk.m).padStart(2,'0')}`)>0;const P=Uu.planners[p]||{};
-    const L=[['Pré-Planner '+p.slice(0,5).replace('.','/'),!!P.pre,'cenário anterior'],['Pós-Planner '+p.slice(0,5).replace('.','/'),!!P.pos,'cenário pós e PDVs saneados'],['Crítica do planner',!!(Uu.crit&&Uu.crit[p]),'pedidos de Vendas antes da virada'],
+    const L=[['Planner '+p.slice(0,5).replace('.','/')+' (Importar planner)',!!(P.pre&&P.pos),'cenário anterior e pós'],
      ['03.05.30 · últimos 12 meses ('+br(ini)+' a '+br(ant)+')',!!firstDay&&firstDay<=ini&&lastDay>=ant,'volume e entregas · '+cov(firstDay,lastDay)],['03.11.42 · últimos 12 meses',!!firstKm&&firstKm<=ini&&lastKm>=ant,'KM real · '+cov(firstKm,lastKm)],['03.11.20 · últimos 12 meses',!!firstPv&&firstPv<=ini&&lastPv>=ant,'KM previsto · '+cov(firstPv,lastPv)],
-     (()=>{const D=Object.keys(bufDaily(Uu)).sort();const f=D[0],l=D[D.length-1];return ['Relatório de pedidos · últimos 12 meses',!!f&&f<=ini&&l>=ant,'buffer PDV e volume · '+cov(f,l)]})(),['Frota fixa do mês da virada',!!fm,'utilização'],['Relatório de clientes atualizado',nCli>0,'mapas e PDVs novos'],['Relatório de planos de ação',!!ST.acoes,'ações da rotina'],['Formulário de alterações',fr.length>0,'pedidos após a virada (depois da virada)']];
+     (()=>{const D=Object.keys(bufDaily(Uu)).sort();const f=D[0],l=D[D.length-1];return ['Relatório de pedidos · últimos 12 meses',!!f&&f<=ini&&l>=ant,'buffer PDV e volume · '+cov(f,l)]})(),['Frota fixa do mês da virada',!!fm,'utilização'],['Relatório de clientes atualizado',nCli>0,'mapas e PDVs novos'],['Relatório de planos de ação',!!ST.acoes,'ações da rotina']];
     const ok=L.filter(x=>x[1]).length;
     return `<div class="pk"><div class="fit"><b>Pacote completo · Planner ${p.replace(/\./g,'/')}</b><span class="tg ${ok===L.length?'g':'y'}">${ok} de ${L.length}</span></div>${L.map(([n,v,w])=>`<div class="pki ${v?'ok':''}"><span>${v?'✓':'○'}</span><div><b>${n}</b><small>${w}</small></div></div>`).join('')}</div>`};
   return `<div class="drop" id="drop"><p style="font-size:16px;margin:0 0 8px"><b>Arraste os arquivos aqui</b> ou</p><label class="btn dark" for="fileIn" style="display:inline-block">Escolher arquivos</label><input id="fileIn" type="file" multiple accept=".csv,.txt,.xlsx,.xls" class="hidden">

@@ -51,7 +51,7 @@ async function iniciar(){
   if(M==='imp'&&!IS_ADMIN){location.replace('rotina.html?m=sem');return}
   document.getElementById('bImp').hidden=!IS_ADMIN||M==='imp';document.getElementById('bDir').hidden=!IS_ADMIN;
   document.title=GRUPOS[M].t+' · Planner Revalle';
-  try{const [ls,st]=await Promise.all([carregarLS(),carregarEstado()]);LSO=ls||{};if(st)ST=st}
+  try{const [ls,st]=await Promise.all([carregarLS(),carregarEstado()]);LSO=ls||{};if(st)ST=st;if(ST&&ST.units&&Object.keys(ST.units).length)await completar()}
   catch(e){carregando('Não consegui abrir os dados da rotina: '+esc(e.message));return}
   const G=GRUPOS[M];const sp=new URLSearchParams(location.search).get('s');
   let i=SLIDES.findIndex(x=>x.id===sp);
@@ -118,3 +118,20 @@ let ESTZ=null;
 async function desfazer(){const log=document.getElementById('impLog');if(!confirm('Voltar os dados da rotina para como estavam antes da última importação?'))return;
   log.innerHTML='Voltando…';try{const z=await PlannerData.text('rotina/estado-anterior.gz');ST=JSON.parse(await gunz(z));const r=await salvarEstado();render();document.getElementById('impLog').innerHTML=r.replace('Salvo no Drive','Dados voltaram para antes da última importação · salvo no Drive')}
   catch(e){log.innerHTML=`<div class="err">✗ Não há importação anterior para desfazer (${esc(e.message)})</div>`}}
+
+// ---- planners do "Importar planner" e clientes da Central de relatórios (sem importar de novo aqui)
+const UNB={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};
+function mascara(s){let m=0;s=String(s||'');for(let i=0;i<28;i++)if(s[i]==='1')m|=(1<<i);return m}
+async function completar(){
+  const nomeU=u=>{const n=UNB[u];if(!n)return null;return Object.keys(ST.units).find(k=>k.toLowerCase().includes(n.toLowerCase().split(' ').pop()))||n};
+  const tarefas=[];
+  tarefas.push((async()=>{try{const ix=await PlannerData.json('index.json');
+    await Promise.all((ix.versions||[]).map(async v=>{const V=await PlannerData.json('v/'+v.id+'.json');const [a,m,d]=v.vig.split('-');const key=`${d}.${m}.${a.slice(2)}`;
+      for(const un of V.units){const u=nomeU(un.id);if(!u)continue;const U=ST.units[u]||(ST.units[u]=emptyUnit());if(U.planners[key]&&U.planners[key].pre&&U.planners[key].pos)continue;
+        const cl=V.clients.filter(r=>r[0]===un.id);const vn=(V.sellers||{})[un.id]||{};
+        const pre=cl.filter(r=>r[6]).map(r=>[String(r[1]),String(r[4]||''),1,r[5],mascara(r[6]),String(r[2]||'').trim()]);
+        const pos=cl.filter(r=>r[9]).map(r=>[String(r[1]),String(r[7]||''),1,r[8],mascara(r[9]),String(r[2]||'').trim()]);
+        U.planners[key]={pre:{rows:pre,vn},pos:{rows:pos,vn},fonte:'Importar planner'}}}))}catch(e){}})());
+  for(const un in UNB)tarefas.push((async()=>{try{const o=JSON.parse(await PlannerData.text('rel/coord/'+un+'.json'));const u=nomeU(un);if(!u||!ST.units[u])return;const U=ST.units[u];
+    for(const c in o){const v=o[c];U.clients[String(+c)]=[+(+v[0]).toFixed(4),+(+v[1]).toFixed(4),v[2]||(U.clients[String(+c)]||[])[2]||'']}}catch(e){}})());
+  await Promise.all(tarefas)}

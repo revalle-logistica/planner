@@ -104,7 +104,7 @@ ol{padding-left:18px;margin:8px 0}
         </div></div>
       <div class="grp g3"><h3><i style="background:#22c55e22">📍</i>Clientes</h3><div class="gs">Endereço e coordenadas para o mapa</div>
         <div class="zones">
-          <div class="zone" data-k="cli"><div class="ic">📍</div><b>Relatório de clientes</b><small>Do roteirizador (todas as unidades)</small><div class="list"></div><button class="pick">Importar</button></div>
+          <div class="zone" data-k="cli" style="cursor:default"><div class="ic">📍</div><b>Relatório de clientes</b><small>Vem da <a href="relatorios.html" style="color:#93c5fd">Central de relatórios</a> (importação única, usada pelo sistema todo)</small><div class="list"></div></div>
           <div class="zone opt" data-k="vol"><b style="font-size:12.5px">📦 Volume 03.05.30 <small>(opcional)</small></b><div class="list"></div></div>
         </div></div>
     </div>
@@ -135,6 +135,11 @@ const host=location.hostname.endsWith('github.io');
 const OWNER=host?location.hostname.split('.')[0]:'revalle-logistica';
 const REPO=host?(location.pathname.split('/')[1]||'planner'):'planner';
 let IDX={versions:[]};const VER={};
+const CEN={};
+async function coordCentral(u){if(u in CEN)return CEN[u];CEN[u]=null;
+  try{const ix=JSON.parse(await PlannerData.text('rel/index.json'));const x=((ix.r||{}).coord||{})[u];if(!x)return null;
+    const o=JSON.parse(await PlannerData.text('rel/coord/'+u+'.json'));const m=new Map();for(const c in o){const v=o[c];m.set(+c,[v[0],v[1],v[2]||'',v[3]||'',v[4]||'',v[5]||''])}
+    CEN[u]={m,em:new Date(x.em).toLocaleDateString('pt-BR')}}catch(e){}return CEN[u]}
 const F={pre:[],pos:[],jpre:[],jpos:[],cli:[],vol:[]}; // {name, ok, unb, unbName, recs|coords, err}
 let built=null;
 
@@ -147,7 +152,7 @@ async function getVer(id){if(!VER[id])VER[id]=await PlannerData.json(`v/${id}.js
 
 // drop zones
 let target='pre';
-document.querySelectorAll('.zone').forEach(z=>{
+document.querySelectorAll('.zone:not([data-k=cli])').forEach(z=>{
   z.onclick=e=>{if(e.target.closest('.file'))return;target=z.dataset.k;$('fi').click()};
   z.ondragover=e=>{e.preventDefault();z.classList.add('drag')};
   z.ondragleave=()=>z.classList.remove('drag');
@@ -222,7 +227,9 @@ async function upd(){
     if(fPos){pos=fPos.recs;posSrc=['file','Arquivo: '+fPos.name];srcNames.pos=fPos.name}
     else if(inEx){pos=P.recsFromVersion(exV,u,'pos');posSrc=['keep','Mantém o pós já publicado'];srcNames.pos=(exV.units.find(x=>x.id===u).src||{}).pos}
     else{posSrc=['miss','Falta o pós-planner']}
+    const cen=await coordCentral(u);
     if(cliMap.has(u)){co=cliMap.get(u);coSrc=['file',`Arquivo (${fmt(co.size)} coordenadas)`]}
+    else if(cen){co=cen.m;coSrc=['file',`Central de relatórios (${fmt(co.size)} · ${cen.em})`]}
     else{const v=allDesc.find(v=>v.units.some(x=>x.id===u));if(v){co=P.coordsFromVersion(await getVer(v.id),u);coSrc=['reuse','Da versão '+fmtD(v.vig)]}else{co=new Map();coSrc=['miss','Sem coordenadas (mapa vazio)']}}
     let vo,voSrc;
     if(volMap.has(u)){const f=volMap.get(u);vo=f.vol;voSrc=['file',`Arquivo (${fmtD(f.from)} a ${fmtD(f.to)})`];srcNames.vol=f.name+` (${f.from} a ${f.to})`}

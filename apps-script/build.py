@@ -64,6 +64,7 @@ css += '''
 .rt{--bg:#26385a;--slide:#304567;--ink:#f5f8fd;--muted:#b4c0d4;--line:rgba(255,255,255,.10);--hl:rgba(255,255,255,.08);--th:transparent;--th-ink:#9fb0cb;--zebra:rgba(255,255,255,.025);--mapbg:#26385a;--navy:#1d2c47;
   --side:#1d2c47;--side2:#26385a;--hd1:#1d2c47;--hd2:#26385a;--bgc:#26385a;--card:transparent;--blue:#7fb2ff;--good:#3ddc84;--bad:#ff6b6b;--warn:#f5b301;--orange:#ff8a3d;
   --f-body:Inter,system-ui,sans-serif;--f-title:Inter,system-ui,sans-serif;--f-tab:"Roboto Condensed","Arial Narrow",Inter,sans-serif}
+.rt .fid{color:#93c5fd!important}
 .rt th{font-size:11px!important;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid rgba(255,255,255,.14)!important}
 .rt td{border-bottom-color:rgba(255,255,255,.06)!important}
 .rt table td,.rt table tr{border-top-color:rgba(255,255,255,.06)!important;border-bottom-color:rgba(255,255,255,.06)!important}
@@ -174,6 +175,14 @@ rep("if(/ERP_POC_ID/i.test(h))parseJan(t,f.name,st,log);",
     "if(/ERP_POC_ID/i.test(h)){guardaJan(f.name);parseJan(t,f.name,st,log)}")
 rep("else if(/Seg1/i.test(h)&&/Periodicidade/i.test(h))parseVis(",
     "else if(/Seg1/i.test(h)&&/Periodicidade/i.test(h)&&(guardaVis(f.name)||1))parseVis(")
+# Bases da rotina: planners vêm do Importar planner e clientes da Central (uma importação só)
+rep("     ['Relatório de clientes','Relatorio-cliente_Unidade.csv',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje)`,'Mapas, municípios e PDVs novos',null,'cli',31]]},",
+    "     ['Relatório de clientes','Vem da Central de relatórios',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje) · importado uma vez só, na Central`,'Mapas, municípios e PDVs novos',null,'cli',null]]},")
+a0=js.index("   {f:'A cada planner'");a1=js.index("]}];",a0)+4
+js=js[:a0]+"   {f:'Virada do planner',sub:'Os planners vêm do Importar planner. Aqui só a conferência do histórico para os KPIs pré × pós',ic:'flow',pk:true,items:[]}];"+js[a1:]
+rep("const L=[['Pré-Planner '+p.slice(0,5).replace('.','/'),!!P.pre,'cenário anterior'],['Pós-Planner '+p.slice(0,5).replace('.','/'),!!P.pos,'cenário pós e PDVs saneados'],['Crítica do planner',!!(Uu.crit&&Uu.crit[p]),'pedidos de Vendas antes da virada'],",
+    "const L=[['Planner '+p.slice(0,5).replace('.','/')+' (Importar planner)',!!(P.pre&&P.pos),'cenário anterior e pós'],")
+rep(",['Formulário de alterações',fr.length>0,'pedidos após a virada (depois da virada)']];","];")
 # Oportunidades: anotações compartilhadas (unidade, PDV/setor opcional, situação)
 opp_old = js[js.index("R.opp=()=>"):js.index("\n", js.index("R.opp=()=>"))]
 js = js.replace(opp_old, "R.opp=()=>oppView();")

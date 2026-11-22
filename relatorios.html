@@ -97,7 +97,7 @@ async function load(){
 }
 function renderRotina(S){
   const RR=[['0530','Entregas por mapa (volume e entregas)','03.05.30','semanal'],['1142','KM rodado por mapa','03.11.42','semanal'],['1120','KM previsto por mapa','03.11.20','semanal'],['ped','Relatório de pedidos','Pedidos','semanal'],
-    ['vis','Visitas da semana (histórico do Monitor)','01.02.78.03','semanal'],['jan','Janelas da semana (histórico do Monitor)','Janela de entrega','semanal'],['acoes','Planos de ação das reuniões','Sistema de gestão','semanal'],['cli','Clientes (município e coordenadas)','Relatório de clientes','mensal']];
+    ['vis','Visitas da semana (histórico do Monitor)','01.02.78.03','semanal'],['jan','Janelas da semana (histórico do Monitor)','Janela de entrega','semanal'],['acoes','Planos de ação das reuniões','Sistema de gestão','semanal']];
   const NOME={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Pombal','983616':'Paulo Afonso'};
   const un=u=>{if(!S||!S.units)return null;const k=Object.keys(S.units).find(x=>x.toLowerCase().includes(NOME[u].toLowerCase()));return k?S.units[k]:null};
   const idade=d=>d?Math.floor((Date.now()-new Date(String(d).slice(0,10)+'T12:00:00'))/864e5):null;

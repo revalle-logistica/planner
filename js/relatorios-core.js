@@ -63,7 +63,7 @@
     // relatório de clientes do roteirizador (coordenadas)
     if (P && P.kindOf(P.parseCSV(txt.slice(0, 5000))) === 'clientes') {
       const map = P.parseClientes(P.parseCSV(txt));
-      return [...map].map(([u, mm]) => { const o = {}; for (const [c, v] of mm) o[c] = [v[0], v[1]]; return { id: 'coord', unb: u, linhas: mm.size, conteudo: JSON.stringify(o) }; });
+      return [...map].map(([u, mm]) => { const o = {}; for (const [c, v] of mm) o[c] = v; return { id: 'coord', unb: u, linhas: mm.size, conteudo: JSON.stringify(o) }; });
     }
     return null;
   }
