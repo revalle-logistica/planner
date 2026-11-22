@@ -212,7 +212,7 @@ MODS.push(
   {h:'rotina.html?m=mon',ic:'radar',c:'#3b9eff',t:'Monitor',d:'Visitas e janelas de entrega semana a semana: o que mudou fora do planner.',w:['Todos']},
   {h:'rotina.html?m=ind',ic:'kpi',c:'#22c55e',t:'Indicadores',d:'KPIs mês a mês, por dia da semana e o checklist 3.4 (pré × pós).',w:['Todos']},
   {h:'rotina.html?m=buf',ic:'box',c:'#ff8a3d',t:'Buffer',d:'% buffer PDV e volume, estratificação e pedidos em aberto.',w:['Todos']},
-  {h:'oportunidades.html',ic:'star',c:'#e879f9',t:'Oportunidades',d:'Anotações abertas do time (ponto de apoio, cadastro, janela, carteira) para usar no próximo planner.',w:['Todos']},
+  {h:'oportunidades.html',ic:'star',c:'#e879f9',t:'Oportunidades',d:'Anotações rápidas do time, sem aprofundar, para lembrar na construção do próximo planner.',w:['Todos']},
   {h:'rotina.html?m=pa',ic:'check',c:'#2dd4bf',t:'Plano de ação',d:'Ações da construção do planner e das reuniões de rotina.',w:['Todos']});
 function renderMods(pend){renderEtapas();
   $('mods').innerHTML=MODS.filter(m=>!window.PlannerAuth||!PlannerAuth.configured()||PlannerAuth.can(m.h.split(/[?#]/)[0])).map(m=>`<a class="mod" href="${m.h}" style="--c:${m.c}"><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p><div class="who">${m.w.map(x=>`<span>${x}</span>`).join('')}</div>${m.badge&&pend?`<span class="bdg">${pend} aguardando</span>`:''}<span class="arrow">→</span></a>`).join('');

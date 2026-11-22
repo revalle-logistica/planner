@@ -41,6 +41,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--pos);border-colo
 .k{display:inline-flex;align-items:center;gap:4px;font:700 11.5px Inter;padding:3px 9px;border-radius:999px;background:var(--panel2);color:var(--txt)}
 .k.c{background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c)}
 .it select{width:auto;padding:5px 8px;font-size:12.5px}
+.ck{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);cursor:pointer}.ck input{width:auto;accent-color:#f5b301}
 .x{border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:15px}
 .empty{color:var(--mut);padding:30px;text-align:center}
 .err{background:#ef444422;color:#fca5a5;border-radius:10px;padding:10px 14px;margin-bottom:12px}
@@ -52,16 +53,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--pos);border-colo
 <body>
 <main>
   <h1>💡 Oportunidades</h1>
-  <p class="lead">Anote aqui o que aparecer ao longo do tempo: ponto de apoio numa região, PDV com coordenada errada, setor sobrecarregado, janela que não faz sentido. Fica aberto para o time todo, e na construção do próximo planner tudo isso é revisado.</p>
+  <p class="lead">Anotações rápidas, sem precisar aprofundar: o que você observou e não quer esquecer. Ponto de apoio numa região, PDV com coordenada errada, setor sobrecarregado, janela que não faz sentido. Fica aberto para o time todo e serve de lembrete na construção do próximo planner. Ação com responsável e prazo vai para o <b>Plano de ação</b>.</p>
   <div class="card">
     <div class="form">
       <label class="full">Tipo<div class="cats" id="cats"></div></label>
-      <label class="full">O que você observou<textarea id="fT" placeholder="Ex.: colocar ponto de apoio de entrega em Sátiro Dias para reduzir KM das rotas do sul da unidade"></textarea></label>
+      <label class="full">O que você observou<textarea id="fT" placeholder="Ex.: vale um ponto de apoio de entrega em Sátiro Dias, as rotas do sul rodam muito KM"></textarea></label>
       <label>Unidade<select id="fU"></select></label>
       <label>Região / município <span style="font-weight:500">(opcional)</span><input id="fR" placeholder="Ex.: Sátiro Dias, zona rural de Inhambupe"></label>
       <label>PDV ou setor <span style="font-weight:500">(opcional)</span><div style="display:flex;gap:6px"><input id="fP" placeholder="PDV" inputmode="numeric"><input id="fS" placeholder="Setor" inputmode="numeric"></div></label>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn pri" id="add">+ Registrar oportunidade</button></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn pri" id="add">+ Anotar</button></div>
   </div>
   <div id="erro"></div>
   <div class="flt"><div class="seg" id="sF"></div><select id="uF"></select><select id="cF"></select><input id="qF" type="search" placeholder="🔎 Buscar no texto, região ou PDV"></div>
@@ -75,7 +76,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const UN=Relatorios.UNIDADES,ORD=Relatorios.ORDEM;
 const CATS=[['apoio','📍 Ponto de apoio','#f5b301'],['visita','🗓️ Visita / carteira','#60a5fa'],['janela','🚚 Janela de entrega','#22d3ee'],['cadastro','🧾 Cadastro / coordenada','#e879f9'],['frota','🚛 Frota / rota','#fb923c'],['outro','💬 Outro','#94a3b8']];
 const CAT=Object.fromEntries(CATS.map(c=>[c[0],c]));
-const ST={aberta:'Aberta',andamento:'Em análise',feita:'Aplicada no planner',descartada:'Descartada'};
+const ST={aberta:'Para lembrar',andamento:'Para lembrar',feita:'Já considerada',descartada:'Já considerada'};
 const EU=PlannerAuth.user()||{},ADM=EU.perfil==='admin';
 const OPP_DEF={Alagoinhas:['Recolocar visitas de sábado no planner: no Planner 1 elas foram zeradas (612 → 2) e segunda e sábado viraram vales de entrega, piorando ICV e ICE.','Alocar PDV novo pela regra "entrega manda, visita segue", usando o vizinho mais próximo no planner (594 PDVs entraram entre abril e setembro sem critério geográfico).','Reduzir setores rodados por dia (24,6 → 18,2 no Planner 2) para baixar KM e dispersão de KM.','Liberar 2ª janela de entrega só para PDV com drop size que justifique.','Fazer a crítica do gabarito (Visão Vendas e Visão Entrega) com Vendas antes da virada, para evitar PDV sem data de entrega.','Tratar com os motoristas os mapas com maior desvio entre KM real e KM previsto.'],
  Serrinha:['Redimensionar a frota ativa: há menos mapas por dia (19,6 → 17,8) para o mesmo volume e a utilização caiu de 93% para 85%.','Concentrar a carteira em menos setores por dia (21,4 → 17,0 no Planner 2) para reduzir KM por hl.','Retirar visitas de domingo (209) e PDVs mensais sem padrão de entrega.','Liberar 2ª janela de entrega só para PDV com drop size que justifique (34% das solicitações pediam 2ª data).','Fazer a crítica do gabarito com Vendas antes da virada.','Manter a dispersão de KM em queda (29% → 15%) com tratativa mensal dos maiores desvios.']};
@@ -91,7 +92,7 @@ const unCod=u=>UN[u]?u:(ORD.find(k=>UN[k]===u)||u);
 function render(){
   if(N===null)return;
   const cnt={abertas:0,fim:0,todas:N.length};N.forEach(n=>{if(n.status==='feita'||n.status==='descartada')cnt.fim++;else cnt.abertas++});
-  $('sF').innerHTML=[['abertas','Em aberto'],['fim','Aplicadas / descartadas'],['todas','Todas']].map(([k,t])=>`<button class="${sF===k?'on':''}" data-s="${k}">${t} (${cnt[k]})</button>`).join('');
+  $('sF').innerHTML=[['abertas','Para lembrar'],['fim','Já consideradas'],['todas','Todas']].map(([k,t])=>`<button class="${sF===k?'on':''}" data-s="${k}">${t} (${cnt[k]})</button>`).join('');
   const q=$('qF').value.trim().toLowerCase(),uf=$('uF').value,cf=$('cF').value;
   const L=N.filter(n=>{const fim=n.status==='feita'||n.status==='descartada';if(sF==='abertas'&&fim)return false;if(sF==='fim'&&!fim)return false;
     if(uf&&unCod(n.unidade)!==uf)return false;if(cf&&(n.categoria||'outro')!==cf)return false;
@@ -101,21 +102,21 @@ function render(){
     return `<div class="it ${fim?'fim':''}" style="--c:${c[2]}"><div class="tx">${esc(n.texto)}</div><div class="mt">
       <span class="k c">${c[1]}</span><span class="k">🏢 ${esc(unNome(unCod(n.unidade)))}</span>${n.regiao?`<span class="k">📍 ${esc(n.regiao)}</span>`:''}${n.pdv?`<span class="k">PDV ${esc(n.pdv)}</span>`:''}${n.setor?`<span class="k">Setor ${esc(n.setor)}</span>`:''}
       <span>· ${esc(n.autor_nome||n.autor||'')} · ${n.criado?new Date(n.criado).toLocaleDateString('pt-BR'):''}</span><span style="margin-left:auto"></span>
-      ${pode?`<select data-st="${n.id}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${n.status===k?'selected':''}>${v}</option>`).join('')}</select><button class="x" data-del="${n.id}" title="Excluir">✕</button>`:`<span class="k">${ST[n.status]||n.status}</span>`}</div></div>`}).join(''):'<div class="empty">Nenhuma oportunidade com esses filtros.</div>';
+      ${pode?`<label class="ck"><input type="checkbox" data-st="${n.id}" ${fim?'checked':''}> já considerada no planner</label><button class="x" data-del="${n.id}" title="Excluir">✕</button>`:(fim?`<span class="k">Já considerada</span>`:'')}</div></div>`}).join(''):'<div class="empty">Nenhuma oportunidade com esses filtros.</div>';
   const velhas=Object.entries(OPP_DEF).flatMap(([u,a])=>a.map(t=>[u,t]));
-  $('migBox').innerHTML=ADM&&!N.some(n=>n.autor===EU.email&&velhas.some(v=>v[1]===n.texto))&&velhas.length?`<div class="card mig" style="margin-top:16px"><div style="flex:1"><b>${velhas.length} oportunidades do HTML antigo</b><div style="color:var(--mut);font-size:12.5px">Alagoinhas e Serrinha · entram como abertas</div></div><button class="btn" id="mig">Trazer para cá</button></div>`:'';
+  $('migBox').innerHTML=ADM&&!N.some(n=>n.autor===EU.email&&velhas.some(v=>v[1]===n.texto))&&velhas.length?`<div class="card mig" style="margin-top:16px"><div style="flex:1"><b>${velhas.length} oportunidades do HTML antigo</b><div style="color:var(--mut);font-size:12.5px">Alagoinhas e Serrinha · entram como anotações para lembrar</div></div><button class="btn" id="mig">Trazer para cá</button></div>`:'';
   if($('mig'))$('mig').onclick=async()=>{$('mig').disabled=true;try{const j=await PlannerAuth.call('notas.add',{itens:velhas.map(([u,t])=>({tipo:'opp',categoria:/ponto de apoio|residente/i.test(t)?'apoio':/janela/i.test(t)?'janela':/visita|setor|carteira|PDV/i.test(t)?'visita':/frota|KM|mapa/i.test(t)?'frota':'outro',unidade:unCod(u),texto:t}))});N=N.concat(j.notas);render()}catch(e){erro(e.message)}};
 }
 function erro(m){$('erro').innerHTML=m?`<div class="err">${esc(m)}</div>`:''}
 $('sF').onclick=e=>{const b=e.target.closest('[data-s]');if(b){sF=b.dataset.s;render()}};
 ['uF','cF'].forEach(k=>$(k).onchange=render);$('qF').oninput=render;
-$('list').onchange=async e=>{const s=e.target.closest('[data-st]');if(!s)return;try{const j=await PlannerAuth.call('notas.set',{id:s.dataset.st,status:s.value});N[N.findIndex(n=>n.id===s.dataset.st)]=j.nota;render()}catch(x){erro('Não salvou: '+x.message)}};
+$('list').onchange=async e=>{const s=e.target.closest('[data-st]');if(!s)return;try{const j=await PlannerAuth.call('notas.set',{id:s.dataset.st,status:s.checked?'feita':'aberta'});N[N.findIndex(n=>n.id===s.dataset.st)]=j.nota;render()}catch(x){erro('Não salvou: '+x.message)}};
 $('list').onclick=async e=>{const b=e.target.closest('[data-del]');if(!b||!confirm('Excluir esta oportunidade?'))return;try{await PlannerAuth.call('notas.set',{id:b.dataset.del,excluir:true});N=N.filter(n=>n.id!==b.dataset.del);render()}catch(x){erro('Não excluiu: '+x.message)}};
 $('add').onclick=async()=>{const t=$('fT').value.trim();if(!t){$('fT').focus();return}
   $('add').disabled=true;$('add').textContent='Registrando…';
   try{const j=await PlannerAuth.call('notas.add',{itens:[{tipo:'opp',categoria:cat,unidade:$('fU').value,regiao:$('fR').value.trim(),pdv:$('fP').value.trim(),setor:$('fS').value.trim(),texto:t}]});
     N=N.concat(j.notas);['fT','fR','fP','fS'].forEach(k=>$(k).value='');erro('');sF='abertas';render()}
-  catch(e){erro('Não registrou: '+e.message)}finally{$('add').disabled=false;$('add').textContent='+ Registrar oportunidade'}};
+  catch(e){erro('Não registrou: '+e.message)}finally{$('add').disabled=false;$('add').textContent='+ Anotar'}};
 PlannerAuth.call('notas.list',{tipo:'opp'}).then(j=>{N=j.notas||[];render()}).catch(e=>{N=[];erro('Não consegui abrir as oportunidades: '+e.message);render()});
 }
 </script>
