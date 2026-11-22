@@ -163,6 +163,7 @@ const IC={
   truck:'<path d="M3 6.5h11v9H3z"/><path d="M14 9.5h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>',
+  file:'<path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"/><path d="M14 3.5V8h4"/><path d="M9 13h6M9 16.5h4"/>',
   check:'<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/>'
 };
 const svg=k=>`<svg viewBox="0 0 24 24">${IC[k]}</svg>`;
@@ -175,6 +176,7 @@ const MODS=[
   {h:'importar.html',ic:'up',c:'#94a3b8',t:'Importar planner',d:'Sobe um planner novo (pré, pós, clientes e volume) e guarda o histórico de versões.',w:['Logística']},
   {h:'links.html',ic:'link',c:'#4ade80',t:'Links dos vendedores',d:'Gera o link pessoal da Minha rota de cada setor da sua equipe para mandar no WhatsApp.',w:['GV','Logística']},
   {h:'usuarios.html',ic:'users',c:'#f472b6',t:'Usuários e equipes',d:'Aprova os pedidos de acesso, define perfis e os setores de cada GV.',w:['Administrador']},
+  {h:'relatorios.html',ic:'file',c:'#fb923c',t:'Central de relatórios',d:'Todos os relatórios que o sistema usa, com a frequência e o que falta atualizar em cada unidade.',w:['Administrador']},
   {h:'janelas.html',ic:'truck',c:'#60a5fa',t:'Janelas BEES',d:'Gera o arquivo semanal de importação das janelas de entrega no BEES e guarda o histórico das semanas.',w:['Logística']}
 ];
 const SOON=[

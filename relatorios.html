@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Central de relatórios | Revalle Logística</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/core.js"></script>
+<script src="js/relatorios-core.js"></script>
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--up:#22c55e;--down:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+header{border-bottom:1px solid var(--line);background:rgba(11,15,23,.9)}
+.hw{max-width:1280px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{margin-right:auto}.brand b{font-size:18px;font-weight:800}.brand b span{color:var(--pos)}.brand small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+main{max-width:1280px;margin:0 auto;padding:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+h2{margin:0 0 4px;font-size:15px}
+.sub{color:var(--mut);font-size:12.5px;margin-bottom:14px;line-height:1.5}
+.sum{display:flex;gap:10px;flex-wrap:wrap}
+.sum div{background:var(--panel2);border-radius:12px;padding:12px 16px;min-width:150px}
+.sum b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.sum small{color:var(--mut);font-size:12px}
+.sum .r b{color:#f87171}.sum .a b{color:#fcd34d}.sum .g b{color:#4ade80}
+.zone{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;cursor:pointer;transition:.15s}
+.zone:hover,.zone.drag{border-color:var(--pos);background:rgba(245,179,1,.05)}
+.zone b{font-size:15px;display:block;margin-bottom:4px}.zone small{color:var(--mut)}
+.tbl{width:100%;border-collapse:separate;border-spacing:0 8px}
+.tbl th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:0 10px}
+.tbl td{background:var(--panel2);padding:12px 10px;vertical-align:middle}
+.tbl td:first-child{border-radius:12px 0 0 12px;padding-left:16px}.tbl td:last-child{border-radius:0 12px 12px 0;padding-right:14px}
+.rn b{font-size:14px}.rn .cd{font-size:11px;font-weight:700;color:var(--pos);background:rgba(245,179,1,.12);border-radius:6px;padding:2px 6px;margin-left:6px;white-space:nowrap}
+.rn small{display:block;color:var(--mut);font-size:12px;margin-top:4px;line-height:1.4;max-width:420px}
+.fq{font-size:12px;color:var(--mut);white-space:nowrap}
+.st{display:block;border-radius:9px;padding:7px 6px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;border:0;width:100%;font-family:Inter}
+.st small{display:block;font-weight:500;font-size:10.5px;opacity:.85;margin-top:1px}
+.s-ok{background:#22c55e22;color:#4ade80}.s-atualizar{background:#f5b30122;color:#fcd34d}.s-atrasado,.s-nunca{background:#ef444422;color:#f87171}.s-na{background:transparent;color:var(--dim);cursor:default}
+.btn{background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:8px 12px;border-radius:9px;font:600 12.5px Inter;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--pos)}.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}
+.log{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.log div{background:var(--panel2);border-radius:9px;padding:8px 12px;font-size:12.5px}
+.log .ok{color:#86efac}.log .err{color:#fca5a5}.log .inf{color:#93c5fd}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mut)}
+.leg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.leg .l1::before{background:#22c55e}.leg .l2::before{background:#f5b301}.leg .l3::before{background:#ef4444}
+.det{display:none;margin-top:10px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.det.on{display:block}
+@media(max-width:900px){.tbl thead{display:none}.tbl tr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--panel2);border-radius:12px;padding:12px;margin-bottom:8px}.tbl td{background:none;padding:0}.tbl td.rn{grid-column:1/-1}.tbl td.fq,.tbl td.ac{grid-column:span 2}}
+</style>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<header><div class="hw"><div class="brand"><b>Central de <span>relatórios</span></b><small>Revalle Logística · o que atualizar, de quando é e para que serve</small></div><div class="leg"><span class="l1">Em dia</span><span class="l2">Atualizar esta semana</span><span class="l3">Atrasado</span></div></div></header>
+<main>
+  <div class="card">
+    <div class="sum" id="sum"></div>
+  </div>
+  <div class="card">
+    <div class="zone" id="drop"><b>Arraste aqui os relatórios da semana</b><small>Pode soltar todos de uma vez, de todas as unidades. O tipo e a unidade de cada arquivo são reconhecidos sozinhos.</small><div style="margin-top:10px"><button class="btn pri" type="button">Escolher arquivos</button></div></div>
+    <input type="file" id="fi" multiple accept=".csv,.txt,.xlsx" hidden>
+    <div class="log" id="log"></div>
+  </div>
+  <div class="card">
+    <h2>Relatórios</h2>
+    <div class="sub">Semanais contam a partir de segunda-feira. Clique na situação de uma unidade para ver os detalhes.</div>
+    <div style="overflow-x:auto"><table class="tbl" id="tbl"></table></div>
+    <div class="det" id="det"></div>
+  </div>
+</main>
+<script>
+{
+const R=Relatorios,$=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('pt-BR');
+const dt=s=>s?new Date(s).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
+const dth=s=>s?new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
+const ABR={'1031287':'ALA','1031295':'SER','826588':'POM','983616':'PAF'};
+const TXT={ok:'Em dia',atualizar:'Atualizar',atrasado:'Atrasado',nunca:'Nunca enviado'};
+let IX={r:{}},CODES=new Map(),alvo=null;
+
+async function load(){
+  try{IX=JSON.parse(await PlannerData.text('rel/index.json'))}catch(e){IX={r:{}}}
+  if(!CODES.size){try{const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];const V=await PlannerData.json(`v/${v.id}.json`);
+    for(const c of V.clients){if(!CODES.has(c[0]))CODES.set(c[0],new Set());CODES.get(c[0]).add(String(c[1]))}}catch(e){}}
+  render();
+}
+function cel(id,u){const x=(IX.r[id]||{})[u];const r=R.CATALOGO.find(c=>c.id===id);return {x,s:R.situacao(r.freq,x&&x.em)}}
+function render(){
+  let ok=0,at=0,ar=0;
+  $('tbl').innerHTML=`<thead><tr><th>Relatório</th><th>Frequência</th>${R.ORDEM.map(u=>`<th>${ABR[u]}</th>`).join('')}<th></th></tr></thead><tbody>`+R.CATALOGO.map(r=>`<tr>
+    <td class="rn"><b>${esc(r.nome)}</b><span class="cd">${esc(r.cod)}</span><small>${esc(r.desc)}</small></td>
+    <td class="fq">${R.FREQ[r.freq]}</td>
+    ${R.ORDEM.map(u=>{const{x,s}=cel(r.id,u);if(r.freq==='semanal'){if(s==='ok')ok++;else if(s==='atualizar')at++;else ar++}
+      return `<td><button class="st s-${s}" data-r="${r.id}" data-u="${u}" title="${esc(R.UNIDADES[u])}">${TXT[s]}<small>${x?dt(x.em):'—'}</small></button></td>`}).join('')}
+    <td class="ac"><button class="btn up" data-r="${r.id}">Subir</button></td></tr>`).join('')+'</tbody>';
+  $('sum').innerHTML=`<div class="r"><b>${ar}</b><small>atrasados ou nunca enviados</small></div><div class="a"><b>${at}</b><small>para atualizar esta semana</small></div><div class="g"><b>${ok}</b><small>em dia</small></div><div><b>${fmt(R.CATALOGO.filter(c=>c.freq==='semanal').length)}</b><small>relatórios semanais × 4 unidades</small></div>`;
+  try{sessionStorage.removeItem('plannerRelPend')}catch(e){}
+}
+function logL(c,t,d){d=d||document.createElement('div');d.className=c;d.innerHTML=t;if(!d.parentNode)$('log').prepend(d);return d}
+async function lerArquivo(f){
+  if(/\.xlsx$/i.test(f.name)){
+    if(!window.XLSX)await new Promise((ok,er)=>{const s=document.createElement('script');s.src='vendor/xlsx.full.min.js';s.onload=ok;s.onerror=er;document.head.appendChild(s)});
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});return R.lerAjustes(wb);
+  }
+  const b=await f.arrayBuffer();let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(e){t=new TextDecoder('windows-1252').decode(b)}
+  return R.ler(f.name,t,{codigos:CODES});
+}
+async function subir(files){
+  const me=(PlannerAuth.user()||{}).email||'';
+  for(const f of files){
+    let itens;try{itens=await lerArquivo(f)}catch(e){logL('err',`✗ ${esc(f.name)}: não consegui ler (${esc(e.message)})`);continue}
+    if(!itens||!itens.length){logL('err',`✗ ${esc(f.name)}: relatório não reconhecido`);continue}
+    itens=itens.filter(i=>R.UNIDADES[i.unb]);
+    if(alvo&&itens.some(i=>i.id!==alvo)){const nm=R.CATALOGO.find(c=>c.id===alvo).nome;logL('err',`✗ ${esc(f.name)}: este arquivo não parece ser "${esc(nm)}"`);continue}
+    for(const i of itens){
+      const r=R.CATALOGO.find(c=>c.id===i.id);
+      const ln=logL('inf',`Gravando ${esc(r.nome)} · ${esc(R.UNIDADES[i.unb])}…`);
+      try{
+        await PlannerData.put(R.caminho(i.id,i.unb,r.ext),i.conteudo);
+        IX.r[i.id]=IX.r[i.id]||{};IX.r[i.id][i.unb]={em:new Date().toISOString(),por:me,n:i.linhas,orig:f.name,kb:Math.round(i.conteudo.length/1024)};
+        logL('ok',`✓ ${esc(r.nome)} · ${esc(R.UNIDADES[i.unb])}: ${fmt(i.linhas)} ${r.id==='ajustes'?'ajustes':'linhas'}`,ln);
+      }catch(e){logL('err',`✗ ${esc(r.nome)} · ${esc(R.UNIDADES[i.unb])}: ${esc(e.message)}`,ln)}
+    }
+    try{await PlannerData.put('rel/index.json',JSON.stringify(IX))}catch(e){logL('err','✗ Não consegui atualizar o resumo: '+esc(e.message))}
+    render();
+  }
+  alvo=null;
+}
+const drop=$('drop');
+drop.onclick=()=>{alvo=null;$('fi').click()};
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('drag')};drop.ondragleave=()=>drop.classList.remove('drag');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('drag');alvo=null;subir([...e.dataTransfer.files])};
+$('fi').onchange=e=>{subir([...e.target.files]);e.target.value=''};
+document.addEventListener('click',async e=>{
+  const up=e.target.closest('.up');if(up){alvo=up.dataset.r;$('fi').click();return}
+  const st=e.target.closest('.st');if(st){
+    const r=R.CATALOGO.find(c=>c.id===st.dataset.r),u=st.dataset.u,{x,s}=cel(r.id,u);
+    $('det').className='det on';
+    $('det').innerHTML=`<b>${esc(r.nome)} · ${esc(R.UNIDADES[u])}</b> <span class="st s-${s}" style="display:inline-block;width:auto;padding:3px 10px;margin-left:6px">${TXT[s]}</span>
+      <div class="sub" style="margin:8px 0 10px">${x?`Enviado em ${dth(x.em)} por ${esc(x.por)} · ${fmt(x.n)} linhas · arquivo original: ${esc(x.orig)}`:'Ainda não foi enviado.'}<br>Usado em: ${r.usa.map(esc).join(', ')}.</div>
+      <button class="btn" data-sub="${r.id}">Subir nova versão</button> ${x?`<button class="btn" data-dl="${r.id}" data-u="${u}">Baixar o que está guardado</button>`:''}`;
+    return}
+  const sb=e.target.closest('[data-sub]');if(sb){alvo=sb.dataset.sub;$('fi').click();return}
+  const dl=e.target.closest('[data-dl]');if(dl){const r=R.CATALOGO.find(c=>c.id===dl.dataset.dl);
+    try{const t=await PlannerData.text(R.caminho(r.id,dl.dataset.u,r.ext));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:r.ext==='csv'?'text/csv':'application/json'}));a.download=`${r.id}_${ABR[dl.dataset.u]}.${r.ext}`;a.click()}catch(err){alert(err.message)}}
+});
+load();
+}
+</script>
+</body>
+</html>

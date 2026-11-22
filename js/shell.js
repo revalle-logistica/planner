@@ -25,6 +25,7 @@
     users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
     out: '<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/>',
+    file: '<path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"/><path d="M14 3.5V8h4"/><path d="M9 13h6M9 16.5h4"/>',
     chev: '<path d="m15 6-6 6 6 6"/>'
   };
   var svg = function (k) { return '<svg viewBox="0 0 24 24">' + I[k] + '</svg>'; };
@@ -46,6 +47,7 @@
     { id: 'oportunidades', ic: 'star', t: 'Oportunidades', soon: 1 },
     { id: 'plano', ic: 'check', t: 'Plano de ação', soon: 1 },
     { sec: 'Administração' },
+    { id: 'relatorios', href: 'relatorios.html', ic: 'file', t: 'Central de relatórios', badge2: true },
     { id: 'importar', href: 'importar.html', ic: 'up', t: 'Importar planner' },
     { id: 'janelas', href: 'janelas.html', ic: 'truck', t: 'Janelas BEES' },
     { id: 'usuarios', href: 'usuarios.html', ic: 'users', t: 'Usuários e equipes' }
@@ -55,7 +57,7 @@
 
   function current() {
     var p = location.pathname.split('/').pop() || 'index.html';
-    var m = { 'index.html': 'home', 'painel.html': 'painel', 'rota.html': 'rota', 'critica.html': 'critica', 'alteracoes.html': 'alteracoes', 'importar.html': 'importar', 'janelas.html': 'janelas', 'links.html': 'links', 'usuarios.html': 'usuarios' };
+    var m = { 'index.html': 'home', 'painel.html': 'painel', 'rota.html': 'rota', 'critica.html': 'critica', 'alteracoes.html': 'alteracoes', 'importar.html': 'importar', 'janelas.html': 'janelas', 'links.html': 'links', 'usuarios.html': 'usuarios', 'relatorios.html': 'relatorios' };
     if (p === 'critica.html' && /reg=1/.test(location.hash)) return 'alteracoes';
     return m[p] || '';
   }
@@ -73,7 +75,7 @@
     VIS.forEach(function (n) {
       if (n.sec) { h += '<div class="sb-sec">' + n.sec + '</div>'; return; }
       var cls = 'sb-a' + (n.cls ? ' ' + n.cls : '') + (n.id === cur ? ' on' : '') + (n.soon ? ' soon' : '');
-      var tail = n.soon ? '<em class="sb-tag">breve</em>' : (n.badge ? '<b class="sb-badge" data-badge hidden></b>' : '');
+      var tail = n.soon ? '<em class="sb-tag">breve</em>' : (n.badge ? '<b class="sb-badge" data-badge hidden></b>' : n.badge2 ? '<b class="sb-badge" data-badge2 hidden style="background:#ef4444;color:#fff"></b>' : '');
       h += n.soon
         ? '<a class="' + cls + '" data-tip="' + n.t + ' · em breve">' + svg(n.ic) + '<span>' + n.t + '</span>' + tail + '</a>'
         : '<a class="' + cls + '" href="' + n.href + '" data-tip="' + n.t + '">' + svg(n.ic) + '<span>' + n.t + '</span>' + tail + '</a>';
@@ -118,7 +120,7 @@
       a.addEventListener('mouseleave', function () { tip.classList.remove('on'); });
     });
 
-    pendingBadge();
+    pendingBadge(); relBadge();
   }
 
   // Nº de solicitações aguardando parecer (cache de 3 min para não pesar)
@@ -139,6 +141,18 @@
       try { sessionStorage.setItem('plannerPend', JSON.stringify({ t: Date.now(), n: n })); } catch (e) {}
       show(n); window.PlannerPending = n;
     }).catch(function () {});
+  }
+  // Relatórios semanais que faltam atualizar nesta semana (só administrador)
+  function relBadge() {
+    if (!A || !A.user() || A.user().perfil !== 'admin' || !window.PlannerData) return;
+    var show = function (n) { document.querySelectorAll('[data-badge2]').forEach(function (b) { b.textContent = n; b.hidden = !n; b.title = n + ' relatórios para atualizar'; }); };
+    try { var c = JSON.parse(sessionStorage.getItem('plannerRelPend') || 'null'); if (c && Date.now() - c.t < 300000) { show(c.n); return; } } catch (e) {}
+    window.PlannerData.text('rel/index.json').then(function (t) { return JSON.parse(t); }).catch(function () { return { r: {} }; }).then(function (ix) {
+      var seg = new Date(); seg.setHours(0, 0, 0, 0); seg.setDate(seg.getDate() - ((seg.getDay() + 6) % 7));
+      var n = 0; ['bees', '010278', '012011', 'coord', 'ajustes'].forEach(function (id) { ['1031287', '1031295', '826588', '983616'].forEach(function (u) { var x = (ix.r[id] || {})[u]; if (!x || new Date(x.em) < seg) n++; }); });
+      try { sessionStorage.setItem('plannerRelPend', JSON.stringify({ t: Date.now(), n: n })); } catch (e) {}
+      show(n);
+    });
   }
   window.PlannerShell = { refreshBadge: function () { try { sessionStorage.removeItem('plannerPend'); } catch (e) {} pendingBadge(); } };
 
