@@ -39,6 +39,8 @@
     { id: 'critica', href: 'critica.html', ic: 'pen', t: 'Crítica (GV)' },
     { id: 'alteracoes', href: 'alteracoes.html', ic: 'list', t: 'Alterações', badge: true },
     { id: 'links', href: 'links.html', ic: 'link', t: 'Links dos vendedores' },
+    { sec: 'Logística' },
+    { id: 'janelas', href: 'janelas.html', ic: 'truck', t: 'Janelas BEES', badge3: true },
     { sec: 'Próximos módulos' },
     { id: 'reuniao', ic: 'meet', t: 'Reunião semanal', soon: 1 },
     { id: 'monitor', ic: 'radar', t: 'Monitor', soon: 1 },
@@ -49,7 +51,6 @@
     { sec: 'Administração' },
     { id: 'relatorios', href: 'relatorios.html', ic: 'file', t: 'Central de relatórios', badge2: true },
     { id: 'importar', href: 'importar.html', ic: 'up', t: 'Importar planner' },
-    { id: 'janelas', href: 'janelas.html', ic: 'truck', t: 'Janelas BEES', badge3: true },
     { id: 'usuarios', href: 'usuarios.html', ic: 'users', t: 'Usuários e equipes' }
   ];
   var MOBILE = ['home', 'painel', 'rota', 'critica', 'alteracoes'];
