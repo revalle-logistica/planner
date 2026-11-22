@@ -134,6 +134,7 @@ async function completar(){
         U.planners[key]={pre:{rows:pre,vn},pos:{rows:pos,vn},fonte:'Importar planner'}}}))}catch(e){}})());
   for(const un in UNB)tarefas.push((async()=>{try{const o=JSON.parse(await PlannerData.text('rel/coord/'+un+'.json'));const u=nomeU(un);if(!u||!ST.units[u])return;const U=ST.units[u];
     for(const c in o){const v=o[c];U.clients[String(+c)]=[+(+v[0]).toFixed(4),+(+v[1]).toFixed(4),v[2]||(U.clients[String(+c)]||[])[2]||'']}}catch(e){}})());
+  tarefas.push(carregarAJH());
   await Promise.all(tarefas)}
 
 function semUnidade(n){throw new Error('não reconheci a unidade pelo nome do arquivo (use Alagoinhas, Serrinha, Pombal ou Paulo Afonso no nome)')}
@@ -142,13 +143,23 @@ function semUnidade(n){throw new Error('não reconheci a unidade pelo nome do ar
 const SOLIC={};
 function vidDe(p){const [d,m,a]=p.split('.');return `20${a}-${m}-${d}`}
 function unbDe(u){return Object.keys(UNB).find(k=>u.toLowerCase().includes(UNB[k].toLowerCase().split(' ').pop()))}
+let AJH=null;
+async function carregarAJH(){try{AJH=JSON.parse(await PlannerData.text('janelas/ajustes-hist.json')).itens||[]}catch(e){AJH=[]}}
+function tcdRows(k){if(!AJH||!AJH.length)return [];const ds=dates();const prox=ds[ds.indexOf(k)+1];const de=vidDe(k),ate=prox?vidDe(prox):'9999';const un=unbDe(UI.u);
+  const P=(U().planners[k]||{}).pos;const st={};if(P)for(const r of P.rows)st[String(r[0])]=String(r[1]);const DD=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+  return AJH.filter(a=>a.unb===un&&a.em>=de&&a.em<ate).map(a=>{const r=Array(11).fill('');r[0]=a.cod;r[1]=st[a.cod]||'';r[2]=a.pdv;r[5]='Janela de entrega (TCD)';
+    r[7]=(a.dias||[]).map((x,j)=>x?DD[j]:'').filter(Boolean).join('/');r[8]=[a.ajuste,a.req?'pedido por '+a.req:''].filter(Boolean).join(' · ');r[9]='Aprovado';r[10]='TCD · pedido '+(a.pedido||'—');return r})}
 function instalarResumo(){const altOrig=R.alt;
   R.alt=()=>{const AO=altOf();const nota=t=>`<p class="note" style="margin:0 0 10px">${t}</p>`;
-    if(AO.n)return nota('📄 Planner '+UI.p.replace(/\./g,'/')+': dados das planilhas do processo antigo (crítica e formulário de alterações).')+altOrig();
+    const tcd=tcdRows(UI.p),nt=tcd.length?` Inclui ${tcd.length} ajuste(s) de janela aprovados pela TCD (planilha semanal).`:'';
+    if(AO.n){const n0=nota('📄 Planner '+UI.p.replace(/\./g,'/')+': visitas das planilhas do processo antigo (crítica e formulário).'+nt);
+      if(AO.C.length&&!AO.F.length)return n0+critView(AO.C.concat(tcd));
+      return n0+altOrig()+(tcd.length?'<div style="margin-top:18px"></div>'+critView(tcd):'')}
     const k=UI.p,v=vidDe(k);
     if(!(k in SOLIC)){SOLIC[k]=null;if(window.PlannerAPI)PlannerAPI.list(v).then(it=>{SOLIC[k]=it||[];render()}).catch(()=>{SOLIC[k]=[];render()});return title('Solicitações','Planner '+k.replace(/\./g,'/'))+'<p class="note">Buscando as solicitações feitas no sistema…</p>'}
     if(SOLIC[k]===null)return title('Solicitações','Planner '+k.replace(/\./g,'/'))+'<p class="note">Buscando as solicitações feitas no sistema…</p>';
     const un=unbDe(UI.u);const it=SOLIC[k].filter(r=>!un||String(r.u)===un);
+    if(!it.length&&tcd.length)return nota('🚚 Ajustes de janela aprovados pela TCD neste planner (planilha semanal).')+critView(tcd);
     if(!it.length)return title('Solicitações','Planner '+k.replace(/\./g,'/'))+nota('Nenhuma solicitação dos GVs para '+esc(UI.u)+' neste planner. Elas entram pela <b>Crítica do planner</b> e aparecem aqui sozinhas.');
     const C=it.map(r=>{const a=Array(11).fill('');a[0]=String(r.code||'');a[1]=String(r.s||r.sNovo||'');a[2]=String(r.n||'');a[5]=String(r.tipo||'Outro');a[6]=String(r.visita||r.janela||'');a[7]=String([r.sNovo&&('setor '+r.sNovo),r.novoDia,r.novaFreq].filter(Boolean).join(' · '));a[8]=String(r.just||'');a[9]=String(r.parecer||'Pendente');a[10]=String(r.obs||'');return a});
-    return nota('💻 Solicitações feitas no sistema pela Crítica do planner ('+it.length+'). O detalhe de cada uma, com o parecer, está na aba Solicitações dos GVs.')+critView(C)}}
+    return nota('💻 Solicitações feitas no sistema pela Crítica do planner ('+it.length+'). O detalhe de cada uma, com o parecer, está na aba Solicitações dos GVs.'+nt)+critView(C.concat(tcd))}}
