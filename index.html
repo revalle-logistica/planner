@@ -196,7 +196,8 @@ const MODS=[
   {h:'painel.html',ic:'chart',c:'#f5b301',t:'Antes × Depois',d:'Visitas por dia, o que mudou, planificador por vendedor, frequência, mapa e relação de clientes.',w:['Gestão','Vendas']},
   {h:'rota.html',ic:'route',c:'#22c55e',t:'Minha rota',d:'Para o vendedor: semana com datas, roteiro do dia no mapa e mensagens prontas para avisar os clientes.',w:['Vendedor']},
   {h:'critica.html',ic:'pen',c:'#e879f9',t:'Crítica do planner',d:'O GV seleciona clientes no mapa (laço), propõe vendedor, dia e frequência e envia para a Logística.',w:['GV']},
-  {h:'alteracoes.html',ic:'list',c:'#3b9eff',t:'Alterações',d:'Todas as solicitações dos GVs num só lugar, com parecer da Logística e Excel completo.',w:['Logística'],badge:1},
+  {h:'alteracoes.html',ic:'list',c:'#3b9eff',t:'Alterações',d:'Solicitações dos GVs com parecer da Logística, monitor semanal de visitas e janelas e histórico pós-planner.',w:['Logística'],badge:1},
+  {h:'rotina.html?m=alt',ic:'list',c:'#3b9eff',t:'Alterações',d:'Monitor semanal de visitas e janelas de entrega e histórico de alterações pós-planner.',w:['Todos'],soAlt:1},
   {h:'painel.html#mapa',ic:'map',c:'#2dd4bf',t:'Mapa dos clientes',d:'Clientes no mapa coloridos pelo tipo de mudança, com ruas ou satélite.',w:['Todos']},
   {h:'importar.html',ic:'up',c:'#94a3b8',t:'Importar planner',d:'Sobe um planner novo (pré, pós, clientes e volume) e guarda o histórico de versões.',w:['Logística']},
   {h:'links.html',ic:'link',c:'#4ade80',t:'Links dos vendedores',d:'Gera o link pessoal da Minha rota de cada setor da sua equipe para mandar no WhatsApp.',w:['GV','Logística']},
@@ -222,13 +223,12 @@ function renderEtapas(){$('etstrip').innerHTML=ETAPAS.map(([f,t],i)=>`<div class
 MODS.splice(2,0,{h:'rotina.html?m=analise',ic:'kpi',c:'#a78bfa',t:'Análise do planner',d:'Carteira por dia, balanceamento por setor, PDVs e volume e os números do planner.',w:['Todos']});
 MODS.push(
   {h:'rotina.html?m=sem',ic:'meet',c:'#f5b301',t:'Reunião semanal',d:'KPIs da semana com semáforo, estratificação do gap, sugestões de ação e ata.',w:['Todos']},
-  {h:'rotina.html?m=mon',ic:'radar',c:'#3b9eff',t:'Monitor',d:'Visitas e janelas de entrega semana a semana: o que mudou fora do planner.',w:['Todos']},
   {h:'rotina.html?m=ind',ic:'kpi',c:'#22c55e',t:'Indicadores',d:'KPIs mês a mês, por dia da semana e o checklist 3.4 (pré × pós).',w:['Todos']},
   {h:'rotina.html?m=buf',ic:'box',c:'#ff8a3d',t:'Buffer',d:'% buffer PDV e volume, estratificação e pedidos em aberto.',w:['Todos']},
   {h:'oportunidades.html',ic:'star',c:'#e879f9',t:'Oportunidades',d:'Anotações rápidas do time, sem aprofundar, para lembrar na construção do próximo planner.',w:['Todos']},
   {h:'rotina.html?m=pa',ic:'check',c:'#2dd4bf',t:'Plano de ação',d:'Ações da construção do planner e das reuniões de rotina.',w:['Todos']});
 function renderMods(pend){renderEtapas();
-  $('mods').innerHTML=MODS.filter(m=>!window.PlannerAuth||!PlannerAuth.configured()||PlannerAuth.can(m.h.split(/[?#]/)[0])).map(m=>`<a class="mod" href="${m.h}" style="--c:${m.c}"><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p><div class="who">${m.w.map(x=>`<span>${x}</span>`).join('')}</div>${m.badge&&pend?`<span class="bdg">${pend} aguardando</span>`:''}<span class="arrow">→</span></a>`).join('');
+  $('mods').innerHTML=MODS.filter(m=>!(m.soAlt&&window.PlannerAuth&&PlannerAuth.configured()&&PlannerAuth.can('alteracoes.html'))).filter(m=>!window.PlannerAuth||!PlannerAuth.configured()||PlannerAuth.can(m.h.split(/[?#]/)[0])).map(m=>`<a class="mod" href="${m.h}" style="--c:${m.c}"><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p><div class="who">${m.w.map(x=>`<span>${x}</span>`).join('')}</div>${m.badge&&pend?`<span class="bdg">${pend} aguardando</span>`:''}<span class="arrow">→</span></a>`).join('');
   $('soon').innerHTML=SOON.map(m=>`<div class="mod" style="--c:${m.c}"><span class="tagsoon">em breve</span><div class="ic">${svg(m.ic)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join('');
   document.querySelectorAll('.mod').forEach(el=>el.addEventListener('mousemove',e=>{const r=el.getBoundingClientRect();el.style.setProperty('--mx',(e.clientX-r.left)+'px');el.style.setProperty('--my',(e.clientY-r.top)+'px')}));
 }

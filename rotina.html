@@ -356,14 +356,14 @@ html[data-theme] .rt .tbl td,html[data-theme] .rt .fq td{border-bottom-color:#E3
    com cópia no navegador enquanto não muda. Preferências e plano de ação em rotina/ls.json. */
 const GRUPOS={
   sem:{t:'Reunião semanal',ids:['sem']},
-  mon:{t:'Monitor',ids:['mon']},
+  alt:{t:'Alterações',ids:['mon','alt']},
   ind:{t:'Indicadores',ids:['ind','kdia','chk','res']},
   buf:{t:'Buffer',ids:['buf']},
-  analise:{t:'Análise do planner',ids:['todos','setor','dia','pdvvol','num','alt']},
+  analise:{t:'Análise do planner',ids:['todos','setor','dia','pdvvol','num']},
   opp:{t:'Oportunidades',ids:['opp']},
   pa:{t:'Plano de ação',ids:['pa']},
   imp:{t:'Bases da rotina',ids:['imp']}};
-let M=new URLSearchParams(location.search).get('m')||'sem';if(M==='opp')location.replace('oportunidades.html');if(!GRUPOS[M])M='sem';
+let M=new URLSearchParams(location.search).get('m')||'sem';if(M==='opp')location.replace('oportunidades.html');if(M==='mon')M='alt';if(!GRUPOS[M])M='sem';
 const EU=(window.PlannerAuth&&PlannerAuth.user())||{};
 const IS_ADMIN=EU.perfil==='admin';
 let LSO={};
@@ -371,7 +371,8 @@ function avisoLeitura(){if(avisoLeitura.ok)return;avisoLeitura.ok=1;alertMsg('S�
 function grupoDe(id){for(const g in GRUPOS)if(GRUPOS[g].ids.includes(id))return g;return 'sem'}
 function irPara(i){const s=SLIDES[i];if(!s)return;const g=grupoDe(s.id);if(g===M){UI.slide=i;render();window.scrollTo(0,0)}else location.href='rotina.html?m='+g+'&s='+s.id}
 function grupoTabs(){const G=GRUPOS[M];const el=document.getElementById('gtabs');if(!el)return;
-  el.innerHTML=G.ids.length>1?G.ids.map(id=>{const i=SLIDES.findIndex(s=>s.id===id);return `<button data-s="${i}" aria-pressed="${i===UI.slide}">${SLIDES[i].n}</button>`}).join(''):'';
+  const NOMES={mon:'📡 Monitor semanal',alt:'📈 Histórico pós-planner'};
+  el.innerHTML=(M==='alt'&&PlannerAuth.can('alteracoes.html')?'<a href="alteracoes.html"><button>📝 Solicitações dos GVs</button></a>':'')+(G.ids.length>1?G.ids.map(id=>{const i=SLIDES.findIndex(s=>s.id===id);return `<button data-s="${i}" aria-pressed="${i===UI.slide}">${NOMES[id]||SLIDES[i].n}</button>`}).join(''):'');
   const t=document.getElementById('pgT');if(t)t.textContent=G.ids.length>1?G.t:SLIDES[UI.slide].n;
   const p=document.getElementById('pgS');if(p)p.textContent=SLIDES[UI.slide].sub}
 // ---- gzip + base64 (o estado tem ~10 MB em JSON; comprimido fica ~1,5 MB)

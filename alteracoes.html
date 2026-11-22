@@ -61,12 +61,13 @@ td.j i{display:block;color:#93c5fd;margin-top:4px}
 .modal h3{margin:0 0 6px}.modal .sub{color:var(--mut);font-size:13px;line-height:1.5;margin-bottom:12px}
 .chk{display:flex;gap:6px;align-items:center;color:var(--mut);font-size:13px}
 @media(max-width:1100px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+.modt{display:flex;gap:6px;flex-wrap:wrap;padding-bottom:0}.modt a{font:700 13px Inter,system-ui,sans-serif;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#dbe4f3;border-radius:999px;padding:7px 14px;text-decoration:none}.modt a.on{background:#f5b301;border-color:#f5b301;color:#111}
 </style>
 <link rel="stylesheet" href="css/theme.css">
 <script src="js/shell.js"></script>
 </head>
 <body>
-<header><div class="hwrap">
+<header><div class="hwrap modt"><a class="on">📝 Solicitações dos GVs</a><a href="rotina.html?m=alt&s=mon">📡 Monitor semanal</a><a href="rotina.html?m=alt&s=alt">📈 Histórico pós-planner</a></div><div class="hwrap">
   <div class="brand"><b>Alterações / <span>crítica</span></b><small id="vsub">Solicitações de Vendas e parecer da Logística</small></div>
   <select id="ver"></select>
   <a class="btn pri" id="mapBtn" href="critica.html">🗺️ Ver no mapa</a>

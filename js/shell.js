@@ -39,13 +39,13 @@
     { id: 'opp', href: 'oportunidades.html', ic: 'star', t: 'Oportunidades' },
     { sec: 'Crítica do planner' },
     { id: 'critica', href: 'critica.html', ic: 'pen', t: 'Crítica (GV)' },
-    { id: 'alteracoes', href: 'alteracoes.html', ic: 'list', t: 'Alterações', badge: true },
+    { id: 'alteracoes', href: 'alteracoes.html', ic: 'list', t: 'Alterações', badge: true, adm: 1 },
+    { id: 'alteracoes', href: 'rotina.html?m=alt', ic: 'list', t: 'Alterações', naoAdm: 1 },
     { id: 'links', href: 'links.html', ic: 'link', t: 'Links dos vendedores' },
     { sec: 'Logística' },
     { id: 'janelas', href: 'janelas.html', ic: 'truck', t: 'Janelas BEES', badge3: true },
     { sec: 'Rotina e indicadores' },
     { id: 'r-sem', href: 'rotina.html?m=sem', ic: 'meet', t: 'Reunião semanal' },
-    { id: 'r-mon', href: 'rotina.html?m=mon', ic: 'radar', t: 'Monitor' },
     { id: 'r-ind', href: 'rotina.html?m=ind', ic: 'kpi', t: 'Indicadores' },
     { id: 'r-buf', href: 'rotina.html?m=buf', ic: 'box', t: 'Buffer' },
     { sec: 'Ações' },
@@ -63,12 +63,12 @@
     var p = location.pathname.split('/').pop() || 'index.html';
     var m = { 'index.html': 'home', 'painel.html': 'painel', 'rota.html': 'rota', 'critica.html': 'critica', 'alteracoes.html': 'alteracoes', 'importar.html': 'importar', 'janelas.html': 'janelas', 'links.html': 'links', 'usuarios.html': 'usuarios', 'relatorios.html': 'relatorios', 'oportunidades.html': 'opp' };
     if (p === 'critica.html' && /reg=1/.test(location.hash)) return 'alteracoes';
-    if (p === 'rotina.html') return 'r-' + (new URLSearchParams(location.search).get('m') || 'sem');
+    if (p === 'rotina.html') { var mm = new URLSearchParams(location.search).get('m') || 'sem'; return (mm === 'alt' || mm === 'mon') ? 'alteracoes' : 'r-' + mm; }
     return m[p] || '';
   }
 
   var A = window.PlannerAuth;
-  function allowed(n) { if (n.adm && !(A && A.user() && A.user().perfil === 'admin')) return false; return !n.href || !A || !A.configured() || A.can(n.href.replace('./', 'index.html').split(/[?#]/)[0]); }
+  function allowed(n) { if (!n) return false; var isA = !!(A && A.user() && A.user().perfil === 'admin'); if (n.adm && !isA) return false; if (n.naoAdm && isA) return false; return !n.href || !A || !A.configured() || A.can(n.href.replace('./', 'index.html').split(/[?#]/)[0]); }
   function build() {
     if (A && A.linkK) { html.classList.remove('has-side'); return; } // vendedor pelo link: só a Minha rota
     var cur = current();
@@ -92,8 +92,8 @@
     document.body.appendChild(sb);
 
     var bn = document.createElement('nav'); bn.className = 'bn';
-    bn.innerHTML = MOBILE.filter(function (id) { return allowed(NAV.filter(function (x) { return x.id === id; })[0]); }).map(function (id) {
-      var n = NAV.filter(function (x) { return x.id === id; })[0];
+    bn.innerHTML = MOBILE.filter(function (id) { return NAV.some(function (x) { return x.id === id && allowed(x); }); }).map(function (id) {
+      var n = NAV.filter(function (x) { return x.id === id && allowed(x); })[0];
       return '<a href="' + n.href + '" class="' + (n.cls || '') + (id === cur ? ' on' : '') + '">' + svg(n.ic) + SHORT[id] + (n.badge ? '<b class="sb-badge" data-badge hidden></b>' : '') + '</a>';
     }).join('');
     document.body.appendChild(bn);
