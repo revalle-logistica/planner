@@ -263,7 +263,7 @@ function renderDay(){
     if(c.pa&&c.pa!==c.pb)t.push(`<span class="chip p">${FREQ[c.pa]||c.pa} → ${FREQ[c.pb]||c.pb}</span>`);
     else t.push(`<span class="chip">${FREQ[c.pb]||c.pb}</span>`);
     const sd=sinceDays(c.ult);if(sd!=null)t.push(`<span class="chip ${sd>30?'r':sd>15?'y':'g'}">Última compra ${sd<=0?'hoje':sd===1?'ontem':'há '+sd+' dias'}</span>`);else t.push('<span class="chip">Sem compra registrada</span>');
-    if(c.vol)t.push(`<span class="chip b">${f1(c.vol)}/mês · drop ${c.ent?f1(c.vol/c.ent):'—'}</span>`);
+    if(c.vol)t.push(`<span class="chip b">${f1(c.vol)} hl/mês · drop ${c.ent?f1(c.vol/c.ent)+' hl':'—'}</span>`);
     if(c.jb){const a=dayTxt(c.ja),b=dayTxt(c.jb);t.push(c.ja&&a!==b?`<span class="chip b">🚚 Entrega ${b} · era ${a}</span>`:`<span class="chip">🚚 Entrega ${b}</span>`)}
     if(c.jan)t.push(`<span class="chip y">Janela ${esc(c.jan)}</span>`);
     if(c.st==='B')t.push('<span class="chip r">Bloqueado</span>');return t.join('')};

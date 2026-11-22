@@ -268,7 +268,7 @@ function paint(ly,view,legId){
 }
 function tip(c){const p=eff(c,'plan'),e=eff(c,'crit'),ch=EFF.has(c.code);const jn=JAN.get(c.code);
   const row=(l,a,b)=>`<tr><td style="color:#8a94a8;padding-right:8px">${l}</td><td>${esc(a)}</td>${ch?`<td style="padding:0 6px">→</td><td style="color:#c026d3;font-weight:700">${esc(b)}</td>`:''}</tr>`;
-  return `<b>${esc(c.n)}</b> <span style="color:#888">${c.code}</span><br><span style="color:#888">${esc(c.city)}${c.vol!=null?' · vol '+fmt(c.vol,0)+'/mês':''}</span><table style="font-size:12px;margin-top:4px">${row('Vendedor',slabel(p.s),slabel(e.s))}${row('Dia',dayTxt(p.m),dayTxt(e.m))}${row('Freq.',(FREQ[p.p]||p.p)+' '+wkTxt(p.m),(FREQ[e.p]||e.p)+' '+wkTxt(e.m))}</table>${c.jb?`<div style="margin-top:4px;color:#60a5fa">🚚 Entrega: ${esc(dayTxt(c.jb))} <span style="color:#888">(mudar na TCD)</span></div>`:''}${jn?`<div style="margin-top:4px;color:#c026d3;font-weight:700">Nova janela de entrega: ${esc(jn)}</div>`:''}`}
+  return `<b>${esc(c.n)}</b> <span style="color:#888">${c.code}</span><br><span style="color:#888">${esc(c.city)}${c.vol!=null?' · '+fmt(c.vol,1)+' hl/mês':''}</span><table style="font-size:12px;margin-top:4px">${row('Vendedor',slabel(p.s),slabel(e.s))}${row('Dia',dayTxt(p.m),dayTxt(e.m))}${row('Freq.',(FREQ[p.p]||p.p)+' '+wkTxt(p.m),(FREQ[e.p]||e.p)+' '+wkTxt(e.m))}</table>${c.jb?`<div style="margin-top:4px;color:#60a5fa">🚚 Entrega: ${esc(dayTxt(c.jb))} <span style="color:#888">(mudar na TCD)</span></div>`:''}${jn?`<div style="margin-top:4px;color:#c026d3;font-weight:700">Nova janela de entrega: ${esc(jn)}</div>`:''}`}
 // ---- laço
 function initLasso(map){
   const el=map.getContainer();let pts=null,line=null;
@@ -311,7 +311,7 @@ function selInfo(){
   if(!s.length){$('selInfo').innerHTML='<div class="sub">Clique em <b>✏️ Laço</b> e desenhe em volta dos PDVs no mapa.</div>';checkForm();return}
   const by=(f)=>{const m={};for(const c of s){const k=f(c);m[k]=(m[k]||0)+1}return Object.entries(m).sort((a,b)=>b[1]-a[1])};
   const vol=s.reduce((a,c)=>a+(c.vol||0),0);
-  $('selInfo').innerHTML=`<div class="big">${fmt(s.length)} <span style="font-size:14px;color:var(--mut);font-weight:600">PDVs selecionados</span></div>${vol?`<div class="sub">Volume: <b style="color:var(--txt)">${fmt(vol,0)}</b>/mês</div>`:''}
+  $('selInfo').innerHTML=`<div class="big">${fmt(s.length)} <span style="font-size:14px;color:var(--mut);font-weight:600">PDVs selecionados</span></div>${vol?`<div class="sub">Volume: <b style="color:var(--txt)">${fmt(vol,0)}</b> hl/mês</div>`:''}
   <div class="kv">${by(c=>eff(c,'crit').s).slice(0,6).map(([k,n])=>`<span class="pill"><span class="dot" style="background:${SCOL[k]}"></span>${esc(k)} ${esc(title(sname(k)).split(' ')[0])} <b>${n}</b></span>`).join('')}</div>
   <div class="kv">${by(c=>dayTxt(eff(c,'crit').m)).map(([k,n])=>`<span class="pill">${esc(k)} <b>${n}</b></span>`).join('')}${by(c=>FREQ[eff(c,'crit').p]||'—').map(([k,n])=>`<span class="pill">${esc(k)} <b>${n}</b></span>`).join('')}</div>`;
   checkForm();
@@ -417,11 +417,11 @@ function exportXLS(){
       'Cód. vendedor (planner)':+p.s||p.s,'Vendedor (planner)':title(sname(p.s)),'Cód. vendedor (solicitado)':+e.s||e.s,'Vendedor (solicitado)':title(sname(e.s)),
       'Dia (planner)':dayTxt(p.m),'Dia (solicitado)':dayTxt(e.m),'Frequência (planner)':FREQ[p.p]||p.p,'Frequência (solicitada)':FREQ[e.p]||e.p,
       'Semanas (planner)':wkTxt(p.m),'Semanas (solicitadas)':wkTxt(e.m),'Nova janela de entrega':j,
-      'Volume/mês':c.vol!=null?Math.round(c.vol*10)/10:'','Justificativa':just,'Lote':lote,'Latitude':c.lat,'Longitude':c.lon}));
+      'Volume (hl/mês)':c.vol!=null?Math.round(c.vol*10)/10:'','Justificativa':just,'Lote':lote,'Latitude':c.lat,'Longitude':c.lon}));
     const P=sellerStats('plan'),K=sellerStats('crit');const z={n:0,d:Array(7).fill(0),v:0};
     const aff=new Set();for(const r of Q){aff.add(r.p.s);aff.add(r.e.s)}
     [...aff].sort((a,b)=>+a-+b).forEach(sv=>{const p=P[sv]||z,k=K[sv]||z;const o={'Unidade':u.name,'Cód. vendedor':+sv||sv,'Vendedor':title(sname(sv)),'Clientes (planner)':p.n,'Clientes (crítica)':k.n,'Δ clientes':k.n-p.n};
-      DAYS.slice(0,6).forEach((d,i)=>{o[`${d} (planner)`]=p.d[i];o[`${d} (crítica)`]=k.d[i]});o['Volume/mês (planner)']=Math.round(p.v);o['Volume/mês (crítica)']=Math.round(k.v);res.push(o)});
+      DAYS.slice(0,6).forEach((d,i)=>{o[`${d} (planner)`]=p.d[i];o[`${d} (crítica)`]=k.d[i]});o['Volume hl/mês (planner)']=Math.round(p.v*10)/10;o['Volume hl/mês (crítica)']=Math.round(k.v*10)/10;res.push(o)});
     B.forEach((b,i)=>lotes.push([u.name,i+1,b.codes.length,describe(b.t),b.just]));
     return{name:u.name,n:Q.length}});
   if(!sol.length){alert('Nenhuma solicitação para exportar.');return}
