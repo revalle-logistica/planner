@@ -179,13 +179,14 @@ const fmt=n=>Number(n||0).toLocaleString('pt-BR');const br=iso=>iso?iso.split('-
 const dt=s=>s?new Date(s).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
 const NOME=R.UNIDADES,ORDEM=R.ORDEM,DIAS=JB.DIAS;
 const quinzTxt={},biResp={},res={},U={};   // U[unb] = {rel:{...}, base, A (análise), dec:{cod:dia}}
-let HIST={semanas:[]},RIX={r:{}},VER=null,cur='';
+let HIST={semanas:[]},RIX={r:{}},VER=null,VERP=null,cur='';
 
 (async()=>{
   $('sem').value=nextMonday();$('ref').value=br($('sem').value);
-  try{HIST=await PlannerData.json('janelas/index.json')}catch(e){HIST={semanas:[]}}
-  try{RIX=JSON.parse(await PlannerData.text('rel/index.json'))}catch(e){RIX={r:{}}}
-  try{const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];if(v)VER=await PlannerData.json(`v/${v.id}.json`)}catch(e){}
+  // tudo em paralelo: cada leitura é uma chamada ao Drive, em série demorava muito
+  const vp=PlannerData.json('index.json').then(ix=>{const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];return v?PlannerData.json(`v/${v.id}.json`):null}).catch(()=>null);
+  [HIST,RIX]=await Promise.all([PlannerData.json('janelas/index.json').catch(()=>({semanas:[]})),PlannerData.text('rel/index.json').then(JSON.parse).catch(()=>({r:{}}))]);
+  VERP=vp;
   drawHist();modo();await carregar();
 })();
 function nextMonday(){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7));return d.toISOString().slice(0,10)}
@@ -197,23 +198,29 @@ const relInfo=(id,u)=>(RIX.r[id]||{})[u];
 const sit=(id,u)=>{const r=R.CATALOGO.find(c=>c.id===id);const x=relInfo(id,u);return R.situacao(r.freq,x&&x.em)};
 
 // ---------- carrega relatórios da Central e a base viva de cada unidade
+
 async function carregar(){
-  for(const u of ORDEM){
+  const ler=(id,u,ext)=>relInfo(id,u)?PlannerData.text(R.caminho(id,u,ext)):Promise.reject(new Error('não enviado'));
+  const js=(id,u)=>ler(id,u,'json').then(JSON.parse);
+  await Promise.all(ORDEM.map(async u=>{
     const o={rel:{},avisos:[]};U[u]=o;
-    if(!relInfo('bees',u))continue;
-    try{o.rel.bees=J.parseCSV(await PlannerData.text(R.caminho('bees',u,'csv'))).rows}catch(e){o.avisos.push('Não consegui ler o arquivo do BEES');continue}
-    try{o.rel.ativos=JSON.parse(await PlannerData.text(R.caminho('010278',u,'json'))).clientes}catch(e){o.rel.ativos=null}
-    try{o.rel.cad=new Map(Object.entries(JSON.parse(await PlannerData.text(R.caminho('012011',u,'json')))))}catch(e){o.rel.cad=null}
-    try{o.rel.coords=JSON.parse(await PlannerData.text(R.caminho('coord',u,'json')));o.coordSrc='Relatório de clientes'}catch(e){o.rel.coords=null}
-    if(!o.rel.coords&&VER){o.rel.coords={};for(const c of VER.clients)if(c[0]===u&&c[10]!=null)o.rel.coords[String(c[1])]=[c[10],c[11]];o.coordSrc='Planner publicado (o relatório de coordenadas ainda não foi enviado)'}
-    try{o.rel.ajustes=JSON.parse(await PlannerData.text(R.caminho('ajustes',u,'json'))).itens}catch(e){o.rel.ajustes=[]}
-    try{o.base=await PlannerData.json(`janelas/base/${u}.json`);o.baseNova=false}catch(e){o.base=null}
-    if(!o.base){
-      try{o.base=JB.deGabarito(u,await PlannerData.text(R.caminho('gabarito',u,'csv')));o.baseNova='Gabarito da Central de relatórios'}
-      catch(e){if(VER&&VER.clients.some(c=>c[0]===u&&c[21])){o.base=JB.deVersao(u,VER);o.baseNova='Janelas pós do planner publicado'}}
+    if(!relInfo('bees',u))return;
+    const [bees,at,cad,co,aj,base]=await Promise.allSettled([ler('bees',u,'csv'),js('010278',u),js('012011',u),js('coord',u),js('ajustes',u),PlannerData.json(`janelas/base/${u}.json`)]);
+    if(bees.status!=='fulfilled'){o.avisos.push('Não consegui ler o arquivo do BEES');return}
+    o.rel.bees=J.parseCSV(bees.value).rows;
+    o.rel.ativos=at.status==='fulfilled'?at.value.clientes:null;
+    o.rel.cad=cad.status==='fulfilled'?new Map(Object.entries(cad.value)):null;
+    if(co.status==='fulfilled'){o.rel.coords=co.value;o.coordSrc='Relatório de clientes'}
+    else{const V=await VERP;o.rel.coords=null;if(V){o.rel.coords={};for(const c of V.clients)if(c[0]===u&&c[10]!=null)o.rel.coords[String(c[1])]=[c[10],c[11]];o.coordSrc='Planner publicado (o relatório de coordenadas ainda não foi enviado)'}}
+    o.rel.ajustes=aj.status==='fulfilled'?aj.value.itens:[];
+    if(base.status==='fulfilled'){o.base=base.value;o.baseNova=false}
+    else{
+      try{o.base=JB.deGabarito(u,await ler('gabarito',u,'csv'));o.baseNova='Gabarito da Central de relatórios'}
+      catch(e){const V=await VERP;if(V&&V.clients.some(c=>c[0]===u&&c[21])){o.base=JB.deVersao(u,V);o.baseNova='Janelas pós do planner publicado'}}
     }
     if(o.base)analisar(u);
-  }
+  }));
+  VER=await VERP;
   cur=cur||ORDEM.find(u=>U[u].A)||'';
   render();
 }
