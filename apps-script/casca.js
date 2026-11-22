@@ -163,3 +163,5 @@ function instalarResumo(){const altOrig=R.alt;
     if(!it.length)return title('Solicitações','Planner '+k.replace(/\./g,'/'))+nota('Nenhuma solicitação dos GVs para '+esc(UI.u)+' neste planner. Elas entram pela <b>Crítica do planner</b> e aparecem aqui sozinhas.');
     const C=it.map(r=>{const a=Array(11).fill('');a[0]=String(r.code||'');a[1]=String(r.s||r.sNovo||'');a[2]=String(r.n||'');a[5]=String(r.tipo||'Outro');a[6]=String(r.visita||r.janela||'');a[7]=String([r.sNovo&&('setor '+r.sNovo),r.novoDia,r.novaFreq].filter(Boolean).join(' · '));a[8]=String(r.just||'');a[9]=String(r.parecer||'Pendente');a[10]=String(r.obs||'');return a});
     return nota('💻 Solicitações feitas no sistema pela Crítica do planner ('+it.length+'). O detalhe de cada uma, com o parecer, está na aba Solicitações dos GVs.'+nt)+critView(C.concat(tcd))}}
+
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-gvf]');if(b){UI.gv=b.dataset.gvf;render()}});

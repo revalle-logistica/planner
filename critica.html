@@ -85,6 +85,7 @@ h2{margin:0 0 4px;font-size:15px;font-weight:800;display:flex;align-items:center
   <div class="brand"><b>Crítica do <span>planner</span></b><small id="vsub">Revalle Logística</small></div>
   <input id="gv" placeholder="Seu nome (GV)" style="width:190px">
   <select id="unit"></select>
+  <select id="fgv" style="max-width:150px"><option value="">Todos os GVs</option></select>
   <select id="fsel" style="max-width:280px"></select>
 </div></header>
 <main>
@@ -164,6 +165,7 @@ let mA,mB,lyA,lyB;
   S.u=h.u&&V.units.some(x=>x.id===h.u)?h.u:V.units[0].id;$('unit').value=S.u;
   $('unit').onchange=e=>{S.u=e.target.value;S.f='';loadUnit()};
   $('fsel').onchange=e=>{S.f=e.target.value;SEL.clear();draw(true)};
+  $('fgv').onchange=e=>{S.gv=e.target.value;S.f='';fillSellers();SEL.clear();draw(true)};
   S.reg=!!h.reg;
   if(S.reg){try{REGD={items:await PlannerAPI.list(V.id)}}catch(e){REGD={items:[]}}
     regUI()}
@@ -190,7 +192,7 @@ function loadUnit(){
   if(S.reg)B=regBatches();else try{B=JSON.parse(localStorage.getItem(key())||'[]')}catch(e){B=[]}
   const sellers=[...new Set(C.map(c=>c.sb))].sort((a,b)=>+a-+b||a.localeCompare(b));
   SCOL={};sellers.forEach((s,i)=>SCOL[s]=PAL[i%PAL.length]);
-  $('fsel').innerHTML='<option value="">Todos os vendedores</option>'+sellers.map(s=>`<option value="${s}">${esc(slabel(s))}</option>`).join('');
+  SELLERS=sellers;S.gv='';$('fgv').innerHTML='<option value="">Todos os GVs</option>'+[...new Set(sellers.map(s=>String(s)[0]).filter(x=>/\d/.test(x)))].sort().map(g=>`<option value="${g}">GV ${g}</option>`).join('');fillSellers();
   $('tSel').innerHTML='<option value="">Manter</option>'+sellers.map(s=>`<option value="${s}">${esc(slabel(s))}</option>`).join('');
   SEL.clear();recompute();draw(true);selInfo();
 }
@@ -223,7 +225,10 @@ function recompute(){
   renderBatches();renderImpact();
 }
 function eff(c,view){if(view==='crit'&&EFF.has(c.code)){const e=EFF.get(c.code);return{s:e.s,p:e.p,m:e.m}}return{s:c.sb,p:c.pb,m:c.mb}}
-function visible(c){if(c.lat==null)return false;if(S.only&&!isReq(c.code))return false;
+// GV = 1º dígito do setor (101 → GV 1)
+let SELLERS=[];
+function fillSellers(){$('fsel').innerHTML='<option value="">Todos os vendedores</option>'+SELLERS.filter(s=>!S.gv||String(s)[0]===S.gv).map(s=>`<option value="${s}">${esc(slabel(s))}</option>`).join('');$('fsel').value=S.f||''}
+function visible(c){if(c.lat==null)return false;if(S.gv){const e=EFF.get(c.code);if(!(String(c.sb)[0]===S.gv||(e&&String(e.s)[0]===S.gv)))return false}if(S.only&&!isReq(c.code))return false;
   if(S.f){const e=EFF.get(c.code);return c.sb===S.f||(e&&e.s===S.f)}return true}
 // ---- mapas
 function base(){return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19})}
@@ -298,11 +303,11 @@ function initSearch(){
   document.addEventListener('click',e=>{if(!e.target.closest('.srch'))sg.style.display='none'});
   function pick(c){sg.style.display='none';q.value='';
     if(c.lat==null){alert('Este cliente não tem coordenada no mapa.');return}
-    if(S.f&&!visible(c)){S.f='';$('fsel').value=''}
+    if((S.f||S.gv)&&!visible(c)){S.f='';S.gv='';$('fgv').value='';fillSellers()}
     if(S.only&&!isReq(c.code)){S.only=false;$('onlyChg').checked=false}
     SEL.add(c.code);draw();selInfo();mA.setView([c.lat,c.lon],Math.max(mA.getZoom(),15));
     setTimeout(()=>{L.popup({offset:[0,-4]}).setLatLng([c.lat,c.lon]).setContent(tip(c)).openOn(mA)},250)}
-  function pickMany(arr){sg.style.display='none';q.value='';if(!arr.length)return;S.f='';$('fsel').value='';
+  function pickMany(arr){sg.style.display='none';q.value='';if(!arr.length)return;S.f='';S.gv='';$('fgv').value='';fillSellers();
     arr.forEach(c=>SEL.add(c.code));draw();selInfo();const pts=arr.filter(c=>c.lat!=null).map(c=>[c.lat,c.lon]);if(pts.length)mA.fitBounds(pts,{padding:[40,40],maxZoom:15})}
 }
 // ---- seleção e formulário

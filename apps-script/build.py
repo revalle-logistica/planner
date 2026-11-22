@@ -195,6 +195,11 @@ for a in ['lastDay>=ant','lastKm>=ant','lastPv>=ant','l>=ant']:
 rep("['Paulo Afonso',/paulo\\s*afonso/i]","['Paulo Afonso',/paulo[\\s_-]*afonso/i]")
 rep("const DDC={'1031287':'Alagoinhas','1031295':'Serrinha'};","const DDC={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};")
 js=js.replace("unitOf(name)||'Unidade'","unitOf(name)||semUnidade(name)").replace("||'Unidade';const U=","||semUnidade(name);const U=")
+# filtro de GV (1º dígito do setor) na tela Por setor
+rep("const sets=[...new Set(s.rows.map(r=>r.v))].sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));if(!sets.includes(UI.setor))UI.setor=sets[0];",
+    "const todos=[...new Set(s.rows.map(r=>r.v))].sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));const gvs=[...new Set(todos.map(v=>String(v)[0]).filter(x=>/\\d/.test(x)))];if(UI.gv&&!gvs.includes(UI.gv))UI.gv='';const sets=todos.filter(v=>!UI.gv||String(v)[0]===UI.gv);if(!sets.includes(UI.setor))UI.setor=sets[0];")
+rep("return title(cen(),'Por setor')+`<div class=\"tabs\" role=\"group\" aria-label=\"Setor\">",
+    "return title(cen(),'Por setor')+`<div class=\"tabs\" role=\"group\" aria-label=\"GV\" style=\"margin-bottom:6px\"><button data-gvf=\"\" aria-pressed=\"${!UI.gv}\">Todos os GVs</button>${gvs.map(g=>`<button data-gvf=\"${g}\" aria-pressed=\"${UI.gv===g}\">GV ${g}</button>`).join('')}</div><div class=\"tabs\" role=\"group\" aria-label=\"Setor\">")
 # Oportunidades: anotações compartilhadas (unidade, PDV/setor opcional, situação)
 opp_old = js[js.index("R.opp=()=>"):js.index("\n", js.index("R.opp=()=>"))]
 js = js.replace(opp_old, "R.opp=()=>oppView();")

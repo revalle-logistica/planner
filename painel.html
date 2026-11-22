@@ -196,6 +196,7 @@ footer{max-width:1480px;margin:0 auto;padding:10px 22px 40px;color:var(--dim);fo
 <main>
   <div class="warn" id="warn"></div>
   <div class="filters">
+    <select id="fGv"><option value="">Todos os GVs</option></select>
     <select id="fSeller"><option value="">Todos os vendedores</option></select>
     <select id="fType"><option value="">Todos os clientes</option><option value="chg">Só quem mudou</option><option value="V">Mudou vendedor</option><option value="D">Mudou dia</option><option value="F">Mudou frequência</option><option value="S">Mudou só a semana</option><option value="J">Mudou janela de entrega</option><option value="N">Sem mudança</option><option value="HQ">Alto volume que deixou de ser semanal</option></select>
     <select id="fDay"><option value="">Qualquer dia</option></select>
@@ -353,6 +354,7 @@ function init(data){
   $('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;S.unit=b.dataset.u;S.drill=null;S.seller='';S.city='';S.page=0;fillSelects();render()};
   if(first)$('fDay').innerHTML+=DAYS.slice(0,6).map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   $('fSeller').onchange=e=>{S.seller=e.target.value;S.page=0;render()};
+  $('fGv').onchange=e=>{S.gv=e.target.value;if(S.seller&&!gvOk(S.seller.split('|')[1]))S.seller='';S.page=0;fillSelects();render()};
   $('fType').onchange=e=>{S.type=e.target.value;S.page=0;render()};
   $('fDay').onchange=e=>{S.day=e.target.value;S.page=0;render()};
   $('fCity').onchange=e=>{S.city=e.target.value;S.page=0;render()};
@@ -376,7 +378,9 @@ function fillSelects(){
   const b=base();const sel=new Map();const cities=new Map();
   for(const c of b){for(const s of[c.sa,c.sb])if(s)sel.set(c.u+'|'+s,1);if(c.city)cities.set(c.city,(cities.get(c.city)||0)+1)}
   const uo=u=>D.units.findIndex(x=>x.id===u);
-  const opts=[...sel.keys()].map(k=>{const[u,s]=k.split('|');return{k,u,s}}).sort((a,b)=>uo(a.u)-uo(b.u)||(+a.s-+b.s)||a.s.localeCompare(b.s));
+  const gvs=[...new Set([...sel.keys()].map(k=>String(k.split('|')[1])[0]).filter(x=>/\d/.test(x)))].sort();
+  $('fGv').innerHTML='<option value="">Todos os GVs</option>'+gvs.map(g=>`<option value="${g}">GV ${g}</option>`).join('');$('fGv').value=S.gv||'';
+  const opts=[...sel.keys()].map(k=>{const[u,s]=k.split('|');return{k,u,s}}).filter(o=>gvOk(o.s)).sort((a,b)=>uo(a.u)-uo(b.u)||(+a.s-+b.s)||a.s.localeCompare(b.s));
   let og='';$('fSeller').innerHTML='<option value="">Todos os vendedores</option>'+opts.map(o=>{let h='';if(S.unit==='ALL'&&o.u!==og){h=(og?'</optgroup>':'')+`<optgroup label="${esc(unitName(o.u))}">`;og=o.u}return h+`<option value="${o.k}">${esc(o.s)} - ${esc(title(sname(o.u,o.s)))}</option>`}).join('')+(og?'</optgroup>':'');
   const sopts=(lab)=>{let g='';return `<option value="">${lab}: todos</option>`+opts.map(o=>{let h='';if(S.unit==='ALL'&&o.u!==g){h=(g?'</optgroup>':'')+`<optgroup label="${esc(unitName(o.u))}">`;g=o.u}return h+`<option value="${o.k}">${lab}: ${esc(o.s)} - ${esc(title(sname(o.u,o.s)))}</option>`}).join('')+(g?'</optgroup>':'')};
   $('lsA').innerHTML=sopts('Vendedor antes');$('lsB').innerHTML=sopts('Vendedor depois');S.lsA=S.lsB='';
@@ -386,21 +390,24 @@ function fillSelects(){
 }
 function unitName(u){return D.units.find(x=>x.id===u)?.name||u}
 function unitAbbr(u){return D.units.find(x=>x.id===u)?.abbr||u}
-function matchSeller(c){if(!S.seller)return true;const[u,s]=S.seller.split('|');return c.u===u&&(c.sa===s||c.sb===s)}
+// GV = 1º dígito do setor (101 → GV 1)
+function gvOk(s){return !S.gv||String(s||'')[0]===S.gv}
+function matchSeller(c){if(S.gv&&!(gvOk(c.sa)&&c.sa||gvOk(c.sb)&&c.sb))return false;if(!S.seller)return true;const[u,s]=S.seller.split('|');return c.u===u&&(c.sa===s||c.sb===s)}
 function matchType(c){const t=S.type;if(!t)return true;if(t==='J')return c.jchg&&(!S.jflow||dayLabel(c.ja)+'|'+dayLabel(c.jb)===S.jflow);if(t==='HQ')return isHQ(c);if(t==='chg')return c.both&&c.t.length>0;if(t==='N')return c.main==='N';return c.t.includes(t)}
 function matchDay(c){if(S.day==='')return true;const d=+S.day;return c.da.has(d)||c.db.has(d)}
 function cur(){return base().filter(c=>drillMatch(c)&&matchSeller(c)&&matchType(c)&&matchDay(c)&&(!S.city||c.city===S.city))}
 function render(){
   const cs=cur();
   const act=[];
+  if(S.gv)act.push(['gv','GV','GV '+S.gv]);
   if(S.seller){const[u,s]=S.seller.split('|');act.push(['seller','Vendedor',title(sname(u,s))])}
   if(S.type)act.push(['type','Tipo',$('fType').selectedOptions[0].text+(S.type==='J'&&S.jflow?' ('+S.jflow.replace('|',' → ')+')':'')]);if(S.type!=='J')S.jflow='';
   if(S.day!=='')act.push(['day','Dia',DAYS[S.day]]);
   if(S.city)act.push(['city','Cidade',S.city]);
   if(S.drill)act.unshift(['drill','Detalhe',drillLabel()]);
   $('active').innerHTML=act.map(([k,l,v])=>`<span class="pill">${l}: <b>${esc(v)}</b><button data-k="${k}">×</button></span>`).join('')+(act.length>1?`<button class="btn" id="clr">Limpar</button>`:'');
-  $('active').onclick=e=>{const k=e.target.dataset.k;if(e.target.id==='clr'){S.seller=S.type=S.city='';S.day='';S.drill=null}else if(k==='drill'){S.drill=null}else if(k){S[k]=''};$('fSeller').value=S.seller;$('fType').value=S.type;$('fDay').value=S.day;$('fCity').value=S.city;render()};
-  $('fDay').value=S.day;$('fType').value=S.type;$('fSeller').value=S.seller;
+  $('active').onclick=e=>{const k=e.target.dataset.k;if(e.target.id==='clr'){S.seller=S.type=S.city=S.gv='';S.day='';S.drill=null}else if(k==='drill'){S.drill=null}else if(k){S[k]=''};$('fSeller').value=S.seller;$('fType').value=S.type;$('fDay').value=S.day;$('fCity').value=S.city;render()};
+  $('fDay').value=S.day;$('fType').value=S.type;$('fSeller').value=S.seller;$('fGv').value=S.gv||'';
   const partial=D.units.filter(u=>(S.unit==='ALL'||u.id===S.unit)&&u.pos<u.pre);
   $('warn').style.display=partial.length?'block':'none';
   $('warn').innerHTML=partial.map(u=>`⚠️ <b>${u.name}:</b> o arquivo pós-planner recebido tem só <b>${fmt(u.pos)}</b> dos <b>${fmt(u.pre)}</b> clientes do pré (parece exportação incompleta). As comparações dessa unidade consideram apenas os ${fmt(u.pos)} clientes presentes nos dois arquivos; os demais aparecem como "Sem dado no pós".`).join('<br>');
@@ -412,7 +419,7 @@ function renderKPIs(cs){
   const n=t=>b.filter(c=>c.t.includes(t)).length;
   let va=0,vb=0;
   const[su,ss]=S.seller?S.seller.split('|'):[];
-  for(const c of b){if(!S.seller||c.sa===ss)va+=c.va;if(!S.seller||c.sb===ss)vb+=c.vb}
+  for(const c of b){if((!S.seller||c.sa===ss)&&gvOk(c.sa))va+=c.va;if((!S.seller||c.sb===ss)&&gvOk(c.sb))vb+=c.vb}
   const pct=x=>b.length?fmt(100*x/b.length,1)+'%':'—';
   const dv=vb-va;
   const k=[
@@ -455,8 +462,8 @@ function renderDays(cs){
   const wk=S.wk==='avg'?null:+S.wk-1;
   for(const c of cs){if(!c.both)continue;const wa=VOL?perVisit(c,c.ma):1,wb=VOL?perVisit(c,c.mb):1;
     for(let i=0;i<28;i++){const w=Math.floor(i/7),d=i%7;if(wk!==null&&w!==wk)continue;
-      if(c.ma[i]==='1'&&(!S.seller||c.sa===ss))A[d]+=wa;
-      if(c.mb[i]==='1'&&(!S.seller||c.sb===ss))B[d]+=wb;}}
+      if(c.ma[i]==='1'&&(!S.seller||c.sa===ss)&&gvOk(c.sa))A[d]+=wa;
+      if(c.mb[i]==='1'&&(!S.seller||c.sb===ss)&&gvOk(c.sb))B[d]+=wb;}}
   const div=wk===null?4:1;
   const a=A.map(x=>x/div),b=B.map(x=>x/div);
   const nd=(A[6]||B[6])?7:6;
@@ -515,7 +522,7 @@ function renderSellers(){
   $('pvTog').onclick=e=>{const b=e.target.closest('button');if(b){S.pv=b.dataset.k;renderSellers()}};
   $('pmTog').onclick=e=>{const b=e.target.closest('button');if(b){S.pm=b.dataset.k;renderSellers()}};
   $('pexp').onclick=exportPlan;
-  let rows=sellerStats();
+  let rows=sellerStats().filter(r=>gvOk(r.s));
   const dayVal=(r,d)=>{const a=S.pm==='cli'?r.ka[d]:S.pm==='vol'?r.la[d]/4:r.va[d]/4,b=S.pm==='cli'?r.kb[d]:S.pm==='vol'?r.lb[d]/4:r.vb[d]/4;return S.pv==='pos'?b:S.pv==='pre'?a:b-a};
   const pct=r=>r.cb?(r.cb-r.keep)/r.cb:0;
   const val={Vb:r=>r.Vb,Va:r=>r.Va,s:r=>+r.s||r.s,n:r=>title(sname(r.u,r.s)),cb:r=>r.cb,ca:r=>r.ca,in:r=>r.in,out:r=>r.out,keep:r=>r.keep,dchg:r=>r.dchg,wchg:r=>r.wchg,p:pct};

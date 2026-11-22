@@ -519,6 +519,8 @@ function instalarResumo(){const altOrig=R.alt;
     const C=it.map(r=>{const a=Array(11).fill('');a[0]=String(r.code||'');a[1]=String(r.s||r.sNovo||'');a[2]=String(r.n||'');a[5]=String(r.tipo||'Outro');a[6]=String(r.visita||r.janela||'');a[7]=String([r.sNovo&&('setor '+r.sNovo),r.novoDia,r.novaFreq].filter(Boolean).join(' · '));a[8]=String(r.just||'');a[9]=String(r.parecer||'Pendente');a[10]=String(r.obs||'');return a});
     return nota('💻 Solicitações feitas no sistema pela Crítica do planner ('+it.length+'). O detalhe de cada uma, com o parecer, está na aba Solicitações dos GVs.'+nt)+critView(C.concat(tcd))}}
 
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-gvf]');if(b){UI.gv=b.dataset.gvf;render()}});
+
 
 /* =========================================================
    DADOS PADRÃO (gerados a partir das bases enviadas)
@@ -928,9 +930,9 @@ R.todos=()=>{const s=SC();if(!s)return noData();const T=dayTable(s.rows);const v
 function altOf(){const ds=dates();const i=ds.indexOf(UI.p);const p=pd(UI.p),n=ds[i+1]?pd(ds[i+1]):null;const k=x=>`${x.y}-${String(x.m).padStart(2,'0')}-${String(x.d).padStart(2,'0')}`;
   const F=(ST.form||[]).filter(r=>r[1]===UI.u&&r[0]>=k(p)&&(!n||r[0]<k(n)));const C=(U().crit&&U().crit[UI.p])||[];return {F,C,n:F.length+C.length}}
 function noData(){return title(cen(),'Sem base')+`<p class="note">Não há arquivo ${UI.k==='pre'?'Pré':'Pós'}-Planner ${UI.p} para ${esc(UI.u)}. Importe em <b>Importar bases</b>.</p>`}
-R.setor=()=>{const s=SC();if(!s)return noData();const sets=[...new Set(s.rows.map(r=>r.v))].sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));if(!sets.includes(UI.setor))UI.setor=sets[0];
+R.setor=()=>{const s=SC();if(!s)return noData();const todos=[...new Set(s.rows.map(r=>r.v))].sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));const gvs=[...new Set(todos.map(v=>String(v)[0]).filter(x=>/\d/.test(x)))];if(UI.gv&&!gvs.includes(UI.gv))UI.gv='';const sets=todos.filter(v=>!UI.gv||String(v)[0]===UI.gv);if(!sets.includes(UI.setor))UI.setor=sets[0];
   const g=s.rows.filter(r=>r.v===UI.setor);const T=dayTable(g);
-  return title(cen(),'Por setor')+`<div class="tabs" role="group" aria-label="Setor">${sets.map(v=>`<button data-setor="${esc(v)}" aria-pressed="${v===UI.setor}">${esc(v)}</button>`).join('')}</div>
+  return title(cen(),'Por setor')+`<div class="tabs" role="group" aria-label="GV" style="margin-bottom:6px"><button data-gvf="" aria-pressed="${!UI.gv}">Todos os GVs</button>${gvs.map(g=>`<button data-gvf="${g}" aria-pressed="${UI.gv===g}">GV ${g}</button>`).join('')}</div><div class="tabs" role="group" aria-label="Setor">${sets.map(v=>`<button data-setor="${esc(v)}" aria-pressed="${v===UI.setor}">${esc(v)}</button>`).join('')}</div>
   <div class="sub">Setor ${esc(UI.setor)} · ${esc(s.vn[UI.setor]||'')}</div>
   <div class="row"><div>${mapBox(`Planner: Revalle ${esc(UI.u)} · ${UI.p.replace(/\./g,'/')}`,drawMap(g))}${legendDays()}</div><div>${weekTable(T)}<p class="note" style="margin-top:8px">${g.length} PDVs · ${g.filter(r=>r.per==='S').length} semanais, ${g.filter(r=>r.per==='Q').length} quinzenais, ${g.filter(r=>r.per==='M').length} mensais.</p></div></div><span class="chip">Checklist 3.4 · V1</span>`};
 R.dia=()=>{const s=SC();if(!s)return noData();const d=UI.dia;const g=s.rows.filter(r=>r.dayW[d]);

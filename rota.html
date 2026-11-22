@@ -19,7 +19,7 @@ header{position:sticky;top:0;z-index:2000;background:rgba(11,15,23,.95);backdrop
 .top{display:flex;align-items:center;gap:10px}
 .top b{font-size:18px;font-weight:800;margin-right:auto}.top b span{color:var(--pos)}
 .top a{color:var(--mut);font-size:13px;text-decoration:none}
-.sel{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:10px}
+.sel{display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px;margin-top:10px}
 select{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:11px 12px;border-radius:11px;font:600 14px Inter;outline:none}
 select:focus{border-color:var(--pos)}
 .tabs{display:flex;gap:4px;margin-top:10px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
@@ -103,7 +103,7 @@ h2{margin:0 0 4px;font-size:16px;font-weight:800}
 .pin{background:var(--pos);color:#111;border:2px solid #fff;border-radius:50%;font:800 11px Inter;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .pin.new{background:#ff5d5d;color:#fff}.pin.mv{background:#3b9eff;color:#fff}
 .note{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.45}
-@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}.cal{grid-template-columns:34px repeat(6,1fr);gap:4px}.cd .n{font-size:16px}.cd{min-height:56px}.sel{grid-template-columns:1fr}}
+@media(max-width:560px){.sel{grid-template-columns:1fr 1fr!important}.sel #seller{grid-column:1/-1}.stats{grid-template-columns:repeat(2,1fr)}.cal{grid-template-columns:34px repeat(6,1fr);gap:4px}.cd .n{font-size:16px}.cd{min-height:56px}.sel{grid-template-columns:1fr}}
 </style>
 <script src="js/api.js"></script>
 <link rel="stylesheet" href="css/theme.css">
@@ -112,7 +112,7 @@ h2{margin:0 0 4px;font-size:16px;font-weight:800}
 <body>
 <header><div class="hw">
   <div class="top"><b>Minha <span>rota</span></b><div class="qbox"><input id="q" type="search" placeholder="🔎 Consultar PDV (código ou nome)" autocomplete="off"><div id="qres"></div></div></div>
-  <div class="sel"><select id="unit"></select><select id="seller"></select></div>
+  <div class="sel"><select id="unit"></select><select id="gv"><option value="">Todos os GVs</option></select><select id="seller"></select></div>
   <div class="tabs"><button class="tab on" data-t="sem">📅 Semana</button><button class="tab" data-t="dia">🧭 Roteiro do dia</button><button class="tab" data-t="jan">🚚 Janelas</button><button class="tab" data-t="chg">💬 Avisar clientes</button></div>
 </div></header>
 <div id="pdv" class="pdvov" hidden></div>
@@ -145,6 +145,7 @@ let V,C=[],S={u:'',s:'',tab:'sem',date:null,tone:'inf'};let map,lay;
   $('unit').innerHTML=V.units.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
   $('unit').onchange=e=>{S.u=e.target.value;S.s='';fillSellers();go()};
   $('seller').onchange=e=>{S.s=e.target.value;go()};
+  $('gv').onchange=e=>{S.gv=e.target.value;fillSellers();if(!S.s)go()};
   document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;go()});
   $('unit').value=S.u;fillSellers();
   const t=today();S.date=t<vigDate()?vigDate():t;
@@ -174,7 +175,11 @@ function showPdv(c){
 } // vendedor identificado só pelo código do setor
 function fillSellers(){
   const set=new Set();for(const c of C)if(c.u===S.u){if(c.sb)set.add(c.sb);if(c.sa)set.add(c.sa)}
-  const list=[...set].sort((a,b)=>+a-+b||a.localeCompare(b));
+  const todos=[...set].sort((a,b)=>+a-+b||a.localeCompare(b));
+  // GV = 1º dígito do setor (101 → GV 1)
+  const gvs=[...new Set(todos.map(s=>String(s)[0]).filter(x=>/\d/.test(x)))];if(S.gv&&!gvs.includes(S.gv))S.gv='';
+  $('gv').innerHTML='<option value="">Todos os GVs</option>'+gvs.map(g=>`<option value="${g}">GV ${g}</option>`).join('');$('gv').value=S.gv||'';
+  const list=todos.filter(s=>!S.gv||String(s)[0]===S.gv);
   if(!list.includes(S.s))S.s='';
   $('seller').innerHTML='<option value="">Escolha o seu setor…</option>'+list.map(s=>`<option value="${s}">Setor ${s}</option>`).join('');
   $('seller').value=S.s;
