@@ -26,20 +26,19 @@ NH = 218 / 360  # matiz dos neutros do tema
 def fundo(c):
     r, g, b, a = parse(c); h, l, s = hls(r, g, b)
     if a is not None and a < .2 and l < .5: return c            # sombras e véus escuros: ficam
-    if s < .25 or l > .93:
-        if l >= .75: l2 = .19 + (1 - l) * .45
-        elif l < .3: l2 = .14 + l * .25
-        else: l2 = .26 + (.75 - l) * .15
-        return out(*rgb(NH, l2, .36), a)
-    if l > .78: return out(*rgb(h, .25, min(s, .55)), a)     # fundos pastel → tom escuro da mesma cor
+    k = 1 if a is None else a
+    if s < .25 or l > .93:                                     # neutros: véu sobre o painel (limpo, sem blocos escuros)
+        if l >= .75: return 'rgba(255,255,255,%.3f)' % ((.03 + (1 - l) * .3) * k)
+        if l < .3: return 'rgba(0,0,0,%.3f)' % (.16 * k)
+        return 'rgba(255,255,255,%.3f)' % (.09 * k)
+    if l > .78:                                                # fundos pastel → véu da mesma cor
+        rr, gg, bb = rgb(h, .55, min(1, s + .2)); return 'rgba(%d,%d,%d,%.3f)' % (rr, gg, bb, .16 * k)
     return c
 
 def borda(c):
     r, g, b, a = parse(c); h, l, s = hls(r, g, b)
-    if s < .25 or l > .9:
-        l2 = .36 if l >= .6 else .5
-        return out(*rgb(NH, l2, .3), a)
-    if l > .75: return out(*rgb(h, .42, min(s, .6)), a)
+    if s < .25 or l > .9: return 'rgba(255,255,255,%s)' % ('.10' if l >= .6 else '.22')
+    if l > .75: rr, gg, bb = rgb(h, .6, min(1, s)); return 'rgba(%d,%d,%d,.35)' % (rr, gg, bb)
     return c
 
 def texto(c):

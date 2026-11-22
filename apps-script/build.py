@@ -61,9 +61,13 @@ css = prefix(css)
 css = tema.css(css)
 css += '''
 /* ---- tema do Planner (cores do painel publicado) ---- */
-.rt{--bg:#26385a;--slide:#304567;--ink:#f5f8fd;--muted:#b4c0d4;--line:#46608a;--hl:#3a5076;--th:#1d2c47;--th-ink:#f5f8fd;--zebra:#34496c;--mapbg:#26385a;--navy:#1d2c47;
-  --side:#1d2c47;--side2:#26385a;--hd1:#1d2c47;--hd2:#26385a;--bgc:#26385a;--card:#304567;--blue:#7fb2ff;--good:#3ddc84;--bad:#ff6b6b;--warn:#f5b301;--orange:#ff8a3d;
+.rt{--bg:#26385a;--slide:#304567;--ink:#f5f8fd;--muted:#b4c0d4;--line:rgba(255,255,255,.10);--hl:rgba(255,255,255,.08);--th:transparent;--th-ink:#9fb0cb;--zebra:rgba(255,255,255,.025);--mapbg:#26385a;--navy:#1d2c47;
+  --side:#1d2c47;--side2:#26385a;--hd1:#1d2c47;--hd2:#26385a;--bgc:#26385a;--card:transparent;--blue:#7fb2ff;--good:#3ddc84;--bad:#ff6b6b;--warn:#f5b301;--orange:#ff8a3d;
   --f-body:Inter,system-ui,sans-serif;--f-title:Inter,system-ui,sans-serif;--f-tab:"Roboto Condensed","Arial Narrow",Inter,sans-serif}
+.rt th{font-size:11px!important;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid rgba(255,255,255,.14)!important}
+.rt td{border-bottom-color:rgba(255,255,255,.06)!important}
+.rt table td,.rt table tr{border-top-color:rgba(255,255,255,.06)!important;border-bottom-color:rgba(255,255,255,.06)!important}
+.rt tr.tot td{background:rgba(245,179,1,.10)!important;color:#fde68a!important}.rt tr.sub2 td{background:rgba(255,255,255,.05)!important}
 .rt .slide{background:var(--panel,#304567)!important;border:1px solid var(--line)!important;border-radius:18px;box-shadow:0 10px 30px -18px rgba(0,0,0,.6)}
 .rt .ctlbar{background:var(--panel,#304567)!important;border:1px solid var(--line)!important}
 .rt input,.rt select,.rt textarea{background:#26385a;color:#f5f8fd;border-color:#46608a}
