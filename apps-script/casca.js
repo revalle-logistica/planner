@@ -32,7 +32,7 @@ async function carregarEstado(){
   let meta;try{meta=JSON.parse(await PlannerData.text('rotina/meta.json'))}catch(e){return null}
   const c=await IDB.get('rz');if(c&&c.v===meta.v&&c.st)return c.st;
   carregando('Baixando os dados da rotina do Drive… (só na primeira vez ou quando houver atualização)');
-  const st=JSON.parse(await gunz(await PlannerData.text('rotina/estado.gz')));IDB.set('rz',{v:meta.v,st});return st}
+  const z=await PlannerData.text('rotina/estado.gz');ESTZ=z;const st=JSON.parse(await gunz(z));IDB.set('rz',{v:meta.v,st});return st}
 async function carregarLS(){try{return JSON.parse(await PlannerData.text('rotina/ls.json'))}catch(e){return {}}}
 function statusRotina(){const out={};for(const u in ST.units){const Uu=ST.units[u];const mk=Object.values(Uu.maps||{});
   const ped=Object.values(Uu.ped||{});
@@ -42,7 +42,9 @@ function statusRotina(){const out={};for(const u in ST.units){const Uu=ST.units[
   return {units:out,acoes:ST.acoes&&ST.acoes.em||null,impAt:ST.impAt||{},form:(ST.form||[]).length}}
 async function salvarEstado(){
   try{ST.updated=new Date().toISOString();const v=ST.updated;const z=await gz(JSON.stringify(ST));
-    await PlannerData.put('rotina/estado.gz',z);await PlannerData.put('rotina/meta.json',JSON.stringify({v,status:statusRotina()}));
+    if(!ESTZ){try{ESTZ=await PlannerData.text('rotina/estado.gz')}catch(e){}}
+    if(ESTZ)await PlannerData.put('rotina/estado-anterior.gz',ESTZ);
+    await PlannerData.put('rotina/estado.gz',z);ESTZ=z;await PlannerData.put('rotina/meta.json',JSON.stringify({v,status:statusRotina()}));
     IDB.set('rz',{v,st:ST});return `<div class="ok">✓ Salvo no Drive (${(z.length/1048576).toFixed(1)} MB) e já disponível para o time.</div>`}
   catch(e){return `<div class="err">✗ Não salvou no Drive: ${esc(e.message)}. Os números valem só até fechar a página.</div>`}}
 async function iniciar(){
@@ -108,3 +110,11 @@ function bindOpp(){const add=document.getElementById('opAdd');if(!add)return;
   document.querySelectorAll('[data-opdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Excluir esta oportunidade?'))return;try{await PlannerAuth.call('notas.set',{id:b.dataset.opdel,excluir:true});NOTAS=NOTAS.filter(n=>n.id!==b.dataset.opdel);render()}catch(e){alertMsg('Não excluiu: '+e.message)}});
   const mg=document.getElementById('opMig');if(mg)mg.onclick=async()=>{mg.disabled=true;mg.textContent='Trazendo…';const u=UI.u;const velhas=(getLS('planner-opp-'+u,null)||OPP_DEF[u]||[]).filter(t=>String(t).trim());
     try{const j=await PlannerAuth.call('notas.add',{itens:velhas.map(t=>({tipo:'opp',unidade:u,planner:'',pdv:'',setor:'',texto:String(t).trim()}))});NOTAS=NOTAS.concat(j.notas);render()}catch(e){alertMsg('Não trouxe: '+e.message);mg.disabled=false}}}
+
+// ---- segurança da importação
+function guardaVis(n){if(!/01\.02\.78\.03/.test(n))throw new Error('ignorado: tem o formato de visitas, mas o nome não é de um 01.02.78.03 semanal (parece pré/pós-planner). Planner novo entra em "Importar planner".')}
+function guardaJan(n){if(!/janela/i.test(n))throw new Error('ignorado: tem o formato de janelas do BEES, mas o nome não é "Janela Entrega_dd.mm.aaaa_…" (parece arquivo do planner ou do gerador). Renomeie se for mesmo a janela da semana.')}
+let ESTZ=null;
+async function desfazer(){const log=document.getElementById('impLog');if(!confirm('Voltar os dados da rotina para como estavam antes da última importação?'))return;
+  log.innerHTML='Voltando…';try{const z=await PlannerData.text('rotina/estado-anterior.gz');ST=JSON.parse(await gunz(z));const r=await salvarEstado();render();document.getElementById('impLog').innerHTML=r.replace('Salvo no Drive','Dados voltaram para antes da última importação · salvo no Drive')}
+  catch(e){log.innerHTML=`<div class="err">✗ Não há importação anterior para desfazer (${esc(e.message)})</div>`}}

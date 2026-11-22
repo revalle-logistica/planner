@@ -155,7 +155,7 @@ rep("UI.slide=SLIDES.findIndex(x=>x.id==='imp');render();const log=$('#impLog');
 # textos da tela de importação
 js = js.replace("Os arquivos são lidos no seu navegador e não saem do seu computador.", "Os arquivos são lidos no seu navegador e só os números calculados vão para o Drive da Logística.")
 js = js.replace("Funciona no Chrome ou Edge, com o HTML aberto no computador.", "Funciona no Chrome ou Edge do computador.")
-rep("<button class=\"btn\" id=\"reset\" style=\"margin-top:6px\">Voltar aos dados originais</button>", "")
+rep("<button class=\"btn\" id=\"reset\" style=\"margin-top:6px\">Voltar aos dados originais</button>", "<button class=\"btn\" id=\"undo\" onclick=\"desfazer()\" style=\"margin-top:6px\">↩ Desfazer a última importação</button>")
 JSC=[('fill="#fff" stroke="${col','fill="#304567" stroke="${col'),('stroke="#fff"','stroke="#26385a"'),('background:#fff;border:2px solid #555','background:#304567;border:2px solid #c0cbdd'),
   ("dark?'#fff':'#333'","dark?'#fff':'#e8eef8'"),("dark?'#bbb':'#555'","dark?'#bbb':'#b4c0d4'"),('fill="#555">','fill="#b4c0d4">'),('stroke="#BBB"','stroke="#5a7499"'),('color:#1E1E1E','color:#f5f8fd'),
   ('stroke="#111"','stroke="#c0cbdd"'),('fill="#111"','fill="#c0cbdd"'),('fill="#6B7280"','fill="#9aa8c0"'),("'Sem cadastro de janela':'#6B7280'","'Sem cadastro de janela':'#9aa8c0'"),("'#7F1D1D','#6B7280']","'#7F1D1D','#9aa8c0']"),
@@ -167,6 +167,13 @@ for a,b in JSC:
     assert a in js,a
     js=js.replace(a,b)
 js=re.sub(r'\b(color|background(?:-color)?|border(?:-[a-z]+)*|outline|fill|stroke)\s*:\s*(#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\([^)]*\))',lambda m:m.group(1)+':'+tema.valor(m.group(1),m.group(2)),js)
+# segurança da importação: só aceita visitas/janelas semanais com o nome do relatório da rotina
+rep("if(/\\|Seg1\\|/i.test(A)&&/Periodicidade/i.test(A))parseVis(wb,f.name,st,log);",
+    "if(/\\|Seg1\\|/i.test(A)&&/Periodicidade/i.test(A)){guardaVis(f.name);parseVis(wb,f.name,st,log)}")
+rep("if(/ERP_POC_ID/i.test(h))parseJan(t,f.name,st,log);",
+    "if(/ERP_POC_ID/i.test(h)){guardaJan(f.name);parseJan(t,f.name,st,log)}")
+rep("else if(/Seg1/i.test(h)&&/Periodicidade/i.test(h))parseVis(",
+    "else if(/Seg1/i.test(h)&&/Periodicidade/i.test(h)&&(guardaVis(f.name)||1))parseVis(")
 # Oportunidades: anotações compartilhadas (unidade, PDV/setor opcional, situação)
 opp_old = js[js.index("R.opp=()=>"):js.index("\n", js.index("R.opp=()=>"))]
 js = js.replace(opp_old, "R.opp=()=>oppView();")
