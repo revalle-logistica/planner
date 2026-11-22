@@ -24,6 +24,11 @@ select{width:100%;background:var(--panel);border:1px solid var(--line);color:var
 select:focus{border-color:var(--pos)}
 .tabs{display:flex;gap:4px;margin-top:10px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
 .tab{flex:1;border:0;background:none;color:var(--mut);padding:10px 6px;border-radius:9px;font:700 13px Inter;cursor:pointer}
+.jsum{display:flex;align-items:center;gap:14px;cursor:pointer;border-color:rgba(96,165,250,.45)!important;background:linear-gradient(90deg,rgba(59,158,255,.12),transparent)!important}
+.jhead{border-color:rgba(96,165,250,.45)!important}
+.jst{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.jst div{background:var(--bg);border-radius:12px;padding:10px;text-align:center}.jst b{display:block;font-size:22px;font-weight:800}.jst small{color:var(--mut);font-size:11px}
+.tcdn{margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.3);font-size:12.5px;color:var(--mut);line-height:1.5}.tcdn b{color:var(--txt)}
+.jl{margin-top:8px}.ji{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}.ji .nm{font-weight:700;font-size:13.5px}.ji .mt{color:var(--mut);font-size:11.5px}.jd{white-space:nowrap;font-size:13px;color:var(--mut)}.jd b{color:#7fbaff}
 .tab.on{background:var(--pos);color:#111}
 main{max-width:980px;margin:0 auto;padding:16px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
@@ -93,7 +98,7 @@ h2{margin:0 0 4px;font-size:16px;font-weight:800}
 <header><div class="hw">
   <div class="top"><b>Minha <span>rota</span></b></div>
   <div class="sel"><select id="unit"></select><select id="seller"></select></div>
-  <div class="tabs"><button class="tab on" data-t="sem">📅 Semana</button><button class="tab" data-t="dia">🧭 Roteiro do dia</button><button class="tab" data-t="chg">💬 Avisar clientes</button></div>
+  <div class="tabs"><button class="tab on" data-t="sem">📅 Semana</button><button class="tab" data-t="dia">🧭 Roteiro do dia</button><button class="tab" data-t="jan">🚚 Janelas</button><button class="tab" data-t="chg">💬 Avisar clientes</button></div>
 </div></header>
 <main id="main"><div class="empty">Carregando…</div></main>
 <script>
@@ -161,7 +166,7 @@ function go(){
   history.replaceState(null,'',`#v=${V.id}&u=${S.u}${S.s?'&s='+S.s:''}`);
   if(map){map.remove();map=null}
   if(!S.s){$('main').innerHTML=`<div class="card"><h2>Bem-vindo 👋</h2><div class="sub">Escolha a unidade e o seu setor lá em cima para ver a sua semana, o roteiro de cada dia e os clientes que você precisa avisar sobre o planner novo (vigência ${fmtD(vigDate())}).</div></div>`;return}
-  ({sem:renderWeek,dia:renderDay,chg:renderChanges})[S.tab]();
+  ({sem:renderWeek,dia:renderDay,jan:renderJanelas,chg:renderChanges})[S.tab]();
   window.scrollTo({top:0});
 }
 function hello(){
@@ -187,7 +192,27 @@ function renderWeek(){
   <div class="note">S1–S4 = semana do ciclo do planner. Considerei que a semana de ${fmtD(vigDate())} é a S${V.s1||1}.</div></div>
   <div class="card"><h2>⚖️ Carteira por dia da semana</h2><div class="sub">Clientes com visita em cada dia (em ao menos uma semana do ciclo): antes × depois.</div>
   <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:150px;margin-top:14px">${per.map(([k,a],d)=>`<div style="display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end"><div style="display:flex;gap:3px;align-items:flex-end;height:110px;width:100%;justify-content:center"><div title="Antes ${a}" style="width:38%;height:${a/mx*100}%;background:var(--pre);border-radius:4px 4px 1px 1px"></div><div title="Depois ${k}" style="width:38%;height:${k/mx*100}%;background:var(--pos);border-radius:4px 4px 1px 1px"></div></div><div style="font-size:12px;font-weight:700;margin-top:6px">${DAYS[d]}</div><div style="font-size:11px;color:var(--mut)">${a}→<b style="color:var(--txt)">${k}</b></div></div>`).join('')}</div></div>`;
+  const mine=C.filter(c=>c.u===S.u&&c.sb===S.s&&(c.ja||c.jb)),mch=mine.filter(jMudou);
+  if(mine.length)$('main').insertAdjacentHTML('beforeend',`<div class="card jsum" id="jsum"><div style="font-size:26px">🚚</div><div style="flex:1"><h2 style="margin:0">Janelas de entrega</h2><div class="sub">${mch.length?`<b style="color:#7fbaff">${mch.length}</b> dos seus ${mine.length} clientes mudaram o dia de entrega.`:`Nenhum dos seus ${mine.length} clientes mudou o dia de entrega.`}</div></div><span style="color:var(--mut);font-size:20px">›</span></div>`);
+  if($('jsum'))$('jsum').onclick=()=>{S.tab='jan';go()};
   $('cal').onclick=e=>{const x=e.target.closest('.cd');if(!x)return;S.date=new Date(+x.dataset.t);S.tab='dia';go()};
+}
+function jMudou(c){return !!(c.ja&&c.jb)&&dayTxt(c.ja)!==dayTxt(c.jb)}
+function renderJanelas(){
+  const mine=C.filter(c=>c.u===S.u&&c.sb===S.s);const js=mine.filter(c=>c.ja||c.jb);
+  if(!js.length){$('main').innerHTML=hello()+`<div class="card"><h2>🚚 Janelas de entrega</h2><div class="sub">As janelas de entrega desta unidade ainda não foram publicadas no planner. Assim que forem, elas aparecem aqui.</div></div>`;return}
+  const ch=js.filter(jMudou);
+  const per=DAYS.slice(0,6).map((_,d)=>{let a=0,b=0;for(const c of js){if(daysOf(c.ja).includes(d))a++;if(daysOf(c.jb).includes(d))b++}return[a,b]});
+  const mx=Math.max(1,...per.flat());
+  const grp={};ch.forEach(c=>{const k=dayTxt(c.jb);(grp[k]=grp[k]||[]).push(c)});
+  const keys=Object.keys(grp).sort((a,b)=>grp[b].length-grp[a].length);
+  $('main').innerHTML=hello()+`<div class="card jhead"><h2>🚚 Janelas de entrega da sua carteira</h2><div class="sub">Dia em que o caminhão entrega em cada cliente, antes e depois do planner.</div>
+   <div class="jst"><div><b>${js.length}</b><small>clientes com janela</small></div><div><b style="color:#7fbaff">${ch.length}</b><small>mudaram a entrega</small></div><div><b>${js.length-ch.length}</b><small>mantiveram</small></div></div>
+   <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:150px;margin-top:16px">${per.map(([a,b],d)=>`<div style="display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end"><div style="display:flex;gap:3px;align-items:flex-end;height:110px;width:100%;justify-content:center"><div title="Antes ${a}" style="width:38%;height:${a/mx*100}%;background:#5b6b86;border-radius:4px 4px 1px 1px"></div><div title="Depois ${b}" style="width:38%;height:${b/mx*100}%;background:#3b9eff;border-radius:4px 4px 1px 1px"></div></div><div style="font-size:12px;font-weight:700;margin-top:6px">${DAYS[d]}</div><div style="font-size:11px;color:var(--mut)">${a}→<b style="color:#7fbaff">${b}</b></div></div>`).join('')}</div>
+   <div style="display:flex;gap:14px;font-size:11.5px;color:var(--mut);margin-top:8px;justify-content:center"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#5b6b86"></i> Antes</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#3b9eff"></i> Depois</span></div>
+   <div class="tcdn">Cliente pediu outro dia de entrega? Solicite na <b>TCD – Torre de Controle da Distribuição</b>. Mudança de <b>visita</b> é na Crítica do planner, com o seu GV.</div></div>
+  ${ch.length?keys.map(k=>`<div class="card"><h2>Agora entrega <span style="color:#7fbaff">${k}</span> <span style="color:var(--mut)">(${grp[k].length})</span></h2><div class="jl">${grp[k].sort((a,b)=>a.n.localeCompare(b.n)).map(c=>`<div class="ji"><div><div class="nm">${esc(c.n)}</div><div class="mt">${c.code} · ${esc(c.city||'')} · visita ${dayTxt(c.mb)}</div></div><div class="jd"><s>${dayTxt(c.ja)}</s> → <b>${dayTxt(c.jb)}</b></div></div>`).join('')}</div></div>`).join(''):`<div class="card"><div class="sub">Nenhum cliente da sua carteira mudou o dia de entrega. 👍</div></div>`}
+  <div class="card"><h2>Todos os clientes com janela <span style="color:var(--mut)">(${js.length})</span></h2><div class="jl">${js.slice().sort((a,b)=>a.n.localeCompare(b.n)).map(c=>`<div class="ji"><div><div class="nm">${esc(c.n)}</div><div class="mt">${c.code} · visita ${dayTxt(c.mb)}</div></div><div class="jd">${jMudou(c)?`<s>${dayTxt(c.ja)}</s> → <b>${dayTxt(c.jb)}</b>`:`<span style="color:var(--txt)">${dayTxt(c.jb||c.ja)}</span>`}</div></div>`).join('')}</div></div>`;
 }
 function renderDay(){
   let d=S.date;if(dayIdx(d)===6)d=S.date=addDays(d,1);
