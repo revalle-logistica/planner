@@ -182,6 +182,15 @@ js=js[:a0]+"   {f:'Virada do planner',sub:'Os planners vêm do Importar planner.
 rep("const L=[['Pré-Planner '+p.slice(0,5).replace('.','/'),!!P.pre,'cenário anterior'],['Pós-Planner '+p.slice(0,5).replace('.','/'),!!P.pos,'cenário pós e PDVs saneados'],['Crítica do planner',!!(Uu.crit&&Uu.crit[p]),'pedidos de Vendas antes da virada'],",
     "const L=[['Planner '+p.slice(0,5).replace('.','/')+' (Importar planner)',!!(P.pre&&P.pos),'cenário anterior e pós'],")
 rep(",['Formulário de alterações',fr.length>0,'pedidos após a virada (depois da virada)']];","];")
+# conferência da virada: só o período pré que os KPIs usam (3 meses), não 12 meses
+rep("const ant=addD(pdk,-1),ini=addD(pdk,-365);","const ant=addD(pdk,-1);const _pe=pk.d>=20?new Date(pk.y,pk.m-1,1):new Date(pk.y,pk.m-2,1);const _pi=new Date(_pe.getFullYear(),_pe.getMonth()-2,1);const _ate=addD(ant,-7);const ini=`${_pi.getFullYear()}-${String(_pi.getMonth()+1).padStart(2,'0')}-01`;const _per=(()=>{const M=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];return M[_pi.getMonth()]+' a '+M[_pe.getMonth()]+'/'+String(_pe.getFullYear()).slice(2)})();")
+rep("['03.05.30 · últimos 12 meses ('+br(ini)+' a '+br(ant)+')'","['03.05.30 · período pré ('+_per+')'")
+rep("['03.11.42 · últimos 12 meses'","['03.11.42 · período pré ('+_per+')'")
+rep("['03.11.20 · últimos 12 meses'","['03.11.20 · período pré ('+_per+')'")
+rep("return ['Relatório de pedidos · últimos 12 meses'","return ['Relatório de pedidos · período pré ('+_per+')'")
+rep("sub:'Os planners vêm do Importar planner. Aqui só a conferência do histórico para os KPIs pré × pós'","sub:'Nada para importar aqui: confere se os relatórios semanais já cobrem o período pré que os KPIs pré × pós usam (3 meses antes da virada)'")
+for a in ['lastDay>=ant','lastKm>=ant','lastPv>=ant','l>=ant']:
+    assert a in js,a; js=js.replace(a,a.replace('ant','_ate'),1)
 # Oportunidades: anotações compartilhadas (unidade, PDV/setor opcional, situação)
 opp_old = js[js.index("R.opp=()=>"):js.index("\n", js.index("R.opp=()=>"))]
 js = js.replace(opp_old, "R.opp=()=>oppView();")
