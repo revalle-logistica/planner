@@ -116,7 +116,7 @@ let V,C=[],S={u:'',s:'',tab:'sem',date:null,tone:'inf'};let map,lay;
   V=await PlannerData.json(`v/${vid}.json`);
   V.names=V.sellers;
   for(const r of V.clients){const[u,code,n,st,sa,pa,ma,sb,pb,mb,lat,lon,city,qa,qb,addr,ult,jan]=r;
-    if(!mb)continue;C.push({u,code,n:n.trim(),st,sa,pa,ma,sb,pb,mb,lat,lon,city,qa,qb:qb||[],addr,ult,jan,vol:r[18],ent:r[19]})}
+    if(!mb)continue;C.push({u,code,n:n.trim(),st,sa,pa,ma,sb,pb,mb,lat,lon,city,qa,qb:qb||[],addr,ult,jan,vol:r[18],ent:r[19],ja:r[20]||'',jb:r[21]||''})}
   let saved={};try{saved=JSON.parse(localStorage.getItem('minhaRota')||'{}')}catch(e){}
   if(V.link){h.u=V.link.unb;h.s=V.link.setor;document.querySelector('.sel').style.display='none'}
   S.u=h.u||saved.u||V.units[0].id;if(!V.units.some(x=>x.id===S.u))S.u=V.units[0].id;
@@ -202,6 +202,7 @@ function renderDay(){
     else t.push(`<span class="chip">${FREQ[c.pb]||c.pb}</span>`);
     const sd=sinceDays(c.ult);if(sd!=null)t.push(`<span class="chip ${sd>30?'r':sd>15?'y':'g'}">Última compra ${sd<=0?'hoje':sd===1?'ontem':'há '+sd+' dias'}</span>`);else t.push('<span class="chip">Sem compra registrada</span>');
     if(c.vol)t.push(`<span class="chip b">${f1(c.vol)}/mês · drop ${c.ent?f1(c.vol/c.ent):'—'}</span>`);
+    if(c.jb){const a=dayTxt(c.ja),b=dayTxt(c.jb);t.push(c.ja&&a!==b?`<span class="chip b">🚚 Entrega ${b} · era ${a}</span>`:`<span class="chip">🚚 Entrega ${b}</span>`)}
     if(c.jan)t.push(`<span class="chip y">Janela ${esc(c.jan)}</span>`);
     if(c.st==='B')t.push('<span class="chip r">Bloqueado</span>');return t.join('')};
   const gm=c=>`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lon}`;

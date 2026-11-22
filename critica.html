@@ -68,6 +68,7 @@ h2{margin:0 0 4px;font-size:15px;font-weight:800;display:flex;align-items:center
 .up{color:var(--up)}.down{color:#f87171}.eq{color:var(--dim)}
 .empty{color:var(--dim);font-size:12.5px;text-align:center;padding:14px}
 .leaflet-popup-content{font:13px Inter}
+.tcd{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.3);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--mut)}.tcd b{color:var(--txt)}
 .jan{display:flex;gap:5px;flex-wrap:wrap}.jan button{flex:1;min-width:44px;background:var(--panel2);border:1px solid var(--line);color:var(--mut);padding:7px 0;border-radius:8px;font:700 12px Inter;cursor:pointer}.jan button.on{background:rgba(232,121,249,.2);border-color:var(--crit);color:#f5c2fb}
 .srch{position:relative;flex:1;min-width:230px;max-width:340px}.srch input{width:100%}
 .sug{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;max-height:320px;overflow:auto;z-index:2500;display:none;box-shadow:0 14px 30px rgba(0,0,0,.45)}
@@ -114,7 +115,7 @@ h2{margin:0 0 4px;font-size:15px;font-weight:800;display:flex;align-items:center
         <label>Vendedor destino<select id="tSel"></select></label>
         <label>Dia de visita<select id="tDay"><option value="">Manter</option><option value="0">Segunda</option><option value="1">Terça</option><option value="2">Quarta</option><option value="3">Quinta</option><option value="4">Sexta</option><option value="5">Sábado</option></select></label>
         <label>Frequência<select id="tFreq"><option value="">Manter</option><option value="S">Semanal</option><option value="Q13">Quinzenal · semanas S1 e S3</option><option value="Q24">Quinzenal · semanas S2 e S4</option></select></label>
-        <label>Nova janela de entrega<div class="jan" id="tJan"><button data-d="0">Seg</button><button data-d="1">Ter</button><button data-d="2">Qua</button><button data-d="3">Qui</button><button data-d="4">Sex</button><button data-d="5">Sáb</button></div></label>
+        <div class="tcd">🚚 <b>Janela de entrega</b> não se altera aqui: solicite na <b>TCD – Torre de Controle da Distribuição</b>. A crítica é só para visita (vendedor, dia e frequência).</div><div class="jan" id="tJan" hidden></div>
         <label>Justificativa (opcional)<textarea id="tJust" rows="2" placeholder="Ex.: PDVs no mesmo bairro do Reinan, encaixa na sexta"></textarea></label>
         <div id="tWarn"></div>
         <button class="btn pri" id="apply" disabled>Aplicar alteração</button>
@@ -156,7 +157,7 @@ let mA,mB,lyA,lyB;
   V=await PlannerData.json(`v/${vid}.json`);
   $('vsub').textContent=`Planner com vigência ${V.vig.split('-').reverse().join('/')} · selecione PDVs no mapa e defina o destino`;
   for(const r of V.clients){const[u,code,n,st,sa,pa,ma,sb,pb,mb,lat,lon,city]=r;if(!mb)continue;
-    ALL.push({u,code,n:n.trim(),st,sb,pb,mb,lat,lon,city,addr:r[15]||'',vol:r[18]})}
+    ALL.push({u,code,n:n.trim(),st,sb,pb,mb,lat,lon,city,addr:r[15]||'',vol:r[18],jb:r[21]||''})}
   try{$('gv').value=localStorage.getItem('criticaGV')||''}catch(e){}
   $('gv').oninput=()=>{try{localStorage.setItem('criticaGV',$('gv').value)}catch(e){}};
   $('unit').innerHTML=V.units.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
@@ -267,7 +268,7 @@ function paint(ly,view,legId){
 }
 function tip(c){const p=eff(c,'plan'),e=eff(c,'crit'),ch=EFF.has(c.code);const jn=JAN.get(c.code);
   const row=(l,a,b)=>`<tr><td style="color:#8a94a8;padding-right:8px">${l}</td><td>${esc(a)}</td>${ch?`<td style="padding:0 6px">→</td><td style="color:#c026d3;font-weight:700">${esc(b)}</td>`:''}</tr>`;
-  return `<b>${esc(c.n)}</b> <span style="color:#888">${c.code}</span><br><span style="color:#888">${esc(c.city)}${c.vol!=null?' · vol '+fmt(c.vol,0)+'/mês':''}</span><table style="font-size:12px;margin-top:4px">${row('Vendedor',slabel(p.s),slabel(e.s))}${row('Dia',dayTxt(p.m),dayTxt(e.m))}${row('Freq.',(FREQ[p.p]||p.p)+' '+wkTxt(p.m),(FREQ[e.p]||e.p)+' '+wkTxt(e.m))}</table>${jn?`<div style="margin-top:4px;color:#c026d3;font-weight:700">Nova janela de entrega: ${esc(jn)}</div>`:''}`}
+  return `<b>${esc(c.n)}</b> <span style="color:#888">${c.code}</span><br><span style="color:#888">${esc(c.city)}${c.vol!=null?' · vol '+fmt(c.vol,0)+'/mês':''}</span><table style="font-size:12px;margin-top:4px">${row('Vendedor',slabel(p.s),slabel(e.s))}${row('Dia',dayTxt(p.m),dayTxt(e.m))}${row('Freq.',(FREQ[p.p]||p.p)+' '+wkTxt(p.m),(FREQ[e.p]||e.p)+' '+wkTxt(e.m))}</table>${c.jb?`<div style="margin-top:4px;color:#60a5fa">🚚 Entrega: ${esc(dayTxt(c.jb))} <span style="color:#888">(mudar na TCD)</span></div>`:''}${jn?`<div style="margin-top:4px;color:#c026d3;font-weight:700">Nova janela de entrega: ${esc(jn)}</div>`:''}`}
 // ---- laço
 function initLasso(map){
   const el=map.getContainer();let pts=null,line=null;
@@ -405,7 +406,7 @@ function requests(){
   return [...new Set([...EFF.keys(),...JAN.keys()])].map(code=>{const c=C.find(x=>x.code===code),p=eff(c,'plan'),e=eff(c,'crit'),j=JAN.get(code)||'',l=lote.get(code)||{i:[],just:[]};
     return{c,p,e,j,tipo:tipoOf(p,e,j),just:l.just.join(' | '),lote:l.i.join(',')}}).sort((a,b)=>(+a.e.s-+b.e.s)||a.c.code-b.c.code)}
 function exportXLS(){
-  if(!totalReq()){alert(SEL.size?`Você selecionou ${SEL.size} PDVs, mas ainda não aplicou a alteração.\n\nEscolha o destino (vendedor, dia, frequência ou janela) no painel "Seleção" e clique em "Aplicar". Depois baixe o Excel.`:'Ainda não há solicitações.\n\n1. Selecione PDVs com o Laço, a busca ou clicando nos pontos.\n2. Escolha o destino no painel "Seleção".\n3. Clique em "Aplicar".\nDepois baixe o Excel.');return}
+  if(!totalReq()){alert(SEL.size?`Você selecionou ${SEL.size} PDVs, mas ainda não aplicou a alteração.\n\nEscolha o destino (vendedor, dia ou frequência) no painel "Seleção" e clique em "Aplicar". Depois baixe o Excel.`:'Ainda não há solicitações.\n\n1. Selecione PDVs com o Laço, a busca ou clicando nos pontos.\n2. Escolha o destino no painel "Seleção".\n3. Clique em "Aplicar".\nDepois baixe o Excel.');return}
   const gv=$('gv').value.trim();if(!gv){alert('Informe seu nome (GV) no topo antes de exportar.');$('gv').focus();return}
   const vig=V.vig.split('-').reverse().join('/');
   const head=['Unidade','Cód. Cliente','Cód. Vendedor','Nome Cliente','Visita','Janela','Tipo de ajuste','Novo dia visita','Nova janela','Justificativa','Parecer','Observação Logística','Cód. Vendedor novo','Nova frequência','GV'];

@@ -44,6 +44,8 @@
     const h = (rows[0] || []).map(x => x.trim());
     if (h.includes('Periodicidade') && h.includes('Seg1')) return 'planner';
     if (h.includes('Latitude') && h.includes('Longitude')) return 'clientes';
+    if (h.includes('ERP_POC_ID') && h.includes('Vendor_Account_ID')) return 'janela_bees';
+    if (h.some(x => /Semana 1$/.test(x)) && h.some(x => /digo Cliente/.test(x))) return 'janela_gabarito';
     if (h.includes('D.Size Total') || (h.includes('Volume') && h.includes('Entregas') && h.includes('Mapa'))) return 'volume';
     return null;
   }
@@ -123,6 +125,27 @@
     const m = new Map(); for (const c of ver.clients) if (c[0] === unb && c[18] != null) m.set(c[1], [c[18], c[19]]); return m;
   }
 
+  // Janelas de entrega → máscara de 28 posições (4 semanas × Seg..Dom), igual às visitas
+  function parseJanela(rows) {
+    const h = rows[0].map(x => x.trim()); const recs = new Map(); let unb = null;
+    if (h.includes('ERP_POC_ID')) { // exportação do BEES (janelas abertas): FREE = aberto, repete nas 4 semanas
+      const ix = {}; h.forEach((c, i) => ix[c] = i); const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      for (const r of rows.slice(1)) {
+        const code = parseInt(r[ix['ERP_POC_ID']], 10); if (!code) continue; unb = unb || String(r[ix['DDC_ID']] || '').trim();
+        const w = D.map(d => String(r[ix[d]] || '').trim().toUpperCase() === 'FREE' ? '1' : '0').join('');
+        if (w.includes('1') || !recs.has(code)) recs.set(code, { m: w.repeat(4) });
+      }
+    } else { // gabarito visão entrega: valor > 0 = aberto
+      const ic = h.findIndex(x => /digo Cliente/.test(x)), iu = h.findIndex(x => /Unidade/.test(x));
+      const cols = []; for (let w = 1; w <= 4; w++) h.forEach((x, i) => { if (new RegExp('Semana ' + w + '$').test(x)) cols.push(i); });
+      for (const r of rows.slice(1)) {
+        const code = parseInt(r[ic], 10); if (!code) continue; unb = unb || String(r[iu] || '').trim();
+        recs.set(code, { m: cols.map(i => (parseFloat(String(r[i] || '0').replace(',', '.')) || 0) > 0 ? '1' : '0').join('') });
+      }
+    }
+    return { unb, unbName: '', recs };
+  }
+
   function titleCase(s) { return s.toLowerCase().replace(/(^|\s)\S/g, t => t.toUpperCase()); }
 
   function unitMeta(unb, unbName) {
@@ -189,6 +212,6 @@
     return { id: ver.id, vig: ver.vig, label: ver.label, created: ver.created, updated: ver.updated, units: ver.units.map(x => u[x.id]) };
   }
 
-  const api = { DAYS, KNOWN, decode, parseCSV, kindOf, parsePlanner, parseClientes, parseVolume, guessUnit, volFromVersion, unitMeta, recsFromVersion, coordsFromVersion, buildUnit, summarize };
+  const api = { DAYS, KNOWN, decode, parseCSV, kindOf, parsePlanner, parseJanela, parseClientes, parseVolume, guessUnit, volFromVersion, unitMeta, recsFromVersion, coordsFromVersion, buildUnit, summarize };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PlannerCore = api;
 })(typeof window !== 'undefined' ? window : globalThis);

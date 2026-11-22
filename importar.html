@@ -99,8 +99,8 @@ ol{padding-left:18px;margin:8px 0}
         </div></div>
       <div class="grp"><h3><i style="background:#3b9eff22">🚚</i>Janelas de entrega</h3><div class="gs">Dias de entrega de cada cliente</div>
         <div class="zones">
-          <div class="zone" data-k="jpre"><div class="ic">📋</div><b>Pré-planner</b><small>Como era a janela</small><div class="list"></div><button class="pick">Importar</button></div>
-          <div class="zone" data-k="jpos"><div class="ic">✅</div><b>Pós-planner</b><small>Como fica a janela</small><div class="list"></div><button class="pick">Importar</button></div>
+          <div class="zone" data-k="jpre"><div class="ic">📋</div><b>Pré-planner</b><small>Como era a janela · arquivo de janelas do BEES</small><div class="list"></div><button class="pick">Importar</button></div>
+          <div class="zone" data-k="jpos"><div class="ic">✅</div><b>Pós-planner</b><small>Como fica a janela · gabarito visão entrega</small><div class="list"></div><button class="pick">Importar</button></div>
         </div></div>
       <div class="grp g3"><h3><i style="background:#22c55e22">📍</i>Clientes</h3><div class="gs">Endereço e coordenadas para o mapa</div>
         <div class="zones">
@@ -166,8 +166,9 @@ async function addFiles(k,list){
         if(kind!=='clientes')throw new Error('não parece relatório de clientes (sem Latitude/Longitude)');
         it.coords=P.parseClientes(rows);it.ok=true;it.info=[...it.coords].map(([u,m])=>`${P.unitMeta(u).abbr} ${fmt(m.size)}`).join(' · ')||'nenhuma coordenada válida';
       }else{
-        if(kind!=='planner')throw new Error(k[0]==='j'?'formato de janela não reconhecido — envie um exemplo para ajustarmos a leitura':'não parece exportação do Planner (sem Periodicidade/Seg1)');
-        const p=P.parsePlanner(rows);if(!p.unb)throw new Error('arquivo sem clientes');
+        const jf=k[0]==='j'&&(kind==='janela_bees'||kind==='janela_gabarito');
+        if(kind!=='planner'&&!jf)throw new Error(k[0]==='j'?'formato de janela não reconhecido (use o arquivo de janelas do BEES ou o gabarito visão entrega)':'não parece exportação do Planner (sem Periodicidade/Seg1)');
+        const p=jf?P.parseJanela(rows):P.parsePlanner(rows);if(!p.unb)throw new Error('arquivo sem clientes');
         Object.assign(it,p);it.ok=true;it.info=`${P.unitMeta(p.unb,p.unbName).name} · ${fmt(p.recs.size)} clientes`;
         F[k]=F[k].filter(x=>x.unb!==p.unb); // um arquivo por unidade
       }
