@@ -113,7 +113,7 @@ const UNITS={};
   const h=Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(x=>x.split('=').map(decodeURIComponent)));
   $('ver').innerHTML=IDX.versions.map(v=>`<option value="${v.id}">${esc(v.label||'Planner '+fmtD(v.vig))}</option>`).join('');
   // planners antigos: solicitações que vieram das planilhas (crítica e formulário), só para consulta
-  try{OLD=await planilhasAntigas();if(OLD.keys.length)$('ver').insertAdjacentHTML('beforeend','<optgroup label="Planners antigos · planilhas (só consulta)">'+OLD.keys.map(k=>`<option value="old:${k}">Planner ${k.replace(/\./g,'/')} · planilha</option>`).join('')+'</optgroup>')}catch(e){}
+  planilhasAntigas().then(r=>{OLD=r;if(OLD.keys.length)$('ver').insertAdjacentHTML('beforeend','<optgroup label="Planners antigos · planilhas (só consulta)">'+OLD.keys.map(k=>`<option value="old:${k}">Planner ${k.replace(/\./g,'/')} · planilha</option>`).join('')+'</optgroup>')}).catch(()=>{});
   $('ver').onchange=e=>load(e.target.value);
 $('fi').onchange=e=>{importFiles(e.target.files);e.target.value=''};
   $('editBtn').onclick=()=>{if(S.edit&&PEND.size)publishAsk();S.edit=!S.edit;$('editBtn').classList.toggle('on',S.edit);$('editBtn').textContent=S.edit?'✓ Concluir parecer':'✍️ Dar parecer';$('editBtn').classList.toggle('pri',S.edit);renderTable()};
@@ -144,9 +144,12 @@ async function janelasDoPeriodo(vid){
 const UNB_N={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'},UNB_A={'1031287':'ALA','1031295':'SER','826588':'POM','983616':'PAF'};
 const unbDeNome=n=>Object.keys(UNB_N).find(k=>String(n||'').toLowerCase().includes(UNB_N[k].toLowerCase().split(' ').pop()));
 const kNum=k=>{const [d,m,a]=k.split('.');return +(a+m+d)};
+function idbRz(){return new Promise(r=>{try{const q=indexedDB.open('planner-34',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>{try{const t=q.result.transaction('kv').objectStore('kv').get('rz');t.onsuccess=()=>r(t.result||null);t.onerror=()=>r(null)}catch(e){r(null)}};q.onerror=()=>r(null)}catch(e){r(null)}})}
 async function planilhasAntigas(){
-  const z=await PlannerData.text('rotina/estado.gz');const b=Uint8Array.from(atob(z),c=>c.charCodeAt(0));
-  const st=JSON.parse(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+  // usa a cópia da rotina guardada no navegador quando ela é a mais recente (evita baixar ~5 MB)
+  let st=null;try{const meta=JSON.parse(await PlannerData.text('rotina/meta.json'));const c=await idbRz();if(c&&c.v===meta.v)st=c.st}catch(e){}
+  if(!st){const z=await PlannerData.text('rotina/estado.gz');const b=Uint8Array.from(atob(z),c=>c.charCodeAt(0));
+    st=JSON.parse(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text())}
   const ks=new Set();for(const u in st.units){for(const k in (st.units[u].crit||{}))ks.add(k);for(const k in (st.units[u].planners||{}))ks.add(k)}
   const versoes=new Set(IDX.versions.map(v=>{const [a,m,d]=v.vig.split('-');return `${d}.${m}.${a.slice(2)}`}));
   OLD={keys:[],st};return {keys:[...ks].filter(k=>!versoes.has(k)&&itensAntigos(k).length).sort((a,b)=>kNum(b)-kNum(a)),st}}
