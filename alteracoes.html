@@ -85,7 +85,7 @@ td.j i{display:block;color:#93c5fd;margin-top:4px}
     <div>
       <div class="card"><h2><span class="n">1</span>Solicitações por tipo de ajuste</h2><div class="sub">Clique numa barra para filtrar.</div><div class="bars" id="bTipo"></div></div>
       <div class="card"><h2><span class="n">2</span>Solicitações por setor</h2><div class="sub">Setor de vendas no planner.</div><div class="bars" id="bSetor"></div></div>
-      <div class="card"><h2><span class="n">3</span>Solicitações por GV</h2><div class="bars" id="bGv"></div></div>
+      <div class="card"><h2><span class="n">3</span>Solicitações por GV</h2><div class="sub">GV = 1º número do setor (setor 304 → GV 3)</div><div class="bars" id="bGv"></div></div>
     </div>
     <div class="card">
       <h2><span class="n">4</span>Solicitações e parecer</h2>
@@ -192,14 +192,16 @@ async function refresh(show,silentRender){
 }
 function setDirty(d){DIRTY=d;$('pubBtn').classList.toggle('dirty',d);$('pubBtn').textContent=d?`💾 Salvar parecer (${PEND.size})`:'💾 Salvar parecer'}
 function say(c,h){$('msg').className='msg '+c;$('msg').innerHTML=h}
+// GV = 1º dígito do setor do vendedor (setor 101 → GV 1; 304 → GV 3)
+const gvDe=r=>{const s=String(r.s||r.sNovo||'').trim();return /^\d/.test(s)?'GV '+s[0]:''};
 const parK=p=>/aprov/i.test(p)?'A':/reprov/i.test(p)?'R':/sem parecer/i.test(p)?'S':'P';
 function rows(){const q=$('q').value.trim().toUpperCase();
-  return REG.items.filter(r=>(S.u==='ALL'||r.u===S.u)&&(!S.par||parK(r.parecer)===parK(S.par))&&(!S.fT||r.tipo===S.fT)&&(!S.fG||r.gv===S.fG)&&(!S.fS||String(r.s)===S.fS)
+  return REG.items.filter(r=>(S.u==='ALL'||r.u===S.u)&&(!S.par||parK(r.parecer)===parK(S.par))&&(!S.fT||r.tipo===S.fT)&&(!S.fG||gvDe(r)===S.fG)&&(!S.fS||String(r.s)===S.fS)
     &&(!q||[r.code,r.n,r.s,r.sNovo,r.just,r.obs,r.tipo].join(' ').toUpperCase().includes(q)))}
 function render(){
   const base=REG.items.filter(r=>S.u==='ALL'||r.u===S.u);
   const fill=(id,arr,lab)=>{const cur=$(id).value;$(id).innerHTML=`<option value="">${lab}</option>`+[...new Set(arr)].filter(Boolean).sort().map(x=>`<option>${esc(x)}</option>`).join('');$(id).value=cur};
-  fill('fTipo',base.map(r=>r.tipo),'Todos os tipos');fill('fGv',base.map(r=>r.gv),'Todos os GVs');
+  fill('fTipo',base.map(r=>r.tipo),'Todos os tipos');fill('fGv',base.map(gvDe),'Todos os GVs');
   const R=rows();
   const ap=R.filter(r=>parK(r.parecer)==='A').length,pe=R.filter(r=>parK(r.parecer)==='P').length,rp=R.filter(r=>parK(r.parecer)==='R').length;
   const setores=new Set(R.map(r=>r.s));
@@ -210,7 +212,7 @@ function render(){
   const cnt=f=>{const o={};R.forEach(r=>{const k=f(r)||'Não informado';o[k]=(o[k]||0)+1});return Object.entries(o).sort((a,b)=>b[1]-a[1])};
   bars('bTipo',cnt(r=>r.tipo),'#3b9eff',k=>{S.fT=S.fT===k?'':k;$('fTipo').value=S.fT;render()},S.fT);
   bars('bSetor',cnt(r=>String(r.s)).slice(0,16),'#ff8a3d',k=>{S.fS=S.fS===k?'':k;render()},S.fS);
-  bars('bGv',cnt(r=>r.gv),'#e879f9',k=>{S.fG=S.fG===k?'':k;$('fGv').value=S.fG;render()},S.fG);
+  bars('bGv',cnt(gvDe),'#e879f9',k=>{S.fG=S.fG===k?'':k;$('fGv').value=S.fG;render()},S.fG);
   $('cnt').textContent=`${fmt(R.length)} solicitações · ${ap} aprovadas · ${rp} reprovadas · ${pe} pendentes${S.fS?' · setor '+S.fS:''}`;
   $('mapBtn').href=`critica.html#v=${S.vid}&u=${S.u==='ALL'?V.units[0].id:S.u}&reg=1`;
   renderTable(R);
