@@ -105,7 +105,7 @@ ol{padding-left:18px;margin:8px 0}
       <div class="grp g3"><h3><i style="background:#22c55e22">📍</i>Clientes</h3><div class="gs">Endereço e coordenadas para o mapa</div>
         <div class="zones">
           <div class="zone" data-k="cli" style="cursor:default"><div class="ic">📍</div><b>Relatório de clientes</b><small>Vem da <a href="relatorios.html" style="color:#93c5fd">Central de relatórios</a> (importação única, usada pelo sistema todo)</small><div class="list"></div></div>
-          <div class="zone opt" data-k="vol"><b style="font-size:12.5px">📦 Volume 03.05.30 <small>(opcional)</small></b><div class="list"></div></div>
+          <div class="zone opt" data-k="vol" style="cursor:default"><b style="font-size:12.5px">📦 Volume 03.05.30</b><small>Vem das <a href="rotina.html?m=imp" style="color:#93c5fd">Bases da rotina</a> (últimos 3 meses antes da vigência)</small><div class="list"></div></div>
         </div></div>
     </div>
     <input type="file" id="fi" multiple accept=".csv,.txt" style="display:none">
@@ -136,6 +136,18 @@ const OWNER=host?location.hostname.split('.')[0]:'revalle-logistica';
 const REPO=host?(location.pathname.split('/')[1]||'planner'):'planner';
 let IDX={versions:[]};const VER={};
 const CEN={};
+// volume por cliente a partir do 03.05.30 importado nas Bases da rotina: 3 meses fechados antes da vigência
+const UNOME={'1031287':'alagoinhas','1031295':'serrinha','826588':'pombal','983616':'paulo'};let ROT;
+async function estadoRotina(){if(ROT!==undefined)return ROT;ROT=null;
+  try{const z=await PlannerData.text('rotina/estado.gz');const b=Uint8Array.from(atob(z),c=>c.charCodeAt(0));
+    ROT=JSON.parse(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text())}catch(e){}return ROT}
+async function volRotina(u,vig){const st=await estadoRotina();if(!st||!st.units)return null;
+  const k=Object.keys(st.units).find(n=>n.toLowerCase().includes(UNOME[u]));const U=k&&st.units[k];if(!U||!U.cliW)return null;
+  const v0=new Date(vig+'T12:00:00');const ate=new Date(v0.getFullYear(),v0.getMonth(),0),de=new Date(ate.getFullYear(),ate.getMonth()-2,1);
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');const a=iso(de),b=iso(ate);
+  const dias=Object.keys(U.days||{}).filter(d=>d>=a&&d<=b);if(dias.length<20)return null;const meses=3;
+  const m=new Map();for(const c in U.cliW){let v=0,e=0;for(const d in U.cliW[c])if(d>=a&&d<=b&&U.cliW[c][d]>0){v+=U.cliW[c][d];e++}if(e)m.set(+c,[Math.round(v/meses*10)/10,Math.round(e/meses*10)/10])}
+  return m.size?{m,de:a,ate:b}:null}
 async function coordCentral(u){if(u in CEN)return CEN[u];CEN[u]=null;
   try{const ix=JSON.parse(await PlannerData.text('rel/index.json'));const x=((ix.r||{}).coord||{})[u];if(!x)return null;
     const o=JSON.parse(await PlannerData.text('rel/coord/'+u+'.json'));const m=new Map();for(const c in o){const v=o[c];m.set(+c,[v[0],v[1],v[2]||'',v[3]||'',v[4]||'',v[5]||''])}
@@ -152,7 +164,7 @@ async function getVer(id){if(!VER[id])VER[id]=await PlannerData.json(`v/${id}.js
 
 // drop zones
 let target='pre';
-document.querySelectorAll('.zone:not([data-k=cli])').forEach(z=>{
+document.querySelectorAll('.zone:not([data-k=cli]):not([data-k=vol])').forEach(z=>{
   z.onclick=e=>{if(e.target.closest('.file'))return;target=z.dataset.k;$('fi').click()};
   z.ondragover=e=>{e.preventDefault();z.classList.add('drag')};
   z.ondragleave=()=>z.classList.remove('drag');
@@ -233,6 +245,7 @@ async function upd(){
     else{const v=allDesc.find(v=>v.units.some(x=>x.id===u));if(v){co=P.coordsFromVersion(await getVer(v.id),u);coSrc=['reuse','Da versão '+fmtD(v.vig)]}else{co=new Map();coSrc=['miss','Sem coordenadas (mapa vazio)']}}
     let vo,voSrc;
     if(volMap.has(u)){const f=volMap.get(u);vo=f.vol;voSrc=['file',`Arquivo (${fmtD(f.from)} a ${fmtD(f.to)})`];srcNames.vol=f.name+` (${f.from} a ${f.to})`}
+    else if((vo=await volRotina(u,vig))){voSrc=['file',`Bases da rotina (${fmtD(vo.de)} a ${fmtD(vo.ate)})`];srcNames.vol=`03.05.30 das Bases da rotina (${vo.de} a ${vo.ate})`;vo=vo.m}
     else{const v=allDesc.find(v=>v.units.some(x=>x.id===u));const vv=v?P.volFromVersion(await getVer(v.id),u):new Map();if(vv.size){vo=vv;voSrc=['reuse','Da versão '+fmtD(v.vig)];srcNames.vol=((await getVer(v.id)).units.find(x=>x.id===u).src||{}).vol}else{vo=null;voSrc=['miss','Sem volume']}}
     let res=null,stat='',jSrc=['miss','—'],jStat='';
     if(pre&&pos){

@@ -176,8 +176,7 @@ rep("if(/ERP_POC_ID/i.test(h))parseJan(t,f.name,st,log);",
 rep("else if(/Seg1/i.test(h)&&/Periodicidade/i.test(h))parseVis(",
     "else if(/Seg1/i.test(h)&&/Periodicidade/i.test(h)&&(guardaVis(f.name)||1))parseVis(")
 # Bases da rotina: planners vêm do Importar planner e clientes da Central (uma importação só)
-rep("     ['Relatório de clientes','Relatorio-cliente_Unidade.csv',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje)`,'Mapas, municípios e PDVs novos',null,'cli',31]]},",
-    "     ['Relatório de clientes','Vem da Central de relatórios',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje) · importado uma vez só, na Central`,'Mapas, municípios e PDVs novos',null,'cli',null]]},")
+rep(",\n     ['Relatório de clientes','Relatorio-cliente_Unidade.csv',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje)`,'Mapas, municípios e PDVs novos',null,'cli',31]]},", "]},")
 a0=js.index("   {f:'A cada planner'");a1=js.index("]}];",a0)+4
 js=js[:a0]+"   {f:'Virada do planner',sub:'Os planners vêm do Importar planner. Aqui só a conferência do histórico para os KPIs pré × pós',ic:'flow',pk:true,items:[]}];"+js[a1:]
 rep("const L=[['Pré-Planner '+p.slice(0,5).replace('.','/'),!!P.pre,'cenário anterior'],['Pós-Planner '+p.slice(0,5).replace('.','/'),!!P.pos,'cenário pós e PDVs saneados'],['Crítica do planner',!!(Uu.crit&&Uu.crit[p]),'pedidos de Vendas antes da virada'],",

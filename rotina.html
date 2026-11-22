@@ -1402,8 +1402,7 @@ R.imp=()=>{const Uu=U();const u=UI.u;const at=k=>{const t=(ST.impAt||{})[k+'|'+u
      ['Janela de entrega','Janela_Entrega_dd.mm.aaaa_Revalle_Unidade.csv',`FREE = janela grátis · FLEX = com taxa · NO = sem janela · ${Object.keys(Uu.jan||{}).length} semana(s) salva(s)`,'Monitor de alterações (janela × semana anterior × visita)',Object.keys(Uu.jan||{}).sort().pop()||null,'jan',7],
      ['Relatório de planos de ação','Relatório do sistema de gestão (.xlsx)','Ações das reuniões RLP, RPS, RNS e RPD','Plano de ação de rotina e reunião semanal',ST.acoes?ST.acoes.em.slice(0,10):null,'acoes',7]]},
    {f:'Mensal',sub:'Atualize no fechamento do mês',ic:'line',items:[
-     ['Frota fixa','Frota Fixa Unidade 2026.xlsx (um arquivo por ano)','Carros ativos por mês · o ano vem do nome do arquivo','Utilização da frota',Uu.frota?null:null,'frota',31],
-     ['Relatório de clientes','Vem da Central de relatórios',`Coordenadas e município dos PDVs (${nCli.toLocaleString('pt-BR')} hoje) · importado uma vez só, na Central`,'Mapas, municípios e PDVs novos',null,'cli',null]]},
+     ['Frota fixa','Frota Fixa Unidade 2026.xlsx (um arquivo por ano)','Carros ativos por mês · o ano vem do nome do arquivo','Utilização da frota',Uu.frota?null:null,'frota',31]]},
    {f:'Virada do planner',sub:'Os planners vêm do Importar planner. Aqui só a conferência do histórico para os KPIs pré × pós',ic:'flow',pk:true,items:[]}];
   const pack=()=>{const p=ds[ds.length-1];if(!p)return '';const pk=pd(p);const pdk=`${pk.y}-${String(pk.m).padStart(2,'0')}-${String(pk.d).padStart(2,'0')}`;const ant=addD(pdk,-1),ini=addD(pdk,-365);const firstDay=Object.keys(Uu.days).sort()[0],firstKm=mk.filter(o=>o.km>0&&o.d).map(o=>o.d).sort()[0],firstPv=mk.filter(o=>o.pv>0&&o.d).map(o=>o.d).sort()[0];const cov=(f,l)=>f&&l?`dados de ${br(f)} a ${br(l)}`:'sem dados';const W=windows(Uu,p,ds);
     const fm=Uu.frota&&frAct(Uu,`${pk.y}-${String(pk.m).padStart(2,'0')}`)>0;const P=Uu.planners[p]||{};
