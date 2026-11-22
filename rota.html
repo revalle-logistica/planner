@@ -57,6 +57,20 @@ h2{margin:0 0 4px;font-size:16px;font-weight:800}
 .nav{background:var(--panel2);border:1px solid var(--line);color:var(--txt);width:42px;height:42px;border-radius:11px;font-size:18px;cursor:pointer}
 #map{height:46vh;min-height:300px;border-radius:12px;border:1px solid var(--line);margin-top:12px;background:#dfe3e8}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.top{display:flex;align-items:center;gap:12px}.qbox{position:relative;flex:1;max-width:420px;margin-left:auto}
+#q{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:9px 12px;font:500 13.5px Inter}#q:focus{outline:2px solid var(--pos);border-color:transparent}
+#qres{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px #0008;overflow:hidden;z-index:3000}#qres:empty{display:none}
+#qres button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);color:var(--txt);padding:9px 12px;font:13px Inter;cursor:pointer}#qres button:hover{background:var(--panel2)}#qres small{color:var(--mut)}#qres b{font-size:13px}
+.pdvov{position:fixed;inset:0;z-index:100000;background:#000a;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
+.pdvc{background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:760px;width:100%;padding:20px}
+.pdvc .x{float:right;background:var(--panel2);border:0;color:var(--txt);width:34px;height:34px;border-radius:9px;font-size:18px;cursor:pointer}
+.pdvg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:600px){.pdvg{grid-template-columns:1fr}}
+.pdvs{background:var(--bg);border-radius:14px;padding:14px}.pdvs h4{margin:0 0 10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}.pdvs.pos h4{color:var(--pos)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px}.kv span{color:var(--mut)}.kv b.ch{color:var(--pos)}.kv b.jc{color:#60a5fa}
+.mcal{display:grid;grid-template-columns:26px repeat(7,1fr);gap:3px;margin-top:12px;font-size:10.5px}.mcal div{height:24px;border-radius:5px;display:grid;place-items:center;background:var(--panel2);color:var(--dim)}.mcal .h{background:none;color:var(--mut);font-weight:700}
+.mcal .on{background:var(--pre);color:#111;font-weight:800}.pdvs.pos .mcal .on{background:var(--pos)}.mcal .jn{box-shadow:inset 0 0 0 2px #3b9eff}
+.jbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(59,158,255,.1);border:1px solid rgba(96,165,250,.4)}.jbar .d{font-size:17px;font-weight:800}.jbar s{color:var(--mut)}.jbar .n{color:#60a5fa}
+.pnote{margin-top:12px;font-size:12px;color:var(--mut);line-height:1.5}.pnote b{color:var(--txt)}
 .chip{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--panel2);color:var(--mut);white-space:nowrap}
 .chip.y{background:#f5b30122;color:var(--pos)}.chip.b{background:#3b9eff22;color:#7fbaff}.chip.r{background:#ff5d5d22;color:#ff8f8f}.chip.p{background:#b07cff22;color:#c9a6ff}.chip.g{background:#22c55e22;color:#6ee7a0}
 .stop{display:flex;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -96,10 +110,11 @@ h2{margin:0 0 4px;font-size:16px;font-weight:800}
 </head>
 <body>
 <header><div class="hw">
-  <div class="top"><b>Minha <span>rota</span></b></div>
+  <div class="top"><b>Minha <span>rota</span></b><div class="qbox"><input id="q" type="search" placeholder="🔎 Consultar PDV (código ou nome)" autocomplete="off"><div id="qres"></div></div></div>
   <div class="sel"><select id="unit"></select><select id="seller"></select></div>
   <div class="tabs"><button class="tab on" data-t="sem">📅 Semana</button><button class="tab" data-t="dia">🧭 Roteiro do dia</button><button class="tab" data-t="jan">🚚 Janelas</button><button class="tab" data-t="chg">💬 Avisar clientes</button></div>
 </div></header>
+<div id="pdv" class="pdvov" hidden></div>
 <main id="main"><div class="empty">Carregando…</div></main>
 <script>
 const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
@@ -134,7 +149,28 @@ let V,C=[],S={u:'',s:'',tab:'sem',date:null,tone:'inf'};let map,lay;
   const t=today();S.date=t<vigDate()?vigDate():t;
   go();
 }catch(e){$('main').innerHTML=`<div class="card"><h2>Não foi possível abrir a rota</h2><div class="sub">${esc(e.message)}</div></div>`;document.querySelector('.sel')&&(document.querySelector('.sel').style.display='none')}})();
-function sname(s){return 'Setor '+s} // vendedor identificado só pelo código do setor
+function sname(s){return 'Setor '+s}
+// ---------- consulta de PDV (visita + janela, antes × depois)
+const norm=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+$('q').oninput=()=>{const t=norm($('q').value.trim());if(t.length<2){$('qres').innerHTML='';return}
+  const pool=C.filter(c=>!S.u||c.u===S.u);const r=[];
+  for(const c of pool){if(String(c.code).startsWith(t)||norm(c.n).includes(t))r.push(c);if(r.length>=8)break}
+  $('qres').innerHTML=r.length?r.map(c=>`<button data-u="${c.u}" data-c="${c.code}"><b>${c.code}</b> · ${esc(c.n)} <small>· ${esc(c.city||'')} · ${c.sb?sname(c.sb):'sem setor'}</small></button>`).join(''):'<button disabled><small>Nenhum PDV encontrado</small></button>'};
+$('qres').onclick=e=>{const b=e.target.closest('button[data-c]');if(!b)return;const c=C.find(x=>x.u===b.dataset.u&&String(x.code)===b.dataset.c);$('qres').innerHTML='';$('q').value='';$('q').blur();showPdv(c)};
+$('q').onkeydown=e=>{if(e.key==='Enter'){const b=$('qres').querySelector('button[data-c]');if(b)b.click()}if(e.key==='Escape'){$('qres').innerHTML=''}};
+document.addEventListener('click',e=>{if(!e.target.closest('.qbox'))$('qres').innerHTML=''});
+function mcal(m,j){let h='<div class="h"></div>'+DAYS.map(d=>`<div class="h">${d}</div>`).join('');for(let w=0;w<4;w++){h+=`<div class="h">S${w+1}</div>`;for(let d=0;d<7;d++){const v=m&&m[w*7+d]==='1',jj=j&&j[w*7+d]==='1';h+=`<div class="${v?'on':''} ${jj?'jn':''}">${v?'●':''}${jj?'🚚':''}</div>`}}return `<div class="mcal">${h}</div>`}
+function showPdv(c){
+  if(!c)return;const jm=!!(c.ja&&c.jb)&&dayTxt(c.ja)!==dayTxt(c.jb);
+  const lado=(t,cls,s,p,m,j,pos)=>`<div class="pdvs ${cls}"><h4>${t}</h4>${m?`<div class="kv"><span>Vendedor</span><b class="${pos&&c.sa!==c.sb?'ch':''}">${s?sname(s):'—'}</b><span>Visita</span><b class="${pos&&dayTxt(c.ma)!==dayTxt(c.mb)?'ch':''}">${dayTxt(m)}</b><span>Frequência</span><b class="${pos&&c.pa!==c.pb?'ch':''}">${FREQ[p]||p||'—'}</b><span>Entrega</span><b class="${pos&&jm?'jc':''}">🚚 ${j?dayTxt(j):'—'}</b></div>${mcal(m,j)}`:'<div class="pnote">Não estava no planner anterior (cliente novo).</div>'}</div>`;
+  $('pdv').innerHTML=`<div class="pdvc"><button class="x" id="px">×</button><div style="font-size:19px;font-weight:800">${esc(c.n)}</div>
+   <div style="color:var(--mut);font-size:13px;margin-top:2px">Código <b style="color:var(--txt)">${c.code}</b> · ${esc(c.city||'—')}${c.st==='B'?' · <span style="color:var(--red)">BLOQUEADO</span>':''}</div>${c.addr?`<div style="color:var(--dim);font-size:12px">${esc(c.addr)}</div>`:''}
+   ${c.ja||c.jb?`<div class="jbar"><span style="font-size:22px">🚚</span><div><div style="font-size:12px;color:var(--mut)">Janela de entrega</div>${jm?`<span class="d"><s>${dayTxt(c.ja)}</s> → <span class="n">${dayTxt(c.jb)}</span></span>`:`<span class="d">${dayTxt(c.jb||c.ja)}</span> <small style="color:var(--mut)">· sem mudança</small>`}</div></div>`:''}
+   <div class="pdvg">${lado('Antes do planner','pre',c.sa,c.pa,c.ma,c.ja,0)}${lado('Depois do planner','pos',c.sb,c.pb,c.mb,c.jb,1)}</div>
+   <div class="pnote">No calendário: <b>●</b> dia de visita · <span style="box-shadow:inset 0 0 0 2px #3b9eff;border-radius:4px;padding:0 4px">🚚</span> dia de entrega.<br>Mudar <b>visita</b>: Crítica do planner, com o GV. Mudar <b>janela de entrega</b>: <b>TCD – Torre de Controle da Distribuição</b>.</div>
+   ${c.lat!=null?`<div style="margin-top:12px"><a class="chip" style="text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${c.lat},${c.lon}">📍 Abrir no Google Maps</a></div>`:''}</div>`;
+  $('pdv').hidden=false;$('px').onclick=()=>$('pdv').hidden=true;$('pdv').onclick=e=>{if(e.target.id==='pdv')$('pdv').hidden=true};
+} // vendedor identificado só pelo código do setor
 function fillSellers(){
   const set=new Set();for(const c of C)if(c.u===S.u){if(c.sb)set.add(c.sb);if(c.sa)set.add(c.sa)}
   const list=[...set].sort((a,b)=>+a-+b||a.localeCompare(b));
