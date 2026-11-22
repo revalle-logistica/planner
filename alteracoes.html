@@ -128,7 +128,7 @@ let OLD={keys:[],st:null};
 // ajustes de janela aprovados (planilha semanal da TCD, histórico montado na Central) dentro do período do planner
 let AJH=null,AJB={};
 async function janelasDoPeriodo(vid){
-  if(AJH===null){AJH=[];try{AJH=JSON.parse(await PlannerData.text('janelas/ajustes-hist.json')).itens||[]}catch(e){}
+  if(AJH===null){let ok=false;for(let t=0;t<2&&!ok;t++){try{AJH=JSON.parse(await PlannerData.text('janelas/ajustes-hist.json')).itens||[];ok=true}catch(e){if(/not_found/.test(e.message)){AJH=[];ok=true}}}if(!ok){AJH=null;return []}
     await Promise.all(Object.keys(UNB_N).map(async u=>{try{AJB[u]=(JSON.parse(await PlannerData.text('janelas/base/'+u+'.json')).pedidos)||{}}catch(e){AJB[u]={}}}))}
   if(!AJH.length)return [];
   const iso=k=>{const [d,m,a]=k.split('.');return `20${a}-${m}-${d}`};
