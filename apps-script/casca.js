@@ -49,7 +49,7 @@ async function salvarEstado(){
   catch(e){return `<div class="err">✗ Não salvou no Drive: ${esc(e.message)}. Os números valem só até fechar a página.</div>`}}
 async function iniciar(){
   if(M==='imp'&&!IS_ADMIN){location.replace('rotina.html?m=sem');return}
-  document.getElementById('bImp').hidden=!IS_ADMIN||M==='imp';document.getElementById('bDir').hidden=!IS_ADMIN;
+  document.getElementById('bImp').hidden=true;document.getElementById('bDir').hidden=!IS_ADMIN||M!=='imp';
   document.title=GRUPOS[M].t+' · Planner Revalle';
   try{const [ls,st]=await Promise.all([carregarLS(),carregarEstado()]);LSO=ls||{};if(st)ST=st;if(ST&&ST.units&&Object.keys(ST.units).length)await completar()}
   catch(e){carregando('Não consegui abrir os dados da rotina: '+esc(e.message));return}
@@ -135,3 +135,5 @@ async function completar(){
   for(const un in UNB)tarefas.push((async()=>{try{const o=JSON.parse(await PlannerData.text('rel/coord/'+un+'.json'));const u=nomeU(un);if(!u||!ST.units[u])return;const U=ST.units[u];
     for(const c in o){const v=o[c];U.clients[String(+c)]=[+(+v[0]).toFixed(4),+(+v[1]).toFixed(4),v[2]||(U.clients[String(+c)]||[])[2]||'']}}catch(e){}})());
   await Promise.all(tarefas)}
+
+function semUnidade(n){throw new Error('não reconheci a unidade pelo nome do arquivo (use Alagoinhas, Serrinha, Pombal ou Paulo Afonso no nome)')}

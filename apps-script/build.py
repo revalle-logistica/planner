@@ -191,6 +191,10 @@ rep("return ['Relatório de pedidos · últimos 12 meses'","return ['Relatório 
 rep("sub:'Os planners vêm do Importar planner. Aqui só a conferência do histórico para os KPIs pré × pós'","sub:'Nada para importar aqui: confere se os relatórios semanais já cobrem o período pré que os KPIs pré × pós usam (3 meses antes da virada)'")
 for a in ['lastDay>=ant','lastKm>=ant','lastPv>=ant','l>=ant']:
     assert a in js,a; js=js.replace(a,a.replace('ant','_ate'),1)
+# unidade pelo nome do arquivo: aceita "Paulo-Afonso", "Paulo_Afonso", "Rib_Pombal"; sem unidade reconhecida não cria "Unidade"
+rep("['Paulo Afonso',/paulo\\s*afonso/i]","['Paulo Afonso',/paulo[\\s_-]*afonso/i]")
+rep("const DDC={'1031287':'Alagoinhas','1031295':'Serrinha'};","const DDC={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};")
+js=js.replace("unitOf(name)||'Unidade'","unitOf(name)||semUnidade(name)").replace("||'Unidade';const U=","||semUnidade(name);const U=")
 # Oportunidades: anotações compartilhadas (unidade, PDV/setor opcional, situação)
 opp_old = js[js.index("R.opp=()=>"):js.index("\n", js.index("R.opp=()=>"))]
 js = js.replace(opp_old, "R.opp=()=>oppView();")

@@ -403,7 +403,7 @@ async function salvarEstado(){
   catch(e){return `<div class="err">✗ Não salvou no Drive: ${esc(e.message)}. Os números valem só até fechar a página.</div>`}}
 async function iniciar(){
   if(M==='imp'&&!IS_ADMIN){location.replace('rotina.html?m=sem');return}
-  document.getElementById('bImp').hidden=!IS_ADMIN||M==='imp';document.getElementById('bDir').hidden=!IS_ADMIN;
+  document.getElementById('bImp').hidden=true;document.getElementById('bDir').hidden=!IS_ADMIN||M!=='imp';
   document.title=GRUPOS[M].t+' · Planner Revalle';
   try{const [ls,st]=await Promise.all([carregarLS(),carregarEstado()]);LSO=ls||{};if(st)ST=st;if(ST&&ST.units&&Object.keys(ST.units).length)await completar()}
   catch(e){carregando('Não consegui abrir os dados da rotina: '+esc(e.message));return}
@@ -490,6 +490,8 @@ async function completar(){
     for(const c in o){const v=o[c];U.clients[String(+c)]=[+(+v[0]).toFixed(4),+(+v[1]).toFixed(4),v[2]||(U.clients[String(+c)]||[])[2]||'']}}catch(e){}})());
   await Promise.all(tarefas)}
 
+function semUnidade(n){throw new Error('não reconheci a unidade pelo nome do arquivo (use Alagoinhas, Serrinha, Pombal ou Paulo Afonso no nome)')}
+
 
 /* =========================================================
    DADOS PADRÃO (gerados a partir das bases enviadas)
@@ -499,7 +501,7 @@ let DEFAULT_STATE={units:{},updated:null};
 /* =========================================================
    MOTOR DE IMPORTAÇÃO
    ========================================================= */
-const UNITS_RE=[['Alagoinhas',/alagoinhas/i],['Serrinha',/serrinha/i],['Ribeira do Pombal',/pombal/i],['Paulo Afonso',/paulo\s*afonso/i],['Beira Rio',/beira\s*rio/i]];
+const UNITS_RE=[['Alagoinhas',/alagoinhas/i],['Serrinha',/serrinha/i],['Ribeira do Pombal',/pombal/i],['Paulo Afonso',/paulo[\s_-]*afonso/i],['Beira Rio',/beira\s*rio/i]];
 function unitOf(s){for(const [u,re] of UNITS_RE) if(re.test(s)) return u; return null}
 function decode(buf){try{return new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){return new TextDecoder('windows-1252').decode(buf)}}
 function num(s){if(s==null)return NaN;s=String(s).trim();if(!s||s==='-')return NaN;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');else if(/^\-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');return parseFloat(s)}
@@ -528,7 +530,7 @@ function parsePlanner(text,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(n
   log(`${pk.kind==='pre'?'Pré':'Pós'}-planner ${pk.date.replace(/\./g,'/')} · ${u} · ${rows.length} PDVs`);
 }
 function parse0530(text,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name)||'*';st.impAt['0530|'+__u]=new Date().toISOString();
-  const L=lines(text);const u=unitOf(name)||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());
+  const L=lines(text);const u=unitOf(name)||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());
   if(!U.cliW)U.cliW={};const nd={},nw={},mp={};
   for(let i=1;i<L.length;i++){const r=L[i].split(';');const k=dkey(r[2]);if(!k)continue;const c=code(r[0]);const v=num(r[13])||0,e=num(r[16])||0;
     if(c){const cw=nw[c]||(nw[c]={});cw[k]=(cw[k]||0)+v}
@@ -544,20 +546,20 @@ function parse0530(text,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name
   log(`03.05.30 · ${u} · ${L.length-1} entregas de ${br(ks[0])} a ${br(ks[ks.length-1])} · histórico mantido fora desse período`);
 }
 function parse1142(text,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name)||'*';st.impAt['1142|'+__u]=new Date().toISOString();
-  const L=lines(text);const u=unitOf(name)||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());let n=0;
+  const L=lines(text);const u=unitOf(name)||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());let n=0;
   for(let i=1;i<L.length;i++){const r=L[i].split(';');const m=code(r[0]);const k=dkey(r[3]);if(!m||!k)continue;const mot=String(r[4]||'').trim();
     const o=U.maps[m]||(U.maps[m]={d:k,p:placa(r[2]),v:0,e:0});o.km=num(r[7]);o.x=(/^999-/.test(mot)||/^1-MAPA/i.test(mot))?1:0;if(!o.d)o.d=k;if(!o.p)o.p=placa(r[2]);n++}
   log(`03.11.42 · ${u} · ${n} mapas com KM`);
 }
 function parse1120(text,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name)||'*';st.impAt['1120|'+__u]=new Date().toISOString();
-  const L=lines(text);const u=unitOf(name)||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());
+  const L=lines(text);const u=unitOf(name)||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());
   const H=L[0].split(';').map(h=>h.trim());const iP=H.findIndex(h=>/kmprev/i.test(h)),iT=H.findIndex(h=>/tipo mapa/i.test(h));const pv={};
   for(let i=1;i<L.length;i++){const r=L[i].split(';');const m=code(r[0]);if(!m)continue;const p=num(r[iP])||0;pv[m]=Math.max(pv[m]||0,p)}
   let n=0;for(const m in pv){const o=U.maps[m]||(U.maps[m]={});o.pv=pv[m];if(pv[m]>0)n++}
   log(`03.11.20 · ${u} · ${n} mapas com KM previsto`);
 }
 function parseCli(text,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name)||'*';st.impAt['cli|'+__u]=new Date().toISOString();
-  const L=lines(text);const u=unitOf(name)||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());
+  const L=lines(text);const u=unitOf(name)||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());
   const H=L[0].replace(/^﻿/,'').split(';').map(h=>h.trim());const ix=n=>H.indexOf(n);
   const iC=ix('Código Cliente'),iLa=ix('Latitude'),iLo=ix('Longitude'),iCi=ix('Cidade'),iSe=ix('Setor');let n=0;
   for(let i=1;i<L.length;i++){const r=L[i].split(';');const c=code(r[iC]);if(!c)continue;const la=num(r[iLa]),lo=num(r[iLo]);if(!(la<0&&la>-35&&lo<-30&&lo>-75))continue;
@@ -569,7 +571,7 @@ const MESES=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','
 // carros ativos do mês (yyyy-mm), pelo ano certo
 function frAct(U,ym){const y=ym.slice(0,4),m=+ym.slice(5,7)-1;if(U.frotaY&&U.frotaY[y])return U.frotaY[y].act[m]||0;if(U.frotaY&&Object.keys(U.frotaY).length)return 0;return U.frota?U.frota.act[m]||0:0}
 function parseFrota(wb,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name)||'*';st.impAt['frota|'+__u]=new Date().toISOString();
-  const u=unitOf(name)||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());
+  const u=unitOf(name)||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());
   const ws=wb.Sheets[wb.SheetNames[0]];const A=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
   let hr=-1,ip=-1;for(let i=0;i<A.length&&hr<0;i++){const j=A[i].findIndex(v=>String(v).trim().toUpperCase()==='PLACA VEICULO');if(j>=0){hr=i;ip=j}}
   if(hr<0)throw new Error('Não achei a coluna "PLACA VEICULO"');
@@ -603,7 +605,7 @@ function parseCrit(wb,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name)|
   const sn=wb.SheetNames.find(n=>/solicita/i.test(n));const A=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
   const hr=A.findIndex(r=>r.some(v=>/tipo de ajuste/i.test(String(v))));const H=A[hr].map(v=>String(v).trim());const f=re=>H.findIndex(h=>re.test(h));
   const iC=f(/c[oó]d\.? cliente/i),iV=f(/c[oó]d\.? vendedor/i),iN=f(/nome cliente/i),iVi=f(/^visita/i),iJa=f(/^janela/i),iT=f(/tipo de ajuste/i),iND=f(/novo dia/i),iNJ=f(/nova janela/i),iJu=f(/justific/i),iP=f(/parecer/i),iO=f(/observa/i);
-  const u=unitOf(name)||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());
+  const u=unitOf(name)||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());
   const ds=Object.keys(U.planners).sort((a,b)=>{const x=pd(a),y=pd(b);return (x.y*1e4+x.m*100+x.d)-(y.y*1e4+y.m*100+y.d)});const dm=name.match(/(\d{2})[.\-_](\d{2})[.\-_](\d{2,4})/);
   const date=dm?`${dm[1]}.${dm[2]}.${dm[3].slice(-2)}`:(ds[ds.length-1]||'sem data');
   const rows=[];for(let i=hr+1;i<A.length;i++){const r=A[i];const c=code(r[iC]);if(!c)continue;
@@ -626,17 +628,17 @@ function parseAcoes(wb,name,st,log){st.impAt=st.impAt||{};const __u=unitOf(name)
   st.acoes={rows,em:new Date().toISOString(),tot,arq:name};log(`Relatório de planos de ação · ${tot} ações lidas · ${rows.length} do planner (RLP/RPS/RNS/RPD com KPI do checklist ou assunto "planner")`);
 }
 
-const DDC={'1031287':'Alagoinhas','1031295':'Serrinha'};
+const DDC={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};
 function parseVis(wb,name,st,log,rows){const A=rows||XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});const hr=A.findIndex(r=>r.some(v=>/^Seg1$/i.test(String(v).trim())));const H=A[hr].map(v=>String(v).trim());const f=n=>H.findIndex(h=>h.toLowerCase()===n.toLowerCase());
   const iC=f('Cliente'),iN=f('Nome Cliente'),iS=f('Status Cliente'),iV=f('Setor'),iVN=f('Nome Setor'),iP=f('Periodicidade'),iU=f('Nome UNB'),i0=f('Seg1');
-  const u=unitOf(name)||unitOf(String((A[hr+1]||[])[iU]||''))||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());const d=isoName(name);
+  const u=unitOf(name)||unitOf(String((A[hr+1]||[])[iU]||''))||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());const d=isoName(name);
   const V={};U.vnm=U.vnm||{};U.snm=U.snm||{};let n=0;
   for(let i=hr+1;i<A.length;i++){const r=A[i];const c=code(r[iC]);if(!c)continue;let mask=0;for(let k=0;k<28;k++)if(num(r[i0+k])>0)mask|=(1<<k);const v=String(r[iV]).trim();
     V[c]=[v,mask>>>0,/^ativo/i.test(String(r[iS]).trim())?1:0,String(r[iP]).trim()];U.vnm[c]=String(r[iN]).trim();if(iVN>=0)U.snm[v]=String(r[iVN]).trim();if(mask)n++}
   (U.vis||(U.vis={}))[d]=V;st.impAt=st.impAt||{};st.impAt['vis|'+u]=new Date().toISOString();log(`Visitas 01.02.78.03 · ${u} · semana de ${br(d)} · ${Object.keys(V).length} PDVs (${n} com visita)`)}
 function parseJan(text,name,st,log){const L=lines(text);const H=L[0].replace(/^﻿/,'').split(';').map(h=>h.trim());const ix=n=>H.indexOf(n);
   const iD=ix('DDC_ID'),iC=ix('ERP_POC_ID'),iT=ix('Settings_Type'),i0=ix('Mon');const d=isoName(name);
-  const u=unitOf(name)||DDC[String((L[1]||'').split(';')[iD]).trim()]||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());
+  const u=unitOf(name)||DDC[String((L[1]||'').split(';')[iD]).trim()]||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());
   const J={};for(let i=1;i<L.length;i++){const r=L[i].split(';');if(iT>=0&&!/poc/i.test(r[iT]))continue;const c=code(r[iC]);if(!c)continue;
     let s='';for(let k=0;k<7;k++){const v=String(r[i0+k]||'').trim().toUpperCase();s+=v==='FREE'?'F':/^FLE/.test(v)?'X':'N'}
     if(J[c]){let m='';for(let k=0;k<7;k++)m+=J[c][k]!=='N'?J[c][k]:s[k];s=m}J[c]=s}
@@ -644,7 +646,7 @@ function parseJan(text,name,st,log){const L=lines(text);const H=L[0].replace(/^�
 const D0=Date.UTC(2020,0,1);const dnum=k=>Math.round((Date.UTC(+k.slice(0,4),+k.slice(5,7)-1,+k.slice(8,10))-D0)/864e5);const dstr=n=>new Date(D0+n*864e5).toISOString().slice(0,10);
 function parsePed(text,name,st,log){const L=lines(text);const H=L[0].replace(/^﻿/,'').split(';').map(h=>h.trim());const ix=n=>H.findIndex(h=>h.toLowerCase()===n.toLowerCase());
   const iC=ix('Código Cliente'),iP=ix('Pedido'),iT=ix('Tamanho'),iR=ix('Roteirizado'),iE=ix('Data de Entrega'),iO=ix('Data de entrega original'),iCa=ix('Data de Cadastro'),iF=ix('Filial Corporativa'),iTp=ix('Tipo'),iS=ix('Sessão Roteirizado');
-  const u=unitOf(name)||DDC[String((L[1]||'').split(';')[iF]).trim()]||'Unidade';const U=st.units[u]||(st.units[u]=emptyUnit());const P=U.ped||(U.ped={});
+  const u=unitOf(name)||DDC[String((L[1]||'').split(';')[iF]).trim()]||semUnidade(name);const U=st.units[u]||(st.units[u]=emptyUnit());const P=U.ped||(U.ped={});
   // sem a coluna "Data de Entrega": cada sessão de roteirização é um dia de entrega = maior data original dos pedidos roteirizados da sessão
   // regra: roteirização antes de 12h = entrega no mesmo dia, depois de 12h = dia seguinte (domingo → segunda); a data da sessão é a data original mais comum a partir daí (se for menos de 20% da sessão, a mais comum da sessão). Validada em out/26: 99,9% igual à "Data de Entrega"
   const sesD={};if(iE<0){if(iS<0)throw new Error('Relatório sem "Data de Entrega" e sem "Sessão Roteirizado"');const iRt=ix('Data Roteirizado');const SS={};
