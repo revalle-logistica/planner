@@ -75,6 +75,7 @@ ol{padding-left:18px;margin:8px 0}
 .d small{position:relative;color:var(--mut);font-size:11px}
 .lst summary{font-size:12.5px}.lst.al summary{color:#fca5a5}
 .codes{color:var(--mut);font-size:12px;word-break:break-word;margin:6px 0}
+.hist tr.hdet td{background:var(--bg);padding:10px 14px}
 .hist td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{display:inline-flex;gap:6px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--txt);text-decoration:none}
 .chip:hover{border-color:var(--pos)}
@@ -371,7 +372,25 @@ function drawHist(){
   $('hist').innerHTML=s.length?`<table class="hist"><thead><tr><th>Semana</th><th>Unidades e arquivos</th><th>Movimento</th><th>Salvo em</th></tr></thead><tbody>${s.map(w=>`<tr><td><b>${br(w.id)}</b>${w.ref?`<br><small style="color:var(--mut)">ref. novos quinzenais: ${esc(w.ref)}</small>`:''}</td>
     <td><div class="chips">${w.unidades.map(x=>`<a class="chip hdl" href="#" data-p="${esc(x.arquivo)}" title="${fmt(x.total)} linhas">⬇ ${esc(x.nome)} <small style="color:var(--mut)">${fmt(x.comJanela)} c/ janela</small></a>`).join('')}</div></td>
     <td style="font-size:12px">${w.unidades.map(x=>`${esc(x.nome)}: ${[x.ajustes!=null?`${x.ajustes} ajustes`:'',x.novos!=null?`${x.novos} novos`:'',x.pendentes?`<span class="am">${x.pendentes} pendentes</span>`:'',x.inativados?`${x.inativados} inativados`:'',x.quinzNovo||x.quinzMantido?`${x.quinzNovo+x.quinzMantido} quinzenais`:''].filter(Boolean).join(' · ')||'—'}`).join('<br>')}</td>
-    <td style="color:var(--mut)">${new Date(w.atualizado).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</td></tr>`).join('')}</tbody></table>`:'<div class="sub">Nenhuma semana salva ainda.</div>';
+    <td style="color:var(--mut)">${new Date(w.atualizado).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}<br><button class="btn sm hver" data-w="${w.id}" style="margin-top:6px">${histAberta===w.id?'▲ Fechar':'▼ Ver números'}</button></td></tr>
+    ${histAberta===w.id?`<tr class="hdet"><td colspan="4">${w.unidades.map(histCard).join('')}</td></tr>`:''}`).join('')}</tbody></table>`:'<div class="sub">Nenhuma semana salva ainda.</div>';
+  $('hist').querySelectorAll('.hver').forEach(b=>b.onclick=()=>{histAberta=histAberta===b.dataset.w?'':b.dataset.w;drawHist()});
+}
+let histAberta='';
+function histCard(x){
+  const d=x.dias||[],mx=Math.max(1,...d),fora=x.semDocumento||0,qn=x.quinzNovo||0,qm=x.quinzMantido||0;
+  return `<div class="un" style="margin:8px 0"><div class="hd"><h3>${esc(x.nome)} <small style="color:var(--mut);font-weight:500">DDC ${esc(x.id)}</small></h3><span><a class="btn sm hdl" href="#" data-p="${esc(x.arquivo)}">⬇ Baixar CSV</a></span></div>
+    <div class="kpis">
+      <div class="k"><b>${fmt(x.total)}</b><small>linhas no arquivo</small></div>
+      <div class="k"><b>${fmt(x.comJanela)}</b><small>com janela</small></div>
+      <div class="k"><b>${fmt(x.ajustes||0)}</b><small>ajustes aplicados</small></div>
+      <div class="k"><b>${fmt(x.novos||0)}</b><small>PDVs novos incluídos</small></div>
+      <div class="k ${x.pendentes?'al':''}"><b>${fmt(x.pendentes||0)}</b><small>pendentes (fechados)</small></div>
+      <div class="k"><b>${fmt(x.inativados||0)}</b><small>inativados</small></div>
+      <div class="k"><b>${fmt(qn)} + ${fmt(qm)}</b><small>quinzenais novos + mantidos</small></div>
+      <div class="k ${fora?'al':''}"><b>${fmt(fora)}</b><small>de fora: sem CPF/CNPJ válido</small></div>
+    </div>
+    ${d.length?`<div class="week">${J.DIAS_PT.map((n,i)=>`<div class="d"><i style="height:${Math.round((d[i]||0)/mx*100)}%"></i><b>${fmt(d[i]||0)}</b><small>${n.slice(0,3)}</small></div>`).join('')}</div>`:''}</div>`;
 }
 }
 </script>
