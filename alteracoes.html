@@ -112,6 +112,8 @@ const UNITS={};
   IDX=await PlannerData.json('index.json');IDX.versions.sort((a,b)=>b.vig.localeCompare(a.vig));
   const h=Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(x=>x.split('=').map(decodeURIComponent)));
   $('ver').innerHTML=IDX.versions.map(v=>`<option value="${v.id}">${esc(v.label||'Planner '+fmtD(v.vig))}</option>`).join('');
+  // planners antigos: solicitações que vieram das planilhas (crítica e formulário), só para consulta
+  try{OLD=await planilhasAntigas();if(OLD.keys.length)$('ver').insertAdjacentHTML('beforeend','<optgroup label="Planners antigos · planilhas (só consulta)">'+OLD.keys.map(k=>`<option value="old:${k}">Planner ${k.replace(/\./g,'/')} · planilha</option>`).join('')+'</optgroup>')}catch(e){}
   $('ver').onchange=e=>load(e.target.value);
 $('fi').onchange=e=>{importFiles(e.target.files);e.target.value=''};
   $('editBtn').onclick=()=>{if(S.edit&&PEND.size)publishAsk();S.edit=!S.edit;$('editBtn').classList.toggle('on',S.edit);$('editBtn').textContent=S.edit?'✓ Concluir parecer':'✍️ Dar parecer';$('editBtn').classList.toggle('pri',S.edit);renderTable()};
@@ -122,8 +124,36 @@ $('fi').onchange=e=>{importFiles(e.target.files);e.target.value=''};
   window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue=''}});
   await load(h.v&&IDX.versions.some(v=>v.id===h.v)?h.v:IDX.versions[0].id);
 })();
+let OLD={keys:[],st:null};
+const UNB_N={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'},UNB_A={'1031287':'ALA','1031295':'SER','826588':'POM','983616':'PAF'};
+const unbDeNome=n=>Object.keys(UNB_N).find(k=>String(n||'').toLowerCase().includes(UNB_N[k].toLowerCase().split(' ').pop()));
+const kNum=k=>{const [d,m,a]=k.split('.');return +(a+m+d)};
+async function planilhasAntigas(){
+  const z=await PlannerData.text('rotina/estado.gz');const b=Uint8Array.from(atob(z),c=>c.charCodeAt(0));
+  const st=JSON.parse(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+  const ks=new Set();for(const u in st.units){for(const k in (st.units[u].crit||{}))ks.add(k);for(const k in (st.units[u].planners||{}))ks.add(k)}
+  const versoes=new Set(IDX.versions.map(v=>{const [a,m,d]=v.vig.split('-');return `${d}.${m}.${a.slice(2)}`}));
+  OLD={keys:[],st};return {keys:[...ks].filter(k=>!versoes.has(k)&&itensAntigos(k).length).sort((a,b)=>kNum(b)-kNum(a)),st}}
+function itensAntigos(k){const st=OLD.st,out=[];let n=0;
+  const todos=new Set();for(const u in st.units)for(const p in (st.units[u].planners||{}))todos.add(p);for(const u in st.units)for(const p in (st.units[u].crit||{}))todos.add(p);
+  const prox=[...todos].filter(p=>kNum(p)>kNum(k)).sort((a,b)=>kNum(a)-kNum(b))[0];
+  const iso=x=>{const [d,m,a]=x.split('.');return `20${a}-${m}-${d}`};const de=iso(k),ate=prox?iso(prox):'9999';
+  for(const u in st.units){const unb=unbDeNome(u);if(!unb)continue;
+    for(const r of ((st.units[u].crit||{})[k]||[]))out.push({id:'old'+(n++),u:unb,code:r[0],n:r[2],s:r[1],sNovo:'',tipo:r[5],novoDia:r[6],novaJanela:r[7],just:r[8],parecer:r[9],obs:r[10],gv:'',origem:'Planilha de crítica (antes da virada)'});}
+  for(const r of (st.form||[])){if(!(r[0]>=de&&r[0]<ate))continue;const unb=unbDeNome(r[1]);if(!unb)continue;
+    out.push({id:'old'+(n++),u:unb,code:r[2],n:'',s:'',sNovo:'',tipo:r[5]||'Formulário',novoDia:r[3],novaJanela:r[4],just:'Formulário de alterações · '+r[0].split('-').reverse().join('/'),parecer:'Sem parecer',obs:'',gv:'',origem:'Formulário (depois da virada)'})}
+  return out}
 async function load(vid){
   S.vid=vid;$('ver').value=vid;
+  const antigo=/^old:/.test(vid);['editBtn','pubBtn','refBtn','mapBtn'].forEach(id=>{const e=$(id);if(e)e.style.display=antigo?'none':''});
+  if(antigo){const k=vid.slice(4);REG={items:itensAntigos(k)};PEND=new Map();setDirty(false);
+    V={vig:'20'+k.split('.').reverse().join('-'),units:Object.keys(UNB_N).filter(u=>REG.items.some(r=>r.u===u)).map(u=>({id:u,name:UNB_N[u],abbr:UNB_A[u]}))};
+    for(const u of V.units)UNITS[u.id]=u;
+    $('vsub').textContent=`Planner ${k.replace(/\./g,'/')} · solicitações das planilhas do processo antigo (crítica e formulário) · só consulta`;
+    $('tabs').innerHTML=[['ALL','Todas'],...V.units.map(u=>[u.id,u.name])].map(([kk,v])=>`<button class="tab ${S.u===kk?'on':''}" data-u="${kk}">${esc(v)}</button>`).join('');
+    $('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;S.u=b.dataset.u;S.fS='';document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));render()};
+    if(S.edit){S.edit=false;$('editBtn').classList.remove('on','pri');$('editBtn').textContent='✍️ Dar parecer'}
+    render();return}
   V=await PlannerData.json(`v/${vid}.json`);
   for(const u of V.units)UNITS[u.id]=u;
   $('vsub').textContent=`Solicitações de Vendas e parecer da Logística · planner com vigência ${fmtD(V.vig)}`;
@@ -133,6 +163,7 @@ async function load(vid){
   render();
 }
 async function refresh(show,silentRender){
+  if(/^old:/.test(S.vid))return;
   if(!PlannerAPI.ok()){REG={items:[]};say('err','A conexão com o registro ainda não foi configurada.');if(!silentRender)render();return}
   try{if(show)say('info','Buscando as solicitações…');const items=await PlannerAPI.list(S.vid);
     for(const it of items){const p=PEND.get(it.id);if(p){it.parecer=p.parecer;it.obs=p.obs}}
@@ -142,7 +173,7 @@ async function refresh(show,silentRender){
 }
 function setDirty(d){DIRTY=d;$('pubBtn').classList.toggle('dirty',d);$('pubBtn').textContent=d?`💾 Salvar parecer (${PEND.size})`:'💾 Salvar parecer'}
 function say(c,h){$('msg').className='msg '+c;$('msg').innerHTML=h}
-const parK=p=>/aprov/i.test(p)?'A':/reprov/i.test(p)?'R':'P';
+const parK=p=>/aprov/i.test(p)?'A':/reprov/i.test(p)?'R':/sem parecer/i.test(p)?'S':'P';
 function rows(){const q=$('q').value.trim().toUpperCase();
   return REG.items.filter(r=>(S.u==='ALL'||r.u===S.u)&&(!S.par||parK(r.parecer)===parK(S.par))&&(!S.fT||r.tipo===S.fT)&&(!S.fG||r.gv===S.fG)&&(!S.fS||String(r.s)===S.fS)
     &&(!q||[r.code,r.n,r.s,r.sNovo,r.just,r.obs,r.tipo].join(' ').toUpperCase().includes(q)))}
@@ -180,7 +211,7 @@ function renderTable(R){
   R.map(r=>{const i=REG.items.indexOf(r);const k=parK(r.parecer);
     const tc={'Carteira/vendedor':'#ff5d5d','Dia de visita':'#3b9eff','Visita e janela':'#b07cff','Janela de entrega':'#2dd4bf'}[r.tipo]||'#8a94a8';
     return `<tr><td class="cli"><b>${esc(r.n)}</b><small>${esc(r.code)}</small></td>${all?`<td>${esc((UNITS[r.u]||{}).abbr||r.u)}</td>`:''}<td class="mono">${esc(r.s)}${r.sNovo&&r.sNovo!==r.s?`<br><b style="color:#f5c2fb">→ ${esc(r.sNovo)}</b>`:''}</td><td><span class="chip" style="background:${tc}22;color:${tc}">${esc(r.tipo)}</span></td><td>${esc(r.novoDia)}${r.novaFreq?`<br><span style="color:var(--mut);font-size:12px">${esc(r.novaFreq)}</span>`:''}</td><td>${esc(r.novaJanela)}</td>
-    <td class="j">${esc(r.just)||'<span style="color:var(--dim)">—</span>'}${!S.edit&&r.obs?`<i>Log: ${esc(r.obs)}</i>`:''}${r.gv?`<span style="display:block;color:var(--dim);text-transform:none;font-size:11.5px;margin-top:3px">GV: ${esc(r.gv)}</span>`:''}</td>
+    <td class="j">${esc(r.just)||'<span style="color:var(--dim)">—</span>'}${!S.edit&&r.obs?`<i>Log: ${esc(r.obs)}</i>`:''}${r.origem?`<span style="display:block;color:#93c5fd;text-transform:none;font-size:11.5px;margin-top:3px">📄 ${esc(r.origem)}</span>`:''}${r.gv?`<span style="display:block;color:var(--dim);text-transform:none;font-size:11.5px;margin-top:3px">GV: ${esc(r.gv)}</span>`:''}</td>
     <td class="${S.edit?'edit':''}">${S.edit?`<select data-i="${i}" class="pp">${['Pendente','Aprovado','Reprovado'].map(x=>`<option ${parK(r.parecer)===parK(x)?'selected':''}>${x}</option>`).join('')}</select><textarea data-i="${i}" class="po" rows="2" placeholder="Observação da Logística">${esc(r.obs||'')}</textarea>`:`<span class="par ${k}">${esc(r.parecer||'Pendente')}</span>`}</td></tr>`}).join('')+'</tbody>';
   const mark=it=>{PEND.set(it.id,{id:it.id,parecer:it.parecer,obs:it.obs||''});setDirty(true)};
   if(S.edit){$('tbl').querySelectorAll('.pp').forEach(el=>el.onchange=()=>{const it=REG.items[+el.dataset.i];it.parecer=el.value;mark(it);render()});
