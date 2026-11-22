@@ -81,6 +81,37 @@ ol{padding-left:18px;margin:8px 0}
 .warn{background:#f5b30114;border:1px solid #f5b30155;color:#fde68a;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-top:12px}
 @media(max-width:800px){.how{grid-template-columns:1fr 1fr}}
 </style>
+<style>
+.rep{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.ru{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.02)}
+.ru b{font-size:14px}.ru .ln{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.ru .ln:last-child{border-bottom:0}.ru .ln span{color:var(--mut)}
+.ok{color:#4ade80}.am{color:#fcd34d}.rd{color:#f87171}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{background:var(--panel2);border:1px solid var(--line);color:var(--mut);padding:8px 14px;border-radius:10px;font:600 13px Inter;cursor:pointer}
+.tabs button.on{background:var(--pos);color:#111;border-color:var(--pos)}
+.tabs button em{font-style:normal;background:#ef4444;color:#fff;border-radius:999px;padding:0 6px;font-size:11px;margin-left:6px}
+.sec{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:rgba(255,255,255,.02)}
+.sec>summary{padding:12px 14px;font-weight:700;font-size:13.5px;color:var(--txt);cursor:pointer;display:flex;justify-content:space-between;gap:8px;list-style:none}
+.sec>summary::-webkit-details-marker{display:none}
+.sec>summary small{color:var(--mut);font-weight:500}
+.sec .in{padding:0 14px 14px;overflow-x:auto}
+.mini{width:100%;border-collapse:collapse;font-size:12.5px}
+.mini th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.mini td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.cnt{display:flex;gap:3px}
+.cnt i{font-style:normal;min-width:30px;text-align:center;border-radius:6px;padding:3px 2px;font-size:11px;background:var(--panel2);color:var(--dim)}
+.cnt i.s{background:#22c55e22;color:#4ade80;font-weight:700}
+.cnt i small{display:block;font-size:9.5px;opacity:.8}
+.tg{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+.tg.n{background:#3b9eff22;color:#60a5fa}.tg.r{background:#e879f922;color:#f0abfc}.tg.p{background:#f5b30122;color:#fcd34d}.tg.x{background:#ef444422;color:#f87171}.tg.g{background:#22c55e22;color:#4ade80}
+select.dia{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 8px;border-radius:8px;font:600 12.5px Inter}
+select.dia.pend{border-color:#f5b30188;color:#fcd34d}
+a.map{color:#93c5fd;font-size:12px}
+</style>
+<script src="js/core.js"></script>
+<script src="js/relatorios-core.js"></script>
+<script src="js/janelas-base.js"></script>
 <script src="js/api.js"></script>
 <link rel="stylesheet" href="css/theme.css">
 <script src="js/shell.js"></script>
@@ -91,52 +122,47 @@ ol{padding-left:18px;margin:8px 0}
   <div class="card">
     <h2>Como funciona</h2>
     <div class="how">
-      <div><b>1. Semana</b>Escolha a semana da importação. Cada semana fica salva no histórico.</div>
-      <div><b>2. Arquivos</b>Solte o arquivo atual do BEES, o cadastro de clientes (CPF/CNPJ) e o gabarito de janelas, se houver um novo.</div>
-      <div><b>3. Quinzenais</b>Diga se mantém os quinzenais que já estão no BEES e informe os novos.</div>
-      <div><b>4. Gerar e salvar</b>Baixe um CSV por unidade para importar no BEES e salve a semana no histórico.</div>
+      <div><b>1. Relatórios</b>Atualize os relatórios da semana na Central de relatórios. Aqui você vê o que está pronto.</div>
+      <div><b>2. Revisão</b>Confira os ajustes aprovados, os inativados e escolha o dia dos PDVs novos (com a sinergia calculada).</div>
+      <div><b>3. Quinzenais</b>Diga se mantém os quinzenais do BEES e informe os novos.</div>
+      <div><b>4. Gerar e salvar</b>Gera um CSV por unidade, atualiza a base viva e guarda a semana no histórico.</div>
     </div>
-    <div class="warn">⚠️ Não abra no Excel o CSV gerado nem o arquivo baixado do BEES: ao salvar, o Excel transforma CNPJ em <b>5,19E+13</b> e corta os dígitos. Use direto do download.</div>
+    <div class="warn">⚠️ Não abra no Excel o CSV gerado nem o arquivo baixado do BEES: ao salvar, o Excel transforma CNPJ em <b>5,19E+13</b> e corta os dígitos.</div>
   </div>
 
   <div class="card">
-    <h2><span class="n">1</span>Semana da importação</h2>
-    <div class="sub">Se a semana já estiver no histórico, salvar de novo <b>atualiza</b> as unidades geradas agora.</div>
-    <div class="row">
+    <h2><span class="n">1</span>Semana e relatórios</h2>
+    <div class="row" style="margin-bottom:14px">
       <label class="f">Semana (segunda-feira)<input type="date" id="sem"></label>
       <label class="f">Data de referência dos novos quinzenais<input id="ref" placeholder="dd/mm/aaaa" inputmode="numeric" style="width:170px"></label>
       <div id="mode" style="padding-bottom:10px"></div>
+      <a class="btn" href="relatorios.html" style="margin-bottom:2px">Abrir a Central de relatórios →</a>
     </div>
+    <div class="rep" id="rep"><div class="sub">Carregando…</div></div>
   </div>
 
   <div class="card">
-    <h2><span class="n">2</span>Arquivos</h2>
-    <div class="sub">Pode soltar todos de uma vez: o tipo e a unidade de cada arquivo são reconhecidos pelo conteúdo. A <b>base</b> das janelas vem do gabarito que você soltar; sem gabarito, usa as janelas pós do planner publicado (quando houver).</div>
-    <div class="zone" id="drop"><b>Arraste os arquivos aqui</b><small>Arquivo atual de janelas do BEES · Cadastro de clientes 01.20.11 (CPF/CNPJ) · Gabarito visão entrega 2ª janela · Lista de quinzenais (Unidade;Codigo)</small><button class="pick">Escolher arquivos</button></div>
-    <input type="file" id="fi" multiple accept=".csv,.txt" style="display:none"><input type="file" id="fq" multiple accept=".csv,.txt" style="display:none">
-    <div class="files" id="files"></div>
-    <div id="units" style="margin-top:14px"></div>
+    <h2><span class="n">2</span>Revisão da semana</h2>
+    <div class="sub">Sinergia: pelo menos <b>5 PDVs</b> da base com janela no mesmo dia num raio de <b>3 km</b>. PDV novo ou reativado sem sinergia fica <b>fechado e pendente</b> até você escolher o dia.</div>
+    <div class="tabs" id="tabs"></div>
+    <div id="rev"><div class="sub">Carregando…</div></div>
   </div>
 
   <div class="card">
     <h2><span class="n">3</span>Quinzenais</h2>
     <div class="sub">Quinzenais mantidos ficam com a data de referência que já têm no BEES. Semanais saem com a data vazia.</div>
     <div id="bi"></div>
-    <div class="row" style="justify-content:space-between;margin:6px 0 10px"><b style="font-size:13px">Novos quinzenais por unidade</b><button class="btn sm" id="rep" disabled>↺ Repetir os novos quinzenais da última semana salva</button></div>
-    <div class="qgrid" id="quinz"><div class="sub">Solte os arquivos para informar os quinzenais.</div></div>
+    <div class="row" style="justify-content:space-between;margin:6px 0 10px"><b style="font-size:13px">Novos quinzenais por unidade</b><button class="btn sm" id="rep2" disabled>↺ Repetir os novos quinzenais da última semana salva</button></div>
+    <div class="qgrid" id="quinz"></div>
+    <input type="file" id="fq" multiple accept=".csv,.txt" style="display:none">
   </div>
 
   <div class="card">
     <h2><span class="n">4</span>Gerar e salvar</h2>
-    <div class="row"><button class="btn pri" id="gerar" disabled>Gerar arquivos</button><span id="st" class="sub" style="margin:0 0 10px"></span></div>
+    <div class="sub">Gera os arquivos e grava a semana: a base viva de cada unidade passa a ter os ajustes, os PDVs novos confirmados e os inativados. O Drive guarda tudo (os arquivos têm CPF/CNPJ).</div>
+    <div class="row"><button class="btn pri" id="gerar" disabled>Gerar e salvar a semana</button><span id="st" class="sub" style="margin:0 0 10px"></span></div>
+    <div class="msg" id="msg"></div>
     <div id="res" style="margin-top:14px"></div>
-    <div id="saveBox" style="display:none;border-top:1px solid var(--line);margin-top:6px;padding-top:14px">
-      <div class="sub">Salvar grava os CSVs e o resumo da semana no Drive da Logística (fora do site público, porque os arquivos têm CPF/CNPJ).</div>
-      <div class="row">
-        <button class="btn pri" id="save">💾 Salvar semana no histórico</button>
-      </div>
-      <div class="msg" id="msg"></div>
-    </div>
   </div>
 
   <div class="card">
@@ -147,163 +173,197 @@ ol{padding-left:18px;margin:8px 0}
 </main>
 <script>
 {
-const J=JanelasCore;const $=id=>document.getElementById(id);
+const J=JanelasCore,R=Relatorios,JB=JanelasBase,$=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=n=>Number(n||0).toLocaleString('pt-BR');const br=iso=>iso?iso.split('-').reverse().join('/'):'';
-const NOME={'1031287':'Alagoinhas','1031295':'Serrinha','826588':'Ribeira do Pombal','983616':'Paulo Afonso'};
-const ORDEM=['1031287','1031295','826588','983616'];
-const A=[];            // arquivos: {nome,tipo,ddc,p,mapa}
-const quinzTxt={},biResp={},res={};
-let HIST={semanas:[]},VER=null;
+const dt=s=>s?new Date(s).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
+const NOME=R.UNIDADES,ORDEM=R.ORDEM,DIAS=JB.DIAS;
+const quinzTxt={},biResp={},res={},U={};   // U[unb] = {rel:{...}, base, A (análise), dec:{cod:dia}}
+let HIST={semanas:[]},RIX={r:{}},VER=null,cur='';
 
 (async()=>{
   $('sem').value=nextMonday();$('ref').value=br($('sem').value);
   try{HIST=await PlannerData.json('janelas/index.json')}catch(e){HIST={semanas:[]}}
+  try{RIX=JSON.parse(await PlannerData.text('rel/index.json'))}catch(e){RIX={r:{}}}
   try{const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];if(v)VER=await PlannerData.json(`v/${v.id}.json`)}catch(e){}
-  drawHist();modo();render();
+  drawHist();modo();await carregar();
 })();
 function nextMonday(){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7));return d.toISOString().slice(0,10)}
-function modo(){const s=$('sem').value,ex=HIST.semanas.find(x=>x.id===s);$('mode').innerHTML=s?(ex?`<span class="tag t-reuse">Atualizar semana ${br(s)}</span>`:`<span class="tag t-file">Nova semana</span>`):'';$('rep').disabled=!ultimaSalva()}
-$('sem').onchange=()=>{const old=$('ref').dataset.auto!=='0';if(old)$('ref').value=br($('sem').value);modo()};
+function modo(){const s=$('sem').value,ex=HIST.semanas.find(x=>x.id===s);$('mode').innerHTML=s?(ex?`<span class="tag t-reuse">Atualizar semana ${br(s)}</span>`:`<span class="tag t-file">Nova semana</span>`):'';$('rep2').disabled=!ultimaSalva()}
+$('sem').onchange=()=>{if($('ref').dataset.auto!=='0')$('ref').value=br($('sem').value);modo()};
 $('ref').oninput=()=>{$('ref').dataset.auto='0'};
 function ultimaSalva(){return HIST.semanas.filter(x=>x.id!==$('sem').value).sort((a,b)=>b.id.localeCompare(a.id))[0]}
+const relInfo=(id,u)=>(RIX.r[id]||{})[u];
+const sit=(id,u)=>{const r=R.CATALOGO.find(c=>c.id===id);const x=relInfo(id,u);return R.situacao(r.freq,x&&x.em)};
 
-// ---------- arquivos
-async function ler(f){const b=await f.arrayBuffer();try{return new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(e){return new TextDecoder('windows-1252').decode(b)}}
-function addQuinz(u,cods){quinzTxt[u]=[...new Set([...J.parseCodigos(quinzTxt[u]),...cods])].join('\n')}
-function atribuirCadastros(){
-  for(const a of A.filter(x=>x.tipo==='cadastro')){let best='',n=0;
-    for(const pl of A.filter(x=>x.tipo==='planner')){let k=0;for(const r of pl.p.rows)if(a.mapa.has(String(r.ERP_POC_ID).trim()))k++;if(k>n){n=k;best=pl.ddc}}
-    a.ddc=best||J.unidadeDe(a.nome);}
-}
-async function addFiles(list){
-  for(const f of list){
-    try{
-      const p=J.parseCSV(await ler(f)),c=J.classificar(p);
-      if(c.tipo==='quinzenais'){const q=J.quinzPorUnidade(p,c.iu,c.ic);for(const u in q)addQuinz(u,q[u]);A.push({nome:f.name,tipo:'quinzenais',ddc:'',p,info:Object.entries(q).map(([u,v])=>`${NOME[u]}: ${v.length}`).join(' · ')});continue}
-      const it={nome:f.name,tipo:c.tipo,ddc:c.ddc,p};if(c.tipo==='cadastro')it.mapa=J.mapaCadastro(p);
-      const i=A.findIndex(a=>c.tipo!=='cadastro'&&c.tipo!=='desconhecido'&&a.tipo===c.tipo&&a.ddc===c.ddc);
-      if(i>=0)A[i]=it;else A.push(it);
-    }catch(e){A.push({nome:f.name,tipo:'erro',ddc:'',p:{rows:[]}})}
+// ---------- carrega relatórios da Central e a base viva de cada unidade
+async function carregar(){
+  for(const u of ORDEM){
+    const o={rel:{},avisos:[]};U[u]=o;
+    if(!relInfo('bees',u))continue;
+    try{o.rel.bees=J.parseCSV(await PlannerData.text(R.caminho('bees',u,'csv'))).rows}catch(e){o.avisos.push('Não consegui ler o arquivo do BEES');continue}
+    try{o.rel.ativos=JSON.parse(await PlannerData.text(R.caminho('010278',u,'json'))).clientes}catch(e){o.rel.ativos=null}
+    try{o.rel.cad=new Map(Object.entries(JSON.parse(await PlannerData.text(R.caminho('012011',u,'json')))))}catch(e){o.rel.cad=null}
+    try{o.rel.coords=JSON.parse(await PlannerData.text(R.caminho('coord',u,'json')));o.coordSrc='Relatório de clientes'}catch(e){o.rel.coords=null}
+    if(!o.rel.coords&&VER){o.rel.coords={};for(const c of VER.clients)if(c[0]===u&&c[10]!=null)o.rel.coords[String(c[1])]=[c[10],c[11]];o.coordSrc='Planner publicado (o relatório de coordenadas ainda não foi enviado)'}
+    try{o.rel.ajustes=JSON.parse(await PlannerData.text(R.caminho('ajustes',u,'json'))).itens}catch(e){o.rel.ajustes=[]}
+    try{o.base=await PlannerData.json(`janelas/base/${u}.json`);o.baseNova=false}catch(e){o.base=null}
+    if(!o.base){
+      try{o.base=JB.deGabarito(u,await PlannerData.text(R.caminho('gabarito',u,'csv')));o.baseNova='Gabarito da Central de relatórios'}
+      catch(e){if(VER&&VER.clients.some(c=>c[0]===u&&c[21])){o.base=JB.deVersao(u,VER);o.baseNova='Janelas pós do planner publicado'}}
+    }
+    if(o.base)analisar(u);
   }
-  atribuirCadastros();render();
+  cur=cur||ORDEM.find(u=>U[u].A)||'';
+  render();
 }
-const drop=$('drop');
-drop.onclick=()=>$('fi').click();
-drop.ondragover=e=>{e.preventDefault();drop.classList.add('drag')};drop.ondragleave=()=>drop.classList.remove('drag');
-drop.ondrop=e=>{e.preventDefault();drop.classList.remove('drag');addFiles(e.dataTransfer.files)};
-$('fi').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
-let fqU='';$('fq').onchange=async e=>{for(const f of e.target.files)addQuinz(fqU,J.codigosDeArquivo(await ler(f)));e.target.value='';render()};
+function analisar(u){
+  const o=U[u];
+  o.A=JB.analisar({base:o.base,ativos:o.rel.ativos||[],coords:o.rel.coords||{},ajustes:o.rel.ajustes||[],bees:o.rel.bees});
+  o.dec={};for(const n of o.A.novos)o.dec[n.cod]=n.pendente&&n.sug<0?-1:n.sug; // pendente de antes com sinergia agora: sugere, você confirma
+  for(const n of o.A.novos)if(n.pendente&&n.sug>=0)o.dec[n.cod]=-1;
+}
+function reiniciar(u){const o=U[u];PlannerData.text(R.caminho('gabarito',u,'csv')).then(t=>{o.base=JB.deGabarito(u,t);o.baseNova='Gabarito da Central (reiniciada)';analisar(u);render()}).catch(e=>alert('Não consegui ler o gabarito: '+e.message))}
 
-const TIPO={planner:'BEES atual',cadastro:'Cadastro CPF/CNPJ',gabarito:'Gabarito de janelas',quinzenais:'Quinzenais'};
-function unidades(){return ORDEM.filter(u=>A.some(a=>a.ddc===u&&(a.tipo==='planner'||a.tipo==='gabarito')))}
-function arq(t,u){return A.find(a=>a.tipo===t&&a.ddc===u)}
-function baseDe(u){
-  const g=arq('gabarito',u);if(g)return{rows:g.p.rows,src:['file','Gabarito: '+g.nome]};
-  const m=J.baseDaVersao(VER,u);if(m.size)return{rows:m,src:['reuse',`Janelas pós do planner ${br(VER.vig)}`]};
-  return null;
-}
+// ---------- tela
 function render(){
-  $('files').innerHTML=A.map(a=>`<span class="file">${a.tipo in TIPO?`<b>${TIPO[a.tipo]}</b>`:'<b class="err">Não reconhecido</b>'} ${esc(NOME[a.ddc]||'')} · ${esc(a.nome)}${a.info?' · '+esc(a.info):''}</span>`).join('');
-  const us=unidades();
-  $('units').innerHTML=us.length?`<table><thead><tr><th>Unidade</th><th>Base das janelas</th><th>Arquivo atual do BEES</th><th>Cadastro CPF/CNPJ</th></tr></thead><tbody>${us.map(u=>{const b=baseDe(u),p=arq('planner',u),c=arq('cadastro',u);
-    return `<tr><td><b>${NOME[u]}</b></td><td>${b?`<span class="tag t-${b.src[0]}">${esc(b.src[1])}</span>`:'<span class="tag t-miss">Falta o gabarito</span>'}</td><td>${p?`<span class="tag t-file">${fmt(p.p.rows.length)} PDVs</span>`:'<span class="tag t-miss">Falta</span>'}</td><td>${c?`<span class="tag t-file">${fmt(c.mapa.size)} documentos</span>`:'<span class="tag t-keep">Sem cadastro — documentos quebrados ficam de fora</span>'}</td></tr>`}).join('')}</tbody></table>`:'';
-  // quinzenais já no BEES
+  $('rep').innerHTML=ORDEM.map(u=>{const o=U[u]||{};const L=(id,obg)=>{const s=sit(id,u),x=relInfo(id,u);const r=R.CATALOGO.find(c=>c.id===id);
+      return `<div class="ln"><span>${esc(r.nome)}</span><b class="${s==='ok'?'ok':s==='atualizar'?'am':obg?'rd':'am'}">${x?(s==='ok'?'✓ ':'')+dt(x.em):obg?'falta':'—'}</b></div>`};
+    const gab=relInfo('gabarito',u),novoGab=o.base&&o.base.origem&&gab&&new Date(gab.em)>new Date(o.base.origem.em);
+    return `<div class="ru"><b>${esc(NOME[u])}</b>${L('bees',1)}${L('010278',1)}${L('012011',0)}${L('coord',0)}${L('ajustes',0)}
+      <div class="ln"><span>Base viva</span><b>${o.base?`${fmt(Object.keys(o.base.clientes).length)} clientes`:'<span class="rd">sem base</span>'}</b></div>
+      ${o.baseNova?`<div class="sub" style="margin:6px 0 0">A base será criada a partir de: ${esc(o.baseNova)}.</div>`:o.base&&o.base.atualizado?`<div class="sub" style="margin:6px 0 0">Atualizada em ${dt(o.base.atualizado)}.</div>`:''}
+      ${novoGab&&!o.baseNova?`<div class="sub" style="margin:6px 0 0;color:#fcd34d">Há um gabarito mais novo que a base. <button class="btn sm" data-rein="${u}">Reiniciar a base com ele</button></div>`:''}
+      ${o.coordSrc&&!relInfo('coord',u)?`<div class="sub" style="margin:6px 0 0">Coordenadas: ${esc(o.coordSrc)}.</div>`:''}
+      ${o.avisos&&o.avisos.length?`<div class="sub rd" style="margin:6px 0 0">${o.avisos.map(esc).join(' · ')}</div>`:''}</div>`}).join('');
+  const prontas=ORDEM.filter(u=>U[u]&&U[u].A);
+  $('tabs').innerHTML=prontas.map(u=>{const A=U[u].A,p=A.novos.filter(n=>U[u].dec[n.cod]<0).length;return `<button data-tab="${u}" class="${u===cur?'on':''}">${esc(NOME[u])}${p?`<em>${p}</em>`:''}</button>`}).join('');
+  $('rev').innerHTML=cur&&U[cur]&&U[cur].A?revisao(cur):'<div class="sub">Envie pelo menos o arquivo do BEES e o 01.02.78.03 na Central de relatórios.</div>';
+  quinzenais(prontas);
+  const falta=ORDEM.filter(u=>relInfo('bees',u)&&!(U[u]&&U[u].A)).map(u=>`${NOME[u]}: sem base (envie o gabarito)`);
+  const semAt=prontas.filter(u=>!U[u].A.temAtivos).map(u=>`${NOME[u]}: sem 01.02.78.03 (novos e inativados não serão verificados)`);
+  const pend=prontas.filter(u=>!biResp[u]&&J.quinzenaisBees(U[u].rel.bees).size).map(u=>`${NOME[u]}: responda sobre os quinzenais`);
+  $('gerar').disabled=!prontas.length||pend.length>0;
+  $('st').innerHTML=[...falta,...semAt,...pend].map(esc).join(' · ')||(prontas.length?`${prontas.length} unidade(s) prontas`:'');
+  $('st').style.color=falta.length||pend.length?'#fca5a5':semAt.length?'#fcd34d':'';
+}
+function chips(n){return n?`<div class="cnt">${n.map((v,i)=>`<i class="${v>=JB.MIN?'s':''}">${DIAS[i].slice(0,3)}<small>${v}</small></i>`).join('')}</div>`:'<span class="sub" style="margin:0">—</span>'}
+function revisao(u){
+  const o=U[u],A=o.A,ap=A.ajustes.filter(r=>r.aplicar),ign=A.ajustes.filter(r=>!r.aplicar);
+  const pend=A.novos.filter(n=>o.dec[n.cod]<0).length;
+  return `<div class="kpis" style="margin-bottom:12px">
+      <div class="k"><b>${fmt(ap.length)}</b><small>ajustes a aplicar</small></div>
+      <div class="k"><b>${fmt(A.novos.length)}</b><small>PDVs novos ou reativados</small></div>
+      <div class="k ${pend?'al':''}"><b>${fmt(pend)}</b><small>ficam pendentes (fechados)</small></div>
+      <div class="k"><b>${fmt(A.inativos.length)}</b><small>inativados (saem da base)</small></div>
+      <div class="k"><b>${fmt(A.semSinergia.length)}</b><small>da base sem sinergia (aviso)</small></div></div>
+    <details class="sec" ${A.novos.length?'open':''}><summary>PDVs novos e reativados <small>${A.novos.length?'escolha o dia de cada um':'nenhum nesta semana'}</small></summary><div class="in">${A.novos.length?`<table class="mini"><thead><tr><th>Código</th><th>Tipo</th><th>Vizinhos com janela em 3 km</th><th>Dia da janela</th><th>Observação</th></tr></thead><tbody>${A.novos.map(n=>{const d=o.dec[n.cod];
+      return `<tr><td><b>${esc(n.cod)}</b><br><small style="color:var(--mut)">Setor ${esc(n.setor||'—')}</small>${n.coord?`<br><a class="map" href="https://www.google.com/maps?q=${n.coord[0]},${n.coord[1]}" target="_blank" rel="noopener">ver no mapa</a>`:''}</td>
+      <td><span class="tg ${n.tipo==='reativado'?'r':'n'}">${n.tipo==='reativado'?'Reativado':'Novo'}</span>${n.pendente?'<br><span class="tg p" style="margin-top:4px">Pendente desde '+br(n.desde)+'</span>':''}</td>
+      <td>${chips(n.cont)}</td>
+      <td><select class="dia ${d<0?'pend':''}" data-u="${u}" data-c="${esc(n.cod)}"><option value="-1" ${d<0?'selected':''}>Deixar pendente (fechado)</option>${DIAS.map((x,i)=>`<option value="${i}" ${d===i?'selected':''}>${x}${n.cont?` · ${n.cont[i]} vizinhos`:''}${n.sug===i?' (sugerido)':''}</option>`).join('')}</select></td>
+      <td style="font-size:12px;color:var(--mut)">${[n.motivo?`<span class="am">${esc(n.motivo)}</span>`:'',n.pendente&&n.sug>=0?`<span class="ok">agora tem sinergia na ${DIAS[n.sug]}</span>`:'',n.antes?`antes da inativação: ${JB.txtDias(n.antes)}`:'',n.beesDias?`no BEES hoje: ${JB.txtDias(n.beesDias)}${n.beesSemSinergia.length?` <span class="rd">(sem sinergia: ${n.beesSemSinergia.join('/')})</span>`:''}`:''].filter(Boolean).join('<br>')}</td></tr>`}).join('')}</tbody></table>`:''}</div></details>
+    <details class="sec"><summary>Ajustes aprovados <small>${ap.length} a aplicar${ign.length?` · ${ign.length} ignorado(s)`:''}</small></summary><div class="in">${A.ajustes.length?`<table class="mini"><thead><tr><th>Pedido</th><th>Código</th><th>PDV</th><th>Ajuste</th><th>Antes → depois</th><th>Situação</th></tr></thead><tbody>${A.ajustes.map(r=>`<tr><td>${esc(r.item.pedido)}</td><td>${esc(r.item.cod)}</td><td>${esc(r.item.pdv)}</td><td>${esc(r.item.ajuste)}</td>
+      <td>${r.aplicar?`${r.antes?JB.txtDias(r.antes):'—'} → <b>${JB.txtDias(r.item.dias.map(x=>x?'1':'0').join(''))}</b>`:'—'}</td>
+      <td>${r.aplicar?(r.semSinergia&&r.semSinergia.length?`<span class="tg p">Aplica · sem sinergia: ${r.semSinergia.join('/')}</span>`:'<span class="tg g">Aplica</span>'):`<span class="tg x">${esc(r.motivo)}</span>`}</td></tr>`).join('')}</tbody></table>`:'<div class="sub" style="margin:0">Nenhum ajuste no arquivo da Central.</div>'}</div></details>
+    <details class="sec"><summary>Inativados <small>${A.inativos.length} saem da base e ficam NO em todos os dias</small></summary><div class="in">${A.inativos.length?`<div class="codes">${A.inativos.map(x=>`${esc(x.cod)} (${JB.txtDias(x.d)})`).join(', ')}</div>`:'<div class="sub" style="margin:0">Nenhum.</div>'}</div></details>
+    <details class="sec"><summary>Aviso: clientes da base sem sinergia <small>${A.semSinergia.length} · não muda nada, só para conferir</small></summary><div class="in"><div class="sub" style="margin:0 0 8px">Nenhum dia de janela desses clientes tem 5 vizinhos em 3 km. Pode ser coordenada errada ou área isolada. Base de cálculo: ${fmt(A.comCoord)} clientes com coordenada${o.coordSrc?' ('+esc(o.coordSrc)+')':''}.</div>${A.semSinergia.length?`<div class="codes">${A.semSinergia.map(x=>`${esc(x.cod)} (${JB.txtDias(x.d)})`).join(', ')}</div>`:''}</div></details>`;
+}
+function quinzenais(us){
   const bh=[];
-  for(const u of us){const p=arq('planner',u);if(!p)continue;const m=J.quinzenaisBees(p.p.rows);if(!m.size){delete biResp[u];continue}
+  for(const u of us){const m=J.quinzenaisBees(U[u].rel.bees);if(!m.size){delete biResp[u];continue}
     const st=biResp[u],refs=[...new Set(m.values())].filter(Boolean).map(esc).join(', ')||'sem data';
     bh.push(`<div class="biq ${st?'':'pend'}"><b>${NOME[u]}</b>: ${fmt(m.size)} clientes já estão <b>quinzenais</b> no BEES (referência ${refs}). Deseja manter?
       <div class="opts"><button class="btn bi ${st&&st.r==='manter'?'on':''}" data-u="${u}" data-r="manter">Manter quinzenais</button><button class="btn bi ${st&&st.r==='semanal'?'on':''}" data-u="${u}" data-r="semanal">Passar para semanal</button></div>
       ${st&&st.r==='manter'?`<details><summary>Escolher quais manter (<span id="bc${u}">${fmt(st.s.size)}</span> de ${fmt(m.size)})</summary><div class="chk">${[...m].map(([c,d])=>`<label><input type="checkbox" class="bic" data-u="${u}" value="${c}" ${st.s.has(c)?'checked':''}> ${c} <small style="color:var(--mut)">${esc(d)}</small></label>`).join('')}</div></details>`:''}</div>`)}
   $('bi').innerHTML=bh.join('');
   document.querySelectorAll('.bic').forEach(x=>x.onchange=()=>{const s=biResp[x.dataset.u].s;x.checked?s.add(x.value):s.delete(x.value);$('bc'+x.dataset.u).textContent=fmt(s.size)});
-  $('quinz').innerHTML=us.length?us.map(u=>`<div class="q"><b>${NOME[u]} <small>DDC ${u}</small></b><textarea data-u="${u}" placeholder="Códigos dos novos quinzenais, um por linha">${esc(quinzTxt[u]||'')}</textarea><div class="qa"><small id="qc${u}">${J.parseCodigos(quinzTxt[u]).length} códigos</small><span><button class="btn sm ld" data-u="${u}">Carregar arquivo</button> <button class="btn sm lp" data-u="${u}">Limpar</button></span></div></div>`).join(''):'<div class="sub">Solte os arquivos para informar os quinzenais.</div>';
+  $('quinz').innerHTML=us.map(u=>`<div class="q"><b>${NOME[u]} <small>DDC ${u}</small></b><textarea data-u="${u}" placeholder="Códigos dos novos quinzenais, um por linha">${esc(quinzTxt[u]||'')}</textarea><div class="qa"><small id="qc${u}">${J.parseCodigos(quinzTxt[u]).length} códigos</small><span><button class="btn sm ld" data-u="${u}">Carregar arquivo</button> <button class="btn sm lp" data-u="${u}">Limpar</button></span></div></div>`).join('');
   document.querySelectorAll('#quinz textarea').forEach(t=>t.oninput=()=>{quinzTxt[t.dataset.u]=t.value;$('qc'+t.dataset.u).textContent=J.parseCodigos(t.value).length+' códigos'});
-  const prontas=us.filter(u=>arq('planner',u)&&baseDe(u));
-  const falta=us.filter(u=>!prontas.includes(u)).map(u=>`${NOME[u]}: falta ${arq('planner',u)?'o gabarito de janelas':'o arquivo atual do BEES'}`);
-  const pend=prontas.filter(u=>!biResp[u]&&J.quinzenaisBees(arq('planner',u).p.rows).size).map(u=>`${NOME[u]}: responda sobre os quinzenais`);
-  $('gerar').disabled=!prontas.length||pend.length>0;
-  $('st').innerHTML=[...falta,...pend].map(esc).join(' · ')||(prontas.length?`${prontas.length} unidade(s) prontas`:'');
-  $('st').style.color=falta.length||pend.length?'#fca5a5':'';
 }
+function addQuinz(u,cods){quinzTxt[u]=[...new Set([...J.parseCodigos(quinzTxt[u]),...cods])].join('\n')}
+async function ler(f){const b=await f.arrayBuffer();try{return new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(e){return new TextDecoder('windows-1252').decode(b)}}
+let fqU='';$('fq').onchange=async e=>{for(const f of e.target.files)addQuinz(fqU,J.codigosDeArquivo(await ler(f)));e.target.value='';render()};
+document.addEventListener('change',e=>{const s=e.target.closest('select.dia');if(s){U[s.dataset.u].dec[s.dataset.c]=+s.value;s.classList.toggle('pend',+s.value<0);const u=s.dataset.u,A=U[u].A,p=A.novos.filter(n=>U[u].dec[n.cod]<0).length;const t=document.querySelector(`[data-tab="${u}"] em`);if(t)t.textContent=p}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.classList.contains('bi')){const u=b.dataset.u;biResp[u]={r:b.dataset.r,s:b.dataset.r==='manter'?new Set(J.quinzenaisBees(arq('planner',u).p.rows).keys()):new Set()};render()}
+  if(b.dataset.tab){cur=b.dataset.tab;render();return}
+  if(b.dataset.rein){if(confirm(`Reiniciar a base viva de ${NOME[b.dataset.rein]} com o gabarito mais novo? Os ajustes e PDVs novos incluídos depois do gabarito anterior deixam de valer.`))reiniciar(b.dataset.rein);return}
+  if(b.classList.contains('bi')){const u=b.dataset.u;biResp[u]={r:b.dataset.r,s:b.dataset.r==='manter'?new Set(J.quinzenaisBees(U[u].rel.bees).keys()):new Set()};render()}
   if(b.classList.contains('ld')){fqU=b.dataset.u;$('fq').click()}
   if(b.classList.contains('lp')){quinzTxt[b.dataset.u]='';render()}
   if(b.classList.contains('cp'))copiar(b.dataset.t,b);
   if(b.classList.contains('dl'))baixar(res[b.dataset.u].nome,res[b.dataset.u].csv);
 });
-document.addEventListener('click',async e=>{const a=e.target.closest('a.hdl');if(!a)return;e.preventDefault();
-  try{const t=await PlannerData.text(a.dataset.p);baixar(a.dataset.p.split('/').pop(),t)}catch(err){alert('Não consegui baixar: '+err.message)}});
-$('rep').onclick=()=>{const w=ultimaSalva();if(!w)return;for(const x of w.unidades)if(x.quinzenaisNovos&&x.quinzenaisNovos.length)addQuinz(x.id,x.quinzenaisNovos);render()};
+$('rep2').onclick=()=>{const w=ultimaSalva();if(!w)return;for(const x of w.unidades)if(x.quinzenaisNovos&&x.quinzenaisNovos.length)addQuinz(x.id,x.quinzenaisNovos);render()};
 function baixar(nome,txt){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 async function copiar(t,b){try{await navigator.clipboard.writeText(t);const o=b.textContent;b.textContent='Copiado';setTimeout(()=>b.textContent=o,1500)}catch(e){}}
-
-// ---------- gerar
-function lista(t,it,al,fn){if(!it.length)return'';return `<details class="lst ${al?'al':''}"><summary>${t} (${fmt(it.length)})</summary><div class="codes">${esc(it.map(fn||(x=>x)).join(', '))}</div><button class="btn sm cp" data-t="${esc(it.map(x=>typeof x==='string'?x:x.cod).join('\n'))}">Copiar códigos</button></details>`}
-$('gerar').onclick=()=>{
-  const ref=$('ref').value.trim();
-  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ref)){$('st').textContent='Data de referência no formato dd/mm/aaaa';$('st').style.color='#fca5a5';return}
-  for(const k in res)delete res[k];
-  const html=[];
-  for(const u of unidades()){
-    const p=arq('planner',u),b=baseDe(u),c=arq('cadastro',u);if(!p||!b)continue;
-    const r=J.gerarUnidade(u,b.rows,p.p.rows,J.parseCodigos(quinzTxt[u]),ref,c&&c.mapa,biResp[u]&&biResp[u].s);
-    const nome=`Janelas_BEES_${NOME[u].replace(/[^A-Za-z0-9]+/g,'_')}_${br($('sem').value).replace(/\//g,'.')}.csv`;
-    res[u]={...r,nome,baseSrc:b.src[1]};const mx=Math.max(1,...r.cont.dias);
-    html.push(`<div class="un"><div class="hd"><h3>${NOME[u]} <small style="color:var(--mut);font-weight:500">DDC ${u} · base: ${esc(b.src[1])}</small></h3><span><button class="btn pri sm dl" data-u="${u}">⬇ Baixar CSV</button></span></div>
-      <div class="kpis">
-        <div class="k"><b>${fmt(r.cont.total)}</b><small>linhas no arquivo</small></div>
-        <div class="k"><b>${fmt(r.cont.base)}</b><small>da base, com janela</small></div>
-        <div class="k"><b>${fmt(r.cont.fora)}</b><small>fora da base, tudo NO</small></div>
-        <div class="k"><b>${fmt(r.cont.incluidos)}</b><small>da base fora do BEES, incluídos</small></div>
-        <div class="k"><b>${fmt(r.cont.quinzNovo)} + ${fmt(r.cont.quinzMantido)}</b><small>quinzenais novos + mantidos</small></div>
-        <div class="k"><b>${fmt(r.cont.recuperados)}</b><small>documentos completados pelo cadastro</small></div>
-        <div class="k ${r.docInvalido.length+r.baseSemBees.length?'al':''}"><b>${fmt(r.docInvalido.length+r.baseSemBees.length)}</b><small>de fora: sem CPF/CNPJ válido</small></div>
-      </div>
-      <div class="week">${J.DIAS_PT.map((d,i)=>`<div class="d"><i style="height:${Math.round(r.cont.dias[i]/mx*100)}%"></i><b>${fmt(r.cont.dias[i])}</b><small>${d.slice(0,3)}</small></div>`).join('')}</div>
-      ${lista('Sem CPF/CNPJ válido no BEES nem no cadastro — não entraram',r.docInvalido,1,x=>`${x.cod} (${x.doc})`)}
-      ${lista('Da base, fora do BEES e sem CPF/CNPJ no cadastro — não entraram',r.baseSemBees,1)}
-      ${lista('Quinzenais informados que não estão na base',r.quinzForaBase,1)}
-      ${lista('Incluídos: estavam na base e não no BEES (semanal)',r.incluidos)}
-      ${lista('Quinzenais mantidos do BEES',r.mantidos)}
-    </div>`);
-  }
-  $('res').innerHTML=html.join('');$('saveBox').style.display=html.length?'block':'none';$('msg').className='msg';
-};
-
-// ---------- salvar no histórico (Drive)
 function say(c,h){$('msg').className='msg '+c;$('msg').innerHTML=h}
-$('save').onclick=async()=>{
-  const us=Object.keys(res);if(!us.length)return;
-  const sem=$('sem').value;$('save').disabled=true;
+function lista(t,it,al,fn){if(!it.length)return'';return `<details class="lst ${al?'al':''}"><summary>${t} (${fmt(it.length)})</summary><div class="codes">${esc(it.map(fn||(x=>x)).join(', '))}</div><button class="btn sm cp" data-t="${esc(it.map(x=>typeof x==='string'?x:x.cod).join('\n'))}">Copiar códigos</button></details>`}
+
+// ---------- gerar e salvar
+$('gerar').onclick=async()=>{
+  const ref=$('ref').value.trim(),sem=$('sem').value;
+  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ref)){say('err','Data de referência no formato dd/mm/aaaa');return}
+  $('gerar').disabled=true;for(const k in res)delete res[k];
+  const html=[],resumo=[];
   try{
-    const resumo=[];
-    for(const u of us){const r=res[u],path=`janelas/${sem}/${r.nome}`;
+    for(const u of ORDEM.filter(u=>U[u]&&U[u].A)){
+      const o=U[u],A=o.A,N=JB.aplicar(o.base,A,o.dec);
+      const r=J.gerarUnidade(u,JB.mapa(N),o.rel.bees,J.parseCodigos(quinzTxt[u]),ref,o.rel.cad,biResp[u]&&biResp[u].s);
+      const nome=`Janelas_BEES_${NOME[u].replace(/[^A-Za-z0-9]+/g,'_')}_${br(sem).replace(/\//g,'.')}.csv`;
+      const novosOk=A.novos.filter(n=>o.dec[n.cod]>=0),pend=A.novos.filter(n=>o.dec[n.cod]<0),aj=A.ajustes.filter(x=>x.aplicar);
       say('info',`Gravando ${NOME[u]}…`);
-      await PlannerData.put(path,r.csv);
-      resumo.push({id:u,nome:NOME[u],arquivo:path,base:r.baseSrc,total:r.cont.total,comJanela:r.cont.base,foraBase:r.cont.fora,incluidos:r.cont.incluidos,
+      await PlannerData.put(`janelas/base/${u}.json`,JSON.stringify(N));
+      await PlannerData.put(`janelas/${sem}/${nome}`,r.csv);
+      o.base=N;o.baseNova=false;
+      res[u]={...r,nome};
+      resumo.push({id:u,nome:NOME[u],arquivo:`janelas/${sem}/${nome}`,total:r.cont.total,comJanela:r.cont.base,foraBase:r.cont.fora,incluidos:r.cont.incluidos,
         quinzNovo:r.cont.quinzNovo,quinzMantido:r.cont.quinzMantido,recuperados:r.cont.recuperados,semDocumento:r.docInvalido.length+r.baseSemBees.length,dias:r.cont.dias,
-        quinzenaisNovos:J.parseCodigos(quinzTxt[u]),quinzenaisMantidos:r.mantidos});}
+        ajustes:aj.length,novos:novosOk.length,pendentes:pend.length,inativados:A.inativos.length,quinzenaisNovos:J.parseCodigos(quinzTxt[u]),quinzenaisMantidos:r.mantidos});
+      const mx=Math.max(1,...r.cont.dias);
+      html.push(`<div class="un"><div class="hd"><h3>${NOME[u]} <small style="color:var(--mut);font-weight:500">DDC ${u}</small></h3><span><button class="btn pri sm dl" data-u="${u}">⬇ Baixar CSV</button></span></div>
+        <div class="kpis">
+          <div class="k"><b>${fmt(r.cont.total)}</b><small>linhas no arquivo</small></div>
+          <div class="k"><b>${fmt(r.cont.base)}</b><small>com janela</small></div>
+          <div class="k"><b>${fmt(aj.length)}</b><small>ajustes aplicados</small></div>
+          <div class="k"><b>${fmt(novosOk.length)}</b><small>PDVs novos incluídos</small></div>
+          <div class="k ${pend.length?'al':''}"><b>${fmt(pend.length)}</b><small>pendentes (fechados)</small></div>
+          <div class="k"><b>${fmt(A.inativos.length)}</b><small>inativados</small></div>
+          <div class="k"><b>${fmt(r.cont.quinzNovo)} + ${fmt(r.cont.quinzMantido)}</b><small>quinzenais novos + mantidos</small></div>
+          <div class="k ${r.docInvalido.length+r.baseSemBees.length?'al':''}"><b>${fmt(r.docInvalido.length+r.baseSemBees.length)}</b><small>de fora: sem CPF/CNPJ válido</small></div>
+        </div>
+        <div class="week">${J.DIAS_PT.map((d,i)=>`<div class="d"><i style="height:${Math.round(r.cont.dias[i]/mx*100)}%"></i><b>${fmt(r.cont.dias[i])}</b><small>${d.slice(0,3)}</small></div>`).join('')}</div>
+        ${lista('Sem CPF/CNPJ válido no BEES nem no cadastro — não entraram',r.docInvalido,1,x=>`${x.cod} (${x.doc})`)}
+        ${lista('Da base, fora do BEES e sem CPF/CNPJ no cadastro — não entraram',r.baseSemBees,1)}
+        ${lista('Quinzenais informados que não estão na base',r.quinzForaBase,1)}
+        ${lista('Pendentes: PDVs novos sem dia definido (ficam NO)',pend.map(n=>n.cod),1)}
+      </div>`);
+    }
     say('info','Atualizando o histórico…');
     let ix={semanas:[]};try{ix=JSON.parse(await PlannerData.text('janelas/index.json'))}catch(e){}
-    const old=ix.semanas.find(x=>x.id===sem);const now=new Date().toISOString();
-    const w={id:sem,ref:$('ref').value.trim(),criado:old?old.criado:now,atualizado:now,unidades:[...(old?old.unidades.filter(x=>!us.includes(x.id)):[]),...resumo].sort((a,b)=>ORDEM.indexOf(a.id)-ORDEM.indexOf(b.id))};
+    const us=resumo.map(x=>x.id),old=ix.semanas.find(x=>x.id===sem),now=new Date().toISOString();
+    const w={id:sem,ref,criado:old?old.criado:now,atualizado:now,unidades:[...(old?old.unidades.filter(x=>!us.includes(x.id)):[]),...resumo].sort((a,b)=>ORDEM.indexOf(a.id)-ORDEM.indexOf(b.id))};
     ix.semanas=ix.semanas.filter(x=>x.id!==sem).concat([w]).sort((a,b)=>b.id.localeCompare(a.id));
+    ix.pendentes=Object.assign(ix.pendentes||{},Object.fromEntries(resumo.map(x=>[x.id,x.pendentes])));
     await PlannerData.put('janelas/index.json',JSON.stringify(ix,null,1));
+    try{sessionStorage.removeItem('plannerJanPend')}catch(e){}
     HIST=ix;drawHist();modo();
-    say('ok',`✓ Semana <b>${br(sem)}</b> salva no histórico (${us.map(u=>NOME[u]).join(', ')}).`);
-  }catch(e){say('err','Não consegui salvar: '+esc(e.message))}
-  finally{$('save').disabled=false}
+    $('res').innerHTML=html.join('');
+    say('ok',`✓ Semana <b>${br(sem)}</b> salva. Base viva atualizada em ${resumo.length} unidade(s). Baixe os CSVs abaixo e importe no BEES.`);
+    for(const u of us)analisar(u);render();
+  }catch(e){say('err','Não consegui concluir: '+esc(e.message))}
+  finally{$('gerar').disabled=false}
 };
 
 // ---------- histórico
+document.addEventListener('click',async e=>{const a=e.target.closest('a.hdl');if(!a)return;e.preventDefault();
+  try{const t=await PlannerData.text(a.dataset.p);baixar(a.dataset.p.split('/').pop(),t)}catch(err){alert('Não consegui baixar: '+err.message)}});
 function drawHist(){
   const s=[...HIST.semanas].sort((a,b)=>b.id.localeCompare(a.id));
-  $('hist').innerHTML=s.length?`<table class="hist"><thead><tr><th>Semana</th><th>Unidades e arquivos</th><th>Quinzenais</th><th>Salvo em</th></tr></thead><tbody>${s.map(w=>`<tr><td><b>${br(w.id)}</b>${w.ref?`<br><small style="color:var(--mut)">ref. novos: ${esc(w.ref)}</small>`:''}</td>
-    <td><div class="chips">${w.unidades.map(x=>`<a class="chip hdl" href="#" data-p="${esc(x.arquivo)}" title="${fmt(x.total)} linhas · ${fmt(x.comJanela)} com janela · base: ${esc(x.base||'')}">⬇ ${esc(x.nome)} <small style="color:var(--mut)">${fmt(x.comJanela)} c/ janela</small></a>`).join('')}</div></td>
-    <td>${w.unidades.filter(x=>x.quinzNovo||x.quinzMantido).map(x=>`${esc(x.nome)}: ${fmt(x.quinzNovo)} novos, ${fmt(x.quinzMantido)} mantidos`).join('<br>')||'<span style="color:var(--mut)">—</span>'}</td>
+  $('hist').innerHTML=s.length?`<table class="hist"><thead><tr><th>Semana</th><th>Unidades e arquivos</th><th>Movimento</th><th>Salvo em</th></tr></thead><tbody>${s.map(w=>`<tr><td><b>${br(w.id)}</b>${w.ref?`<br><small style="color:var(--mut)">ref. novos quinzenais: ${esc(w.ref)}</small>`:''}</td>
+    <td><div class="chips">${w.unidades.map(x=>`<a class="chip hdl" href="#" data-p="${esc(x.arquivo)}" title="${fmt(x.total)} linhas">⬇ ${esc(x.nome)} <small style="color:var(--mut)">${fmt(x.comJanela)} c/ janela</small></a>`).join('')}</div></td>
+    <td style="font-size:12px">${w.unidades.map(x=>`${esc(x.nome)}: ${[x.ajustes!=null?`${x.ajustes} ajustes`:'',x.novos!=null?`${x.novos} novos`:'',x.pendentes?`<span class="am">${x.pendentes} pendentes</span>`:'',x.inativados?`${x.inativados} inativados`:'',x.quinzNovo||x.quinzMantido?`${x.quinzNovo+x.quinzMantido} quinzenais`:''].filter(Boolean).join(' · ')||'—'}`).join('<br>')}</td>
     <td style="color:var(--mut)">${new Date(w.atualizado).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</td></tr>`).join('')}</tbody></table>`:'<div class="sub">Nenhuma semana salva ainda.</div>';
 }
 }

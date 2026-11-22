@@ -49,7 +49,7 @@
     { sec: 'Administração' },
     { id: 'relatorios', href: 'relatorios.html', ic: 'file', t: 'Central de relatórios', badge2: true },
     { id: 'importar', href: 'importar.html', ic: 'up', t: 'Importar planner' },
-    { id: 'janelas', href: 'janelas.html', ic: 'truck', t: 'Janelas BEES' },
+    { id: 'janelas', href: 'janelas.html', ic: 'truck', t: 'Janelas BEES', badge3: true },
     { id: 'usuarios', href: 'usuarios.html', ic: 'users', t: 'Usuários e equipes' }
   ];
   var MOBILE = ['home', 'painel', 'rota', 'critica', 'alteracoes'];
@@ -75,7 +75,7 @@
     VIS.forEach(function (n) {
       if (n.sec) { h += '<div class="sb-sec">' + n.sec + '</div>'; return; }
       var cls = 'sb-a' + (n.cls ? ' ' + n.cls : '') + (n.id === cur ? ' on' : '') + (n.soon ? ' soon' : '');
-      var tail = n.soon ? '<em class="sb-tag">breve</em>' : (n.badge ? '<b class="sb-badge" data-badge hidden></b>' : n.badge2 ? '<b class="sb-badge" data-badge2 hidden style="background:#ef4444;color:#fff"></b>' : '');
+      var tail = n.soon ? '<em class="sb-tag">breve</em>' : (n.badge ? '<b class="sb-badge" data-badge hidden></b>' : n.badge2 ? '<b class="sb-badge" data-badge2 hidden style="background:#ef4444;color:#fff"></b>' : n.badge3 ? '<b class="sb-badge" data-badge3 hidden></b>' : '');
       h += n.soon
         ? '<a class="' + cls + '" data-tip="' + n.t + ' · em breve">' + svg(n.ic) + '<span>' + n.t + '</span>' + tail + '</a>'
         : '<a class="' + cls + '" href="' + n.href + '" data-tip="' + n.t + '">' + svg(n.ic) + '<span>' + n.t + '</span>' + tail + '</a>';
@@ -153,6 +153,10 @@
       try { sessionStorage.setItem('plannerRelPend', JSON.stringify({ t: Date.now(), n: n })); } catch (e) {}
       show(n);
     });
+    // PDVs novos pendentes de definição no Janelas BEES
+    var show3 = function (n) { document.querySelectorAll('[data-badge3]').forEach(function (b) { b.textContent = n; b.hidden = !n; b.title = n + ' PDVs novos aguardando o dia da janela'; }); };
+    try { var c3 = JSON.parse(sessionStorage.getItem('plannerJanPend') || 'null'); if (c3 && Date.now() - c3.t < 300000) { show3(c3.n); return; } } catch (e) {}
+    window.PlannerData.text('janelas/index.json').then(function (t) { var p = JSON.parse(t).pendentes || {}; var n = 0; for (var k in p) n += +p[k] || 0; try { sessionStorage.setItem('plannerJanPend', JSON.stringify({ t: Date.now(), n: n })); } catch (e) {} show3(n); }).catch(function () {});
   }
   window.PlannerShell = { refreshBadge: function () { try { sessionStorage.removeItem('plannerPend'); } catch (e) {} pendingBadge(); } };
 
