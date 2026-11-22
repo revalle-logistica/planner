@@ -1,8 +1,8 @@
 /* Tema e navegação comuns a todas as telas do Planner Revalle.
    "medio" (padrão) = azul-ardósia mais claro · "escuro" = tema original do painel. */
 html[data-theme="medio"]{
-  --bg:#1e2d45;--panel:#273853;--panel2:#30435f;--line:#3d5373;--txt:#f2f6fc;--mut:#b4c0d4;--dim:#8796b0;
-  --cE:#455a7a;
+  --bg:#26385a;--panel:#304567;--panel2:#3a5076;--line:#4a6289;--txt:#f5f8fd;--mut:#c0cbdd;--dim:#93a3bf;
+  --cE:#52698f;
 }
 html[data-theme="medio"] body{
   background:
@@ -12,14 +12,14 @@ html[data-theme="medio"] body{
     var(--bg);
   background-attachment:fixed;
 }
-html[data-theme="medio"] header{background:rgba(30,45,69,.82)!important;backdrop-filter:blur(14px) saturate(1.3)}
+html[data-theme="medio"] header{background:rgba(38,56,90,.85)!important;backdrop-filter:blur(14px) saturate(1.3)}
 html[data-theme="medio"] .leaflet-popup-content-wrapper,html[data-theme="medio"] .leaflet-popup-tip{background:var(--panel)!important}
-html[data-theme="medio"] .tbl td,html[data-theme="medio"] .fq td{border-bottom-color:#3a4f6e!important}
+html[data-theme="medio"] .tbl td,html[data-theme="medio"] .fq td{border-bottom-color:#46608a!important}
 
 /* Cartões com mais profundidade e resposta ao passar o mouse */
 .card,.kpi{box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 10px 30px -18px rgba(0,0,0,.6);transition:border-color .2s,box-shadow .2s,transform .2s}
 .kpi:hover{border-color:rgba(245,179,1,.45);transform:translateY(-2px);box-shadow:0 14px 34px -16px rgba(0,0,0,.7)}
-.card:hover{border-color:#4d6588}
+.card:hover{border-color:#5a7499}
 .btn,button,select,input{transition:background .15s,border-color .15s,color .15s,transform .15s}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:#3a4c69;border-radius:10px;border:2px solid transparent;background-clip:padding-box}
@@ -30,7 +30,7 @@ html[data-theme="medio"] .tbl td,html[data-theme="medio"] .fq td{border-bottom-c
 html.side-mini{--sw:74px}
 html.has-side body{padding-left:var(--sw);transition:padding-left .25s ease}
 .sb{position:fixed;left:0;top:0;bottom:0;width:var(--sw);z-index:5000;display:flex;flex-direction:column;
-  background:linear-gradient(180deg,rgba(39,56,83,.97),rgba(30,45,69,.97));border-right:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(48,69,103,.97),rgba(38,56,90,.97));border-right:1px solid var(--line);
   backdrop-filter:blur(14px);transition:width .25s ease;overflow:hidden;font-family:Inter,system-ui,sans-serif}
 html[data-theme="escuro"] .sb{background:linear-gradient(180deg,#121826,#0b0f17)}
 .sb-top{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;text-decoration:none;color:var(--txt)}

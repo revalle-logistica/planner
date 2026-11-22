@@ -97,7 +97,7 @@
     var paintTheme = function () {
       var t = html.getAttribute('data-theme');
       sb.querySelectorAll('[data-th]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-th') === t); });
-      var mc = document.querySelector('meta[name=theme-color]'); if (mc) mc.content = '#1e2d45';
+      var mc = document.querySelector('meta[name=theme-color]'); if (mc) mc.content = '#26385a';
     };
     sb.querySelectorAll('[data-th]').forEach(function (b) {
       b.onclick = function () { html.setAttribute('data-theme', b.getAttribute('data-th')); set('plannerTheme', b.getAttribute('data-th')); paintTheme(); };
