@@ -65,6 +65,7 @@ css += '''
   --side:#1d2c47;--side2:#26385a;--hd1:#1d2c47;--hd2:#26385a;--bgc:#26385a;--card:transparent;--blue:#7fb2ff;--good:#3ddc84;--bad:#ff6b6b;--warn:#f5b301;--orange:#ff8a3d;
   --f-body:Inter,system-ui,sans-serif;--f-title:Inter,system-ui,sans-serif;--f-tab:"Roboto Condensed","Arial Narrow",Inter,sans-serif}
 .rt .fid{color:#93c5fd!important}
+.rt .bfdt{display:inline-flex;align-items:center;gap:6px;margin-left:14px;font-size:12.5px;color:var(--mut)}.rt .bfdt .inp{width:auto;padding:4px 8px;font-size:12.5px}.rt .bfdt small{color:var(--dim)}
 .rt th{font-size:11px!important;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid rgba(255,255,255,.14)!important}
 .rt td{border-bottom-color:rgba(255,255,255,.06)!important}
 .rt table td,.rt table tr{border-top-color:rgba(255,255,255,.06)!important;border-bottom-color:rgba(255,255,255,.06)!important}
@@ -125,6 +126,13 @@ js = js.replace("># Números relacionados ao planner · ", ">Números relacionad
 js = js.replace("const alt=altOf().n;", "const SI=solicInfo(UI.p),alt=SI.n;")
 js = js.replace("one('Solicitações de ajuste',alt,'Formulário / crítica')", "one('Solicitações de ajuste',alt,SI.cap)")
 js = js.replace("const altN=altOf().n;", "const altN=solicInfo(UI.p).n;")
+# Buffer: filtro de data a data
+js = js.replace("const days=Object.keys(byD).sort().filter(d=>dow(d)<6&&byD[d].length>=20).slice(-60);", "const _dd=Object.keys(byD).sort().filter(d=>dow(d)<6&&byD[d].length>=20),_dmin=_dd[0]||'',_dmax=_dd[_dd.length-1]||'';const _rg=!!(UI.bfDe||UI.bfAte);const days=_rg?_dd.filter(d=>(!UI.bfDe||d>=UI.bfDe)&&(!UI.bfAte||d<=UI.bfAte)):_dd.slice(-60);const _d0=days[0]||UI.bfDe||'',_d1=days[days.length-1]||UI.bfAte||'';")
+js = js.replace('<h4 class="mh" style="margin:0">Buffer por dia de entrega previsto</h4>', '<h4 class="mh" style="margin:0">Buffer por dia de entrega previsto</h4><span class="bfdt">De <input type="date" class="inp" id="bfDe" value="${_d0}" min="${_dmin}" max="${_dmax}"> até <input type="date" class="inp" id="bfAte" value="${_d1}" min="${_dmin}" max="${_dmax}">${_rg?\'<button class="lk2" id="bfLimpa" title="Voltar aos últimos 60 dias">✕ limpar</button>\':\'<small>últimos 60 dias</small>\'}</span>')
+js = js.replace("ws.slice().reverse().map(w=>", "ws.filter(w=>!_rg||(addD(w,6)>=_d0&&w<=_d1)).reverse().map(w=>")
+js = js.replace("const per=UI.bfp||'4';", "const per=UI.bfp==='r'&&!(UI.bfDe||UI.bfAte)?'4':(UI.bfp||'4');")
+js = js.replace('<button data-bfp="1" aria-pressed="${per===', '${(UI.bfDe||UI.bfAte)?`<button data-bfp="r" aria-pressed="${per===\'r\'}">${br(_d0).slice(0,5)} a ${br(_d1).slice(0,5)}</button>`:\'\'}<button data-bfp="1" aria-pressed="${per===')
+js = js.replace("bufTables(Uu,d=>sel.includes(wkStart(d)))", "bufTables(Uu,per==='r'?d=>d>=_d0&&d<=_d1:d=>sel.includes(wkStart(d)))")
 # vendedor só pelo código do setor (sem nome)
 rep("<div class=\"sub\">Setor ${esc(UI.setor)} · ${esc(s.vn[UI.setor]||'')}</div>", "<div class=\"sub\">Setor ${esc(UI.setor)}</div>")
 # preferências de tela continuam no navegador; o resto vai para o Drive

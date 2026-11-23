@@ -170,3 +170,6 @@ function instalarResumo(){const altOrig=R.alt;
     return nota('💻 Solicitações feitas no sistema pela Crítica do planner ('+it.length+'). O detalhe de cada uma, com o parecer, está na aba Solicitações dos GVs.'+nt)+critView(C.concat(tcd))}}
 
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-gvf]');if(b){UI.gv=b.dataset.gvf;render()}});
+
+document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='bfDe'||t.id==='bfAte')){UI[t.id]=t.value||'';if(UI.bfDe&&UI.bfAte&&UI.bfDe>UI.bfAte){const x=UI.bfDe;UI.bfDe=UI.bfAte;UI.bfAte=x}UI.bfp=(UI.bfDe||UI.bfAte)?'r':'4';render()}});
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='bfLimpa'){UI.bfDe='';UI.bfAte='';UI.bfp='4';render()}});
