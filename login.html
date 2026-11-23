@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml"><link rel="icon" href="img/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <title>Entrar | Planner Revalle</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="js/config.js"></script>
@@ -14,7 +15,7 @@
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif;padding:20px}
 .box{width:100%;max-width:400px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 24px;box-shadow:0 20px 60px -30px rgba(0,0,0,.8)}
 .top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
-.logo{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font:900 18px Inter;color:#111;background:conic-gradient(from 200deg,#f5b301,#ffd25e,#f59e0b,#f5b301)}
+.logo{width:44px;height:44px;object-fit:contain;border-radius:13px;display:grid;place-items:center;font:900 18px Inter;color:#111;background:conic-gradient(from 200deg,#f5b301,#ffd25e,#f59e0b,#f5b301)}
 .top b{font-size:17px;font-weight:800}.top b span{color:var(--pos)}.top small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
 .tabs{display:flex;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px;margin-bottom:18px}
 .tabs button{flex:1;border:0;background:transparent;color:var(--mut);font:600 13px Inter;padding:9px;border-radius:8px;cursor:pointer}
@@ -34,7 +35,7 @@ input:focus,select:focus{border-color:var(--pos)}
 </head>
 <body>
 <div class="box">
-  <div class="top"><div class="logo">R</div><div><b>Planner <span>Revalle</span></b><small>Logística · Agreste e Nordeste</small></div></div>
+  <div class="top"><img class="logo" src="img/icon.svg" alt=""><div><b>Planner <span>Revalle</span></b><small>Logística · Agreste e Nordeste</small></div></div>
   <div class="tabs"><button class="on" data-t="in">Entrar</button><button data-t="up">Pedir acesso</button></div>
   <form class="f on" id="fin" autocomplete="on">
     <label>E-mail<input type="email" id="e1" autocomplete="username" required></label>

@@ -101,3 +101,4 @@ html.link-mode .bn{display:none}
 
 /* tom único: botão de troca de cor removido */
 .sb-theme{display:none!important}
+img.sb-logo{width:40px;background:none;padding:0;object-fit:contain}

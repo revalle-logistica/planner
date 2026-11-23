@@ -76,7 +76,7 @@
       if (n.sec) { for (var j = i + 1; j < NAV.length && !NAV[j].sec; j++) if (allowed(NAV[j]) && !NAV[j].soon) return true; return n.sec === 'Próximos módulos' && A && A.user() && A.user().perfil === 'admin'; }
       return n.soon ? (A && A.user() && A.user().perfil === 'admin') : allowed(n);
     });
-    var h = '<a class="sb-top" href="./"><div class="sb-logo">R</div><div class="sb-name"><b>Planner <span>Revalle</span></b><small>Logística · Agreste e Nordeste</small></div></a><nav class="sb-nav">';
+    var h = '<a class="sb-top" href="./"><img class="sb-logo" src="img/icon.svg" alt=""><div class="sb-name"><b>Planner <span>Revalle</span></b><small>Logística · Agreste e Nordeste</small></div></a><nav class="sb-nav">';
     VIS.forEach(function (n) {
       if (n.sec) { h += '<div class="sb-sec">' + n.sec + '</div>'; return; }
       var cls = 'sb-a' + (n.cls ? ' ' + n.cls : '') + (n.id === cur ? ' on' : '') + (n.soon ? ' soon' : '');

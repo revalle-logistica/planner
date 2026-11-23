@@ -209,6 +209,7 @@ js = shell_js + '\n' + js
 
 html = '''<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml"><link rel="icon" href="img/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <title>Rotina e indicadores · Planner Revalle</title>
 <meta name="theme-color" content="#26385a">
 <script src="js/config.js"></script>
