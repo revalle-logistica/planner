@@ -301,20 +301,24 @@ function renderChanges(){
   const mud=mine.filter(c=>c.sa===S.s&&(dayTxt(c.ma)!==dayTxt(c.mb)||c.pa!==c.pb||c.ma!==c.mb));
   const sairam=before.filter(c=>c.sb!==S.s);
   const inf=S.tone==='inf';
-  const quando=c=>{const d=daysOf(c.mb);const nv=nextVisits(c);const dias=d.map(x=>DPLUR[x]).join(' e ');
+  const nosDias=d=>d.length?(d[0]>=5?'aos ':'às ')+d.map(x=>DPLUR[x]).join(' e '):'';
+  const quando=c=>{const d=daysOf(c.mb);const nv=nextVisits(c);
     const fq=c.pb==='S'?'toda semana':c.pb==='Q'?'a cada 15 dias':c.pb==='M'?'uma vez por mês':'';
-    return `às ${dias}, ${fq}${nv.length?` (próximas: ${nv.map(fmtD).join(' e ')})`:''}`};
+    return `${nosDias(d)}, ${fq}${nv.length?` (próximas: ${nv.map(fmtD).join(' e ')})`:''}`};
   const cli=c=>title(c.n);
-  const msgNovo=c=>inf?`Olá, ${cli(c)}! Tudo bem? Aqui é da Revalle. A partir de ${vd} eu passo a atender vocês, ${quando(c)}. Qualquer coisa é só me chamar aqui! 🍻`
-    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} o seu atendimento pela Revalle passa a ter visitas ${quando(c)}, com um novo vendedor. Permanecemos à disposição.`;
-  const msgMud=c=>inf?`Olá, ${cli(c)}! Aqui é da Revalle. A partir de ${vd} minha visita aí muda: passo a ir ${quando(c)}. Antes era ${dayTxt(c.ma)}${c.pa!==c.pb?` (${(FREQ[c.pa]||'').toLowerCase()})`:''}. Até lá! 👊`
-    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} as visitas da Revalle passam a ocorrer ${quando(c)}, em substituição ao dia ${dayTxt(c.ma)}. Seu vendedor continua o mesmo.`;
-  const msgSaiu=c=>{const nn=title(sname(c.sb));return inf?`Olá, ${cli(c)}! Aqui é da Revalle. Passando para avisar que a partir de ${vd} vocês passam a ser atendidos por outro vendedor, ${quando(c)}. Foi um prazer, conte sempre comigo! 🙏`
-    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} o seu atendimento pela Revalle passa a ser feito por outro vendedor, com visitas ${quando(c)}. Agradecemos a parceria.`};
+  const ent=c=>{const d=daysOf(c.jb);if(!d.length)return '';const a=daysOf(c.ja),mudou=jMudou(c);
+    return inf?(mudou?` E a entrega muda: passa a ser ${nosDias(d)} (antes era ${nosDias(a)}).`:` A entrega ${c.ja?'continua':'é'} ${nosDias(d)}.`)
+      :(mudou?` As entregas passam a ocorrer ${nosDias(d)}, em substituição ${a[0]>=5?'aos':'às'} ${a.map(x=>DPLUR[x]).join(' e ')}.`:` As entregas ocorrem ${nosDias(d)}.`)};
+  const msgNovo=c=>inf?`Olá, ${cli(c)}! Tudo bem? Aqui é da Revalle. A partir de ${vd} eu passo a atender vocês, ${quando(c)}.${ent(c)} Qualquer coisa é só me chamar aqui! 🍻`
+    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} o seu atendimento pela Revalle passa a ter visitas ${quando(c)}, com um novo vendedor.${ent(c)} Permanecemos à disposição.`;
+  const msgMud=c=>inf?`Olá, ${cli(c)}! Aqui é da Revalle. A partir de ${vd} minha visita aí muda: passo a ir ${quando(c)}. Antes era ${dayTxt(c.ma)}${c.pa!==c.pb?` (${(FREQ[c.pa]||'').toLowerCase()})`:''}.${ent(c)} Até lá! 👊`
+    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} as visitas da Revalle passam a ocorrer ${quando(c)}, em substituição ao dia ${dayTxt(c.ma)}.${ent(c)} Seu vendedor continua o mesmo.`;
+  const msgSaiu=c=>{const nn=title(sname(c.sb));return inf?`Olá, ${cli(c)}! Aqui é da Revalle. Passando para avisar que a partir de ${vd} vocês passam a ser atendidos por outro vendedor, ${quando(c)}.${ent(c)} Foi um prazer, conte sempre comigo! 🙏`
+    :`Prezado(a) ${cli(c)}, informamos que a partir de ${vd} o seu atendimento pela Revalle passa a ser feito por outro vendedor, com visitas ${quando(c)}.${ent(c)} Agradecemos a parceria.`};
   const block=(id,ttl,sub,arr,fn,info)=>`<div class="card"><div class="sec"><div><h2>${ttl} <span style="color:var(--mut)">(${arr.length})</span></h2><div class="sub">${sub}</div></div>${arr.length?`<button class="cp" data-all="${id}">📋 Copiar todas</button>`:''}</div>
     ${arr.length?arr.map((c,i)=>`<div class="chg"><div class="r1"><div><b>${esc(c.n)}</b> <span style="color:var(--dim);font-size:12px">${c.code}</span><div class="ft">${info(c)}</div></div><button class="cp" data-id="${id}" data-i="${i}">Copiar</button></div><div class="msg" id="${id}${i}">${esc(fn(c))}</div></div>`).join(''):'<div class="empty">Nenhum cliente nesta lista.</div>'}</div>`;
-  $('main').innerHTML=hello()+`<div class="card"><div class="sec"><div><h2>💬 Mensagens prontas</h2><div class="sub">Copie e cole no WhatsApp do cliente. As datas das próximas visitas já vêm calculadas.</div></div><div class="tog" id="tone"><button data-t="inf" class="${inf?'on':''}">Informal</button><button data-t="for" class="${inf?'':'on'}">Formal</button></div></div></div>`
-    +block('n','🆕 Novos na sua carteira','Clientes que passam a ser seus. Vale pedir ao colega um resumo de cada um.',novos,msgNovo,c=>`Era do <b>${esc(c.sa?sname(c.sa):'—')}</b> · agora <b>${dayTxt(c.mb)}</b> · ${FREQ[c.pb]||c.pb}${c.vol?` · <b style="color:#7fbaff">${f1(c.vol)}</b>/mês`:''}`)
+  $('main').innerHTML=hello()+`<div class="card"><div class="sec"><div><h2>💬 Mensagens prontas</h2><div class="sub">Copie e cole no WhatsApp do cliente. As datas das próximas visitas e o dia de entrega já vêm na mensagem.</div></div><div class="tog" id="tone"><button data-t="inf" class="${inf?'on':''}">Informal</button><button data-t="for" class="${inf?'':'on'}">Formal</button></div></div></div>`
+    +block('n','🆕 Novos na sua carteira','Clientes que passam a ser seus. Vale pedir ao colega um resumo de cada um.',novos,msgNovo,c=>`Era do <b>${esc(c.sa?sname(c.sa):'—')}</b> · agora <b>${dayTxt(c.mb)}</b> · ${FREQ[c.pb]||c.pb}${c.jb?` · 🚚 ${dayTxt(c.jb)}`:''}${c.vol?` · <b style="color:#7fbaff">${f1(c.vol)}</b>/mês`:''}`)
     +block('m','🔄 Mudaram de dia ou frequência','Seus clientes que continuam com você, mas em outro dia ou ritmo.',mud,msgMud,c=>`<b>${dayTxt(c.ma)}</b> ${FREQ[c.pa]?'('+FREQ[c.pa]+')':''} → <b style="color:var(--pos)">${dayTxt(c.mb)}</b> (${FREQ[c.pb]||c.pb})`)
     +block('s','👋 Saíram da sua carteira','Clientes que passam para outro vendedor.',sairam,msgSaiu,c=>`Vai para o <b>${esc(sname(c.sb))}</b> · ${dayTxt(c.mb)}`);
   const arrs={n:novos,m:mud,s:sairam};
