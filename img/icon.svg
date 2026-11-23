@@ -1,22 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffd25e"/><stop offset=".55" stop-color="#f5b301"/><stop offset="1" stop-color="#f59e0b"/>
+      <stop offset="0" stop-color="#3b9eff"/><stop offset="1" stop-color="#1f5fd6"/>
     </linearGradient>
     <clipPath id="m"><path d="M8 24 L22 19 L42 24 L56 19 L56 52 L42 57 L22 52 L8 57 Z"/></clipPath>
   </defs>
   <rect width="64" height="64" rx="14" fill="url(#g)"/>
   <!-- mapa dobrado em 3 partes -->
-  <path d="M8 24 L22 19 L22 52 L8 57 Z" fill="#3a5076"/>
-  <path d="M22 19 L42 24 L42 57 L22 52 Z" fill="#26385a"/>
-  <path d="M42 24 L56 19 L56 52 L42 57 Z" fill="#3a5076"/>
+  <path d="M8 24 L22 19 L22 52 L8 57 Z" fill="#f2f6fc"/>
+  <path d="M22 19 L42 24 L42 57 L22 52 Z" fill="#d3deef"/>
+  <path d="M42 24 L56 19 L56 52 L42 57 Z" fill="#f2f6fc"/>
   <!-- estrada no mapa -->
   <g clip-path="url(#m)">
-    <path d="M4 50 C16 44 22 50 30 44 S44 34 60 36" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round"/>
-    <path d="M4 50 C16 44 22 50 30 44 S44 34 60 36" fill="none" stroke="#3b9eff" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+    <path d="M4 50 C16 44 22 50 30 44 S44 34 60 36" fill="none" stroke="#26385a" stroke-width="4.4" stroke-linecap="round"/>
+    <path d="M4 50 C16 44 22 50 30 44 S44 34 60 36" fill="none" stroke="#f5b301" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
   </g>
   <!-- pino -->
-  <ellipse cx="32" cy="41.5" rx="5" ry="1.6" fill="#0d1726" opacity=".45"/>
+  <ellipse cx="32" cy="41.5" rx="5" ry="1.6" fill="#0d1726" opacity=".35"/>
   <path d="M32 5c-6.6 0-11.6 5-11.6 11.4 0 8.2 11.6 24.6 11.6 24.6s11.6-16.4 11.6-24.6C43.6 10 38.6 5 32 5z" fill="#e5484d" stroke="#fff" stroke-width="2"/>
   <circle cx="32" cy="16.4" r="4.3" fill="#fff"/>
 </svg>
