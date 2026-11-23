@@ -42,6 +42,7 @@
     { id: 'critica', href: 'critica.html', ic: 'pen', t: 'Crítica (GV)' },
     { id: 'alteracoes', href: 'alteracoes.html', ic: 'list', t: 'Alterações', badge: true, adm: 1 },
     { id: 'alteracoes', href: 'rotina.html?m=alt', ic: 'list', t: 'Alterações', naoAdm: 1 },
+    { id: 'sns', href: 'sns.html', ic: 'list', t: 'Pedidos dos SNS' },
     { id: 'links', href: 'links.html', ic: 'link', t: 'Links dos vendedores' },
     { sec: 'Logística' },
     { id: 'janelas', href: 'janelas.html', ic: 'truck', t: 'Janelas BEES', badge3: true },
@@ -62,7 +63,7 @@
 
   function current() {
     var p = location.pathname.split('/').pop() || 'index.html';
-    var m = { 'index.html': 'home', 'painel.html': 'painel', 'rota.html': 'rota', 'critica.html': 'critica', 'alteracoes.html': 'alteracoes', 'importar.html': 'importar', 'janelas.html': 'janelas', 'links.html': 'links', 'usuarios.html': 'usuarios', 'relatorios.html': 'relatorios', 'oportunidades.html': 'opp' };
+    var m = { 'index.html': 'home', 'painel.html': 'painel', 'rota.html': 'rota', 'critica.html': 'critica', 'alteracoes.html': 'alteracoes', 'importar.html': 'importar', 'janelas.html': 'janelas', 'sns.html': 'sns', 'links.html': 'links', 'usuarios.html': 'usuarios', 'relatorios.html': 'relatorios', 'oportunidades.html': 'opp' };
     if (p === 'critica.html' && /reg=1/.test(location.hash)) return 'alteracoes';
     if (p === 'rotina.html') { var mm = new URLSearchParams(location.search).get('m') || 'sem'; return (mm === 'alt' || mm === 'mon') ? 'alteracoes' : 'r-' + mm; }
     return m[p] || '';
@@ -87,7 +88,7 @@
         : '<a class="' + cls + '" href="' + n.href + '" data-tip="' + n.t + '">' + svg(n.ic) + '<span>' + n.t + '</span>' + tail + '</a>';
     });
     var me = A && A.user();
-    h += '</nav><div class="sb-foot">' + (me ? '<div class="sb-me" title="' + me.email + '"><div class="sb-av">' + me.nome.split(' ').map(function (x) { return x[0]; }).slice(0, 2).join('').toUpperCase() + '</div><div class="sb-mn"><b>' + me.nome.split(' ')[0] + '</b><small>' + (me.perfil === 'admin' ? 'Administrador' : me.perfil === 'logistica' ? 'Logística' : me.perfil === 'gerente' ? 'Gerente comercial' : 'GV') + '</small></div><button class="sb-out" title="Sair">' + svg('out') + '</button></div>' : '') + '<div class="sb-theme" title="Tom das telas"><button data-th="medio">Médio</button><button data-th="escuro">Escuro</button><button class="sb-th1" title="Trocar o tom (médio / escuro)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:middle"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button></div>' +
+    h += '</nav><div class="sb-foot">' + (me ? '<div class="sb-me" title="' + me.email + '"><div class="sb-av">' + me.nome.split(' ').map(function (x) { return x[0]; }).slice(0, 2).join('').toUpperCase() + '</div><div class="sb-mn"><b>' + me.nome.split(' ')[0] + '</b><small>' + (me.perfil === 'admin' ? 'Administrador' : me.perfil === 'logistica' ? 'Logística' : me.perfil === 'gerente' ? 'Gerente comercial' : me.perfil === 'sns' ? 'SNS' : 'GV') + '</small></div><button class="sb-out" title="Sair">' + svg('out') + '</button></div>' : '') + '<div class="sb-theme" title="Tom das telas"><button data-th="medio">Médio</button><button data-th="escuro">Escuro</button><button class="sb-th1" title="Trocar o tom (médio / escuro)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:middle"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button></div>' +
       '<button class="sb-min" title="Recolher / expandir a barra">' + svg('chev') + '<span>Recolher menu</span></button></div>';
     var sb = document.createElement('aside'); sb.className = 'sb'; sb.innerHTML = h;
     document.body.appendChild(sb);

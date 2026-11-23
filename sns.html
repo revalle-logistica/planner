@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#26385a">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml"><link rel="icon" href="img/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>Pedidos dos SNS | Planner Revalle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/api.js"></script>
+<style>
+:root{--bg:#0b0f17;--panel:#121826;--panel2:#171f30;--line:#232c40;--txt:#e8ecf4;--mut:#8a94a8;--dim:#5b6478;--pos:#f5b301;--up:#22c55e;--down:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px Inter,system-ui,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:24px 22px 60px}
+h1{margin:0;font-size:24px;font-weight:800}.lead{color:var(--mut);margin:6px 0 18px;line-height:1.5;max-width:860px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.flow div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.03);font-size:13px;line-height:1.45;color:var(--mut)}
+.flow b{display:block;color:var(--txt);font-size:14px;margin-bottom:2px}.flow i{font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--pos);color:#111;font-weight:800;font-size:12px;margin-right:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel);cursor:pointer}
+.kpi.on{border-color:var(--pos)}.kpi b{display:block;font-size:26px;font-weight:800}.kpi small{color:var(--mut);font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+select,input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:9px;font:500 13px Inter}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:8px 12px;border-radius:9px;font:600 12.5px Inter;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--pos)}.btn.pri{background:var(--pos);color:#111;border-color:var(--pos)}.btn.red{color:#fca5a5}.btn:disabled{opacity:.4;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td small{color:var(--mut);display:block;margin-top:2px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.t-wait{background:#f5b30122;color:#fcd34d}.t-ok{background:#22c55e22;color:#4ade80}.t-no{background:#ef444422;color:#f87171}.t-log{background:#3b9eff22;color:#93c5fd}
+.grp{font-size:13px;font-weight:800;padding:14px 8px 6px;color:#ffd25e}
+.msg{padding:12px 14px;border-radius:10px;font-size:13px;margin:0 0 12px;display:none;line-height:1.5}
+.msg.ok{display:block;background:#22c55e18;border:1px solid #22c55e55;color:#86efac}
+.msg.err{display:block;background:#ef444418;border:1px solid #ef444455;color:#fca5a5}
+.msg.info{display:block;background:#3b9eff18;border:1px solid #3b9eff55;color:#93c5fd}
+.empty{color:var(--mut);font-size:13px;padding:14px 4px}
+@media(max-width:760px){.flow,.kpis{grid-template-columns:1fr 1fr}td:nth-child(4),th:nth-child(4){display:none}}
+</style>
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/shell.js"></script>
+</head>
+<body>
+<main>
+  <h1 id="tit">Pedidos dos SNS</h1>
+  <div class="lead" id="lead"></div>
+  <div class="flow"><div><i>1</i><b>SNS pede</b>Na Crítica do planner, como o GV: seleciona os PDVs e propõe vendedor, dia e frequência.</div>
+    <div><i>2</i><b>GV aprova</b>Um dos GVs vinculados ao SNS aprova ou reprova aqui, com observação.</div>
+    <div><i>3</i><b>Logística dá o parecer</b>O que o GV aprovou entra em Alterações, como "SNS + nome", para o parecer final.</div></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <div class="bar"><select id="ver"></select><select id="fsns"><option value="">Todos os SNS</option></select><input type="text" id="q" placeholder="Buscar PDV, código ou setor" style="flex:1;min-width:180px">
+      <span id="acts" hidden><button class="btn pri" id="bAp">✓ Aprovar selecionados</button> <button class="btn red" id="bRp">✕ Reprovar selecionados</button></span></div>
+    <div class="msg" id="msg"></div>
+    <div id="list"><div class="empty">Carregando…</div></div>
+  </div>
+</main>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=s=>s?new Date(s).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
+const say=(c,h)=>{$('msg').className='msg '+c;$('msg').innerHTML=h};
+const EU=PlannerAuth.user()||{},SOU_SNS=EU.perfil==='sns';
+let VS=[],P=[],LOG=[],F='aguardando_gv',SEL=new Set();
+const ETAPA={aguardando_gv:'Aguardando o GV',reprovado_gv:'Reprovado pelo GV',aprovado_gv:'Com a Logística'};
+const chave=sns=>'SNS '+sns;
+function logDe(p){const it=LOG.find(x=>x.gv===chave(p.sns_nome)&&String(x.code)===String(p.code)&&String(x.u)===String(p.unb));return it}
+function etapa(p){
+  if(p.status==='aguardando_gv')return['wait','Aguardando o GV',''];
+  if(p.status==='reprovado_gv')return['no','Reprovado pelo GV',(p.gv_nome?p.gv_nome.split(' ')[0]:'')+(p.gv_obs?': '+p.gv_obs:'')];
+  const l=logDe(p);const par=l&&l.parecer||'';
+  if(/aprov/i.test(par))return['ok','Aprovado pela Logística',l.obs||''];
+  if(/reprov/i.test(par))return['no','Reprovado pela Logística',l.obs||''];
+  return['log','Aprovado pelo GV · aguardando a Logística',p.gv_nome?'GV '+p.gv_nome.split(' ')[0]:''];
+}
+function pedido(it){return [it.sNovo?`Setor ${esc(it.s)} → <b>${esc(it.sNovo)}</b>`:'',it.novoDia?`Dia: <b>${esc(it.novoDia)}</b>`:'',it.novaFreq?`Freq.: <b>${esc(it.novaFreq)}</b>`:''].filter(Boolean).join(' · ')||esc(it.tipo||'')}
+async function load(){
+  $('tit').textContent=SOU_SNS?'Meus pedidos de alteração':'Pedidos dos SNS';
+  $('lead').innerHTML=SOU_SNS?'Acompanhe aqui os pedidos que você fez na <a href="critica.html" style="color:#93c5fd">Crítica do planner</a>: primeiro o GV aprova, depois a Logística dá o parecer.':'Pedidos de alteração de visita feitos pelos SNS. Aprove ou reprove: o que for aprovado vai para o parecer da Logística em Alterações.';
+  try{const ix=await PlannerData.json('index.json');VS=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig));
+    $('ver').innerHTML=VS.map(v=>`<option value="${v.id}">Planner ${v.vig.split('-').reverse().join('/')}</option>`).join('')}catch(e){say('err','Não consegui ler os planners: '+esc(e.message));return}
+  await refresh();
+}
+async function refresh(){
+  const v=$('ver').value;$('list').innerHTML='<div class="empty">Carregando…</div>';
+  try{const j=await PlannerAuth.call('sns.list',{v});P=j.pedidos}catch(e){say('err',esc(e.message));return}
+  try{LOG=PlannerAPI.ok()?await PlannerAPI.list(v):[]}catch(e){LOG=[]}
+  const sns=[...new Set(P.map(p=>p.sns_nome))].sort();$('fsns').innerHTML='<option value="">Todos os SNS</option>'+sns.map(s=>`<option>${esc(s)}</option>`).join('');$('fsns').hidden=SOU_SNS||sns.length<2;
+  SEL.clear();render();
+}
+function render(){
+  const c=k=>P.filter(p=>p.status===k).length;
+  const K=[['aguardando_gv',SOU_SNS?'Aguardando o GV':'Aguardando você',c('aguardando_gv')],['aprovado_gv','Aprovados pelo GV',c('aprovado_gv')],['reprovado_gv','Reprovados pelo GV',c('reprovado_gv')],['','Todos',P.length]];
+  $('kpis').innerHTML=K.map(([k,t,n])=>`<div class="kpi ${F===k?'on':''}" data-f="${k}"><b>${n}</b><small>${t}</small></div>`).join('');
+  const q=$('q').value.trim().toLowerCase(),fs=$('fsns').value;
+  const L=P.filter(p=>(!F||p.status===F)&&(!fs||p.sns_nome===fs)&&(!q||(p.code+' '+(p.item.n||'')+' '+(p.item.s||'')+' '+(p.item.sNovo||'')).toLowerCase().includes(q)));
+  const podeDecidir=!SOU_SNS&&F==='aguardando_gv';$('acts').hidden=!podeDecidir;
+  if(!L.length){$('list').innerHTML=`<div class="empty">${P.length?'Nada neste filtro.':SOU_SNS?'Você ainda não enviou pedidos neste planner. Faça na Crítica do planner e clique em "Enviar para aprovação do GV".':'Nenhum pedido de SNS neste planner.'}</div>`;return}
+  const by={};L.forEach(p=>(by[p.sns_nome]=by[p.sns_nome]||[]).push(p));
+  $('list').innerHTML=`<table><thead><tr>${podeDecidir?'<th><input type="checkbox" id="all"></th>':''}<th>PDV</th><th>Pedido</th><th>Motivo</th><th>Etapa</th></tr></thead><tbody>`+
+    Object.entries(by).map(([sns,ps])=>(SOU_SNS?'':`<tr><td colspan="5" class="grp">SNS ${esc(sns)} · ${ps.length} PDV${ps.length>1?'s':''}</td></tr>`)+ps.map(p=>{const it=p.item,[cl,t,sub]=etapa(p);
+      return `<tr>${podeDecidir?`<td><input type="checkbox" data-id="${p.id}" ${SEL.has(p.id)?'checked':''}></td>`:''}<td><b>${esc(it.n||'')}</b><small>${esc(p.code)} · ${esc(p.un||'')} · setor ${esc(it.s||'')}</small></td>
+        <td>${pedido(it)}<small>${esc(it.tipo||'')}</small></td><td>${esc(it.just||'')||'<span style="color:var(--dim)">—</span>'}<small>${fmt(p.criado)}</small></td>
+        <td><span class="tag t-${cl}">${esc(t)}</span>${sub?`<small>${esc(sub)}</small>`:''}</td></tr>`}).join('')).join('')+'</tbody></table>';
+}
+// envia para a Logística tudo o que o GV já aprovou daquele SNS (o registro da crítica guarda por "SNS + nome")
+async function encaminhar(snsNome){
+  const v=$('ver').value;const j=await PlannerAuth.call('sns.list',{v});const meus=j.pedidos.filter(p=>p.sns_nome===snsNome);
+  const units=[...new Set(meus.map(p=>p.unb))];
+  const items=meus.filter(p=>p.status==='aprovado_gv').map(p=>Object.assign({},p.item,{just:`[SNS ${snsNome} · aprovado por ${p.gv_nome}${p.gv_obs?': '+p.gv_obs:''}] `+(p.item.just||'')}));
+  return PlannerAPI.post({action:'submit',v,gv:chave(snsNome),units,items});
+}
+async function decidir(dec){
+  if(!SEL.size){say('err','Marque os pedidos primeiro.');return}
+  let obs='';if(dec==='reprovado_gv'){obs=prompt('Motivo da reprovação (o SNS vai ver):','');if(obs===null)return}
+  else obs=prompt('Observação para a Logística (opcional):','')||'';
+  const ids=[...SEL],afet=[...new Set(P.filter(p=>SEL.has(p.id)).map(p=>p.sns_nome))];
+  $('bAp').disabled=$('bRp').disabled=true;say('info','Gravando…');
+  try{await PlannerAuth.call('sns.decide',{ids,decisao:dec,obs});
+    let env=0,falha=[];for(const s of afet){try{const r=await encaminhar(s);env+=(r.added||0)+(r.updated||0)}catch(e){falha.push(s)}}
+    say(falha.length?'err':'ok',`${ids.length} pedido(s) ${dec==='aprovado_gv'?'aprovados e enviados para a Logística':'reprovados'}.`+(falha.length?` Não consegui enviar para a Logística os pedidos de ${esc(falha.join(', '))}: clique em aprovar de novo em instantes.`:''));
+    await refresh()}
+  catch(e){say('err',esc(e.message))}finally{$('bAp').disabled=$('bRp').disabled=false}
+}
+document.addEventListener('click',e=>{const k=e.target.closest('[data-f]');if(k){F=k.dataset.f;SEL.clear();render()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='all'){document.querySelectorAll('#list input[data-id]').forEach(x=>{x.checked=t.checked;t.checked?SEL.add(x.dataset.id):SEL.delete(x.dataset.id)})}
+  else if(t.dataset&&t.dataset.id){t.checked?SEL.add(t.dataset.id):SEL.delete(t.dataset.id)}});
+$('ver').onchange=refresh;$('fsns').onchange=render;$('q').oninput=render;
+$('bAp').onclick=()=>decidir('aprovado_gv');$('bRp').onclick=()=>decidir('reprovado_gv');
+load();
+}
+</script>
+</body>
+</html>

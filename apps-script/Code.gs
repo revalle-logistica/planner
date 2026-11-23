@@ -14,7 +14,9 @@ const SHEETS = {
   Links: ['token', 'unb', 'setor', 'ativo', 'criado_por', 'criado_em', 'desativado_em'],
   Arquivos: ['nome', 'file_id', 'atualizado', 'por', 'bytes'],
   Log: ['quando', 'email', 'acao', 'detalhe'],
-  Notas: ['id', 'tipo', 'unidade', 'planner', 'pdv', 'setor', 'texto', 'status', 'autor', 'autor_nome', 'criado', 'atualizado', 'excluida', 'categoria', 'regiao']
+  Notas: ['id', 'tipo', 'unidade', 'planner', 'pdv', 'setor', 'texto', 'status', 'autor', 'autor_nome', 'criado', 'atualizado', 'excluida', 'categoria', 'regiao'],
+  SnsVinculo: ['sns_email', 'gvs', 'revenda', 'atualizado'],
+  PedidosSNS: ['id', 'v', 'unb', 'un', 'code', 'sns_email', 'sns_nome', 'item', 'status', 'gv_email', 'gv_nome', 'gv_obs', 'gv_em', 'criado', 'atualizado']
 };
 
 // ---------- infraestrutura
@@ -104,8 +106,13 @@ function session(b, perfis) {
 function pub(u) { return { email: u.email, nome: u.nome, area: u.area, perfil: u.perfil, status: u.status, criado: u.criado, aprovado_em: u.aprovado_em, ultimo_acesso: u.ultimo_acesso }; }
 function adm_(u) { return u.perfil === 'admin' || u.perfil === 'logistica'; }
 function veTudo_(u) { return adm_(u) || u.perfil === 'gerente'; }
+// SNS: vinculado a um ou mais GVs e a uma revenda (Agreste = Alagoinhas + Serrinha · Nordeste = Ribeira do Pombal + Paulo Afonso)
+const REVENDAS = { Agreste: /alagoinhas|serrinha/i, Nordeste: /pombal|paulo\s*afonso/i };
+function vinculo_(email) { const v = rows('SnsVinculo').find(x => x.sns_email === email); return v ? { gvs: v.gvs ? v.gvs.split(',').filter(Boolean) : [], revenda: v.revenda } : { gvs: [], revenda: '' }; }
+function equipeEmails_(u) { return u.perfil === 'sns' ? vinculo_(u.email).gvs : [u.email]; }
 function gvOwns(u, unb, setor) {
   if (veTudo_(u)) return true;
+  if (u.perfil === 'sns') { const gvs = vinculo_(u.email).gvs; return rows('Equipes').some(e => gvs.indexOf(e.gv_email) >= 0 && e.unb === String(unb) && e.setor === String(setor)); }
   return rows('Equipes').some(e => e.gv_email === u.email && e.unb === String(unb) && e.setor === String(setor));
 }
 
@@ -184,7 +191,7 @@ function esc_(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ 
 function emailHtml_(tipo, nome, perfil) {
   const pn = String(nome || '').split(' ')[0];
   const ok = tipo === 'aprovado';
-  const perfilTxt = perfil === 'admin' ? 'Administrador' : perfil === 'logistica' ? 'Logística' : perfil === 'gerente' ? 'Gerente comercial (todos os GVs)' : 'Gerente de Vendas (GV)';
+  const perfilTxt = perfil === 'admin' ? 'Administrador' : perfil === 'logistica' ? 'Logística' : perfil === 'gerente' ? 'Gerente comercial (todos os GVs)' : perfil === 'sns' ? 'SNS' : 'Gerente de Vendas (GV)';
   const F = "font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;";
   let corpo;
   if (ok) {
@@ -228,7 +235,7 @@ function enviarEmail_(tipo, u, perfil) {
       ? (perfil === 'admin' ? 'Seu acesso de administrador ao Planner Revalle foi aprovado' : 'Seu acesso ao Planner Revalle foi aprovado')
       : 'Seu pedido de acesso ao Planner Revalle';
     const texto = tipo === 'aprovado'
-      ? 'Olá, ' + u.nome + '! Seu acesso ao Planner Revalle foi aprovado (' + (perfil === 'admin' ? 'Administrador' : perfil === 'logistica' ? 'Logística' : perfil === 'gerente' ? 'Gerente comercial' : 'GV') + '). Acesse ' + SITE_URL + ' com o seu e-mail e a senha do cadastro.'
+      ? 'Olá, ' + u.nome + '! Seu acesso ao Planner Revalle foi aprovado (' + (perfil === 'admin' ? 'Administrador' : perfil === 'logistica' ? 'Logística' : perfil === 'gerente' ? 'Gerente comercial' : perfil === 'sns' ? 'SNS' : 'GV') + '). Acesse ' + SITE_URL + ' com o seu e-mail e a senha do cadastro.'
       : 'Olá, ' + u.nome + '. Seu pedido de acesso ao Planner Revalle não foi aprovado neste momento. Fale com a Logística se precisar.';
     MailApp.sendEmail({ to: u.email, subject: assunto, body: texto, htmlBody: emailHtml_(tipo, u.nome, perfil), name: 'Planner Revalle · Logística' });
     log(u.email, 'email', tipo);
@@ -283,14 +290,69 @@ const ACTIONS = {
   },
 
   // usuários (administrador)
-  'users.list'(b) { session(b, ['admin']); return { users: rows('Usuarios').map(pub), equipes: rows('Equipes').map(e => ({ unb: e.unb, setor: e.setor, gv: e.gv_email })) }; },
+  'users.list'(b) { session(b, ['admin']); return { users: rows('Usuarios').map(pub), equipes: rows('Equipes').map(e => ({ unb: e.unb, setor: e.setor, gv: e.gv_email })), vinculos: rows('SnsVinculo').map(v => ({ sns: v.sns_email, gvs: v.gvs ? v.gvs.split(',').filter(Boolean) : [], revenda: v.revenda })) }; },
+  'sns.vinculo.set'(b) {
+    const a = session(b, ['admin']);
+    return locked(() => {
+      const u = userOf(b.email); if (!u) throw new Error('Usuário não encontrado');
+      const gvs = (b.gvs || []).map(String).filter(e => { const g = userOf(e); return g && g.perfil === 'gv'; });
+      const revenda = String(b.revenda || ''); if (revenda && !REVENDAS[revenda]) throw new Error('Revenda inválida');
+      const r = rows('SnsVinculo').find(x => x.sns_email === u.email);
+      const o = { sns_email: u.email, gvs: gvs.join(','), revenda, atualizado: now() };
+      if (r) update('SnsVinculo', r._row, o); else append('SnsVinculo', o);
+      log(a.email, 'sns.vinculo.set', u.email + ' ' + revenda + ' ' + gvs.join(','));
+      return { gvs, revenda };
+    });
+  },
+  // pedidos dos SNS: o SNS pede, um GV vinculado aprova ou reprova, e o aprovado segue para o parecer da Logística
+  'sns.me'(b) { const u = session(b, ['sns']); return vinculo_(u.email); },
+  'sns.submit'(b) {
+    const u = session(b, ['sns']); const v = String(b.v || ''); if (!v) throw new Error('Planner não informado');
+    const vin = vinculo_(u.email); if (!vin.gvs.length) throw new Error('Você ainda não está vinculado a nenhum GV. Peça à Logística para fazer o vínculo.');
+    const rx = REVENDAS[vin.revenda]; const units = (b.units || []).map(String); const itens = (b.itens || []).slice(0, 2000);
+    itens.forEach(it => { if (rx && !rx.test(String(it.un || ''))) throw new Error('A unidade ' + it.un + ' não é da sua revenda (' + vin.revenda + ')'); });
+    return locked(() => {
+      const meus = rows('PedidosSNS').filter(r => r.sns_email === u.email && r.v === v && units.indexOf(r.unb) >= 0);
+      const pend = meus.filter(r => r.status === 'aguardando_gv'), decid = new Set(meus.filter(r => r.status !== 'aguardando_gv').map(r => r.unb + '|' + r.code));
+      if (pend.length) delRows('PedidosSNS', pend.map(r => r._row));
+      let add = 0, kept = 0;
+      itens.forEach(it => {
+        const k = String(it.u) + '|' + String(it.code);
+        if (decid.has(k)) { kept++; return; }
+        append('PedidosSNS', { id: uid('p'), v, unb: String(it.u), un: String(it.un || ''), code: String(it.code), sns_email: u.email, sns_nome: u.nome, item: JSON.stringify(it), status: 'aguardando_gv', criado: now(), atualizado: now() }); add++;
+      });
+      log(u.email, 'sns.submit', v + ' ' + add + ' pedido(s)');
+      return { added: add, kept, removed: Math.max(0, pend.length - add) };
+    });
+  },
+  'sns.list'(b) {
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']); const v = String(b.v || '');
+    const vins = rows('SnsVinculo');
+    const meus = u.perfil === 'gv' ? new Set(vins.filter(x => x.gvs.split(',').indexOf(u.email) >= 0).map(x => x.sns_email)) : null;
+    const it = rows('PedidosSNS').filter(r => (!v || r.v === v) && (veTudo_(u) || (u.perfil === 'sns' ? r.sns_email === u.email : meus.has(r.sns_email))));
+    return { perfil: u.perfil, pedidos: it.map(r => { const o = {}; SHEETS.PedidosSNS.forEach(k => o[k] = r[k]); o.item = JSON.parse(r.item || '{}'); return o; }) };
+  },
+  'sns.decide'(b) {
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']); const ids = new Set((b.ids || []).map(String));
+    const dec = String(b.decisao || ''); if (['aprovado_gv', 'reprovado_gv', 'aguardando_gv'].indexOf(dec) < 0) throw new Error('Decisão inválida');
+    return locked(() => {
+      const vins = rows('SnsVinculo'); const out = [];
+      rows('PedidosSNS').filter(r => ids.has(r.id)).forEach(r => {
+        if (u.perfil === 'gv') { const vv = vins.find(x => x.sns_email === r.sns_email); if (!vv || vv.gvs.split(',').indexOf(u.email) < 0) throw new Error('Este SNS não está vinculado a você'); }
+        const p = dec === 'aguardando_gv' ? { status: dec, gv_email: '', gv_nome: '', gv_obs: '', gv_em: '', atualizado: now() } : { status: dec, gv_email: u.email, gv_nome: u.nome, gv_obs: String(b.obs || '').slice(0, 500), gv_em: now(), atualizado: now() };
+        update('PedidosSNS', r._row, p); out.push(Object.assign({}, r, p));
+      });
+      log(u.email, 'sns.decide', dec + ' ' + out.length);
+      return { atualizados: out.length };
+    });
+  },
   'users.set'(b) {
     const a = session(b, ['admin']);
     return locked(() => {
       const u = userOf(b.email); if (!u) throw new Error('Usuário não encontrado');
       if (u.email === a.email && (b.status && b.status !== 'ativo' || b.perfil && b.perfil !== 'admin')) throw new Error('Você não pode tirar o seu próprio acesso de administrador');
       const p = {};
-      if (b.perfil) { if (['admin', 'logistica', 'gerente', 'gv'].indexOf(b.perfil) < 0) throw new Error('Perfil inválido'); p.perfil = b.perfil; }
+      if (b.perfil) { if (['admin', 'logistica', 'gerente', 'gv', 'sns'].indexOf(b.perfil) < 0) throw new Error('Perfil inválido'); p.perfil = b.perfil; }
       if (b.status) { if (['ativo', 'bloqueado', 'recusado'].indexOf(b.status) < 0) throw new Error('Situação inválida'); p.status = b.status; }
       if (p.status === 'ativo' && u.status === 'pendente') { p.aprovado_por = a.email; p.aprovado_em = now(); if (!p.perfil && !u.perfil) p.perfil = 'gv'; }
       update('Usuarios', u._row, p);
@@ -323,15 +385,15 @@ const ACTIONS = {
 
   // links dos vendedores (administrador e gerente: todos · GV: só a equipe)
   'links.list'(b) {
-    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
-    const eq = rows('Equipes').filter(e => veTudo_(u) || e.gv_email === u.email);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']);
+    const meus = equipeEmails_(u); const eq = rows('Equipes').filter(e => veTudo_(u) || meus.indexOf(e.gv_email) >= 0);
     const mine = new Set(eq.map(e => e.unb + '|' + e.setor));
     const links = rows('Links').filter(l => l.ativo === 'sim' && (veTudo_(u) || mine.has(l.unb + '|' + l.setor)))
       .map(l => ({ unb: l.unb, setor: l.setor, token: l.token, criado_em: l.criado_em, criado_por: l.criado_por }));
     return { perfil: u.perfil, equipe: eq.map(e => ({ unb: e.unb, setor: e.setor, gv: e.gv_email })), links };
   },
   'links.generate'(b) {
-    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']);
     const lista = b.setores || [{ unb: b.unb, setor: b.setor }];
     return locked(() => {
       const all = rows('Links'), out = [];
@@ -349,7 +411,7 @@ const ACTIONS = {
     });
   },
   'links.disable'(b) {
-    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']);
     const unb = String(b.unb), setor = String(b.setor);
     if (!gvOwns(u, unb, setor)) throw new Error('O setor ' + setor + ' não é da sua equipe');
     return locked(() => {
@@ -361,7 +423,7 @@ const ACTIONS = {
 
   // dados (planner, relatórios, janelas)
   'data.get'(b) {
-    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']), nome = String(b.name || '');
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']), nome = String(b.name || '');
     if (!adm_(u) && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome) || /^rel\/(index\.json|coord\/\d+\.json)$/.test(nome) || nome === 'janelas/ajustes-hist.json')) throw new Error('Sem permissão para este arquivo');
     return readFile(nome);
   },
@@ -372,11 +434,11 @@ const ACTIONS = {
   },
   // anotações do time (Oportunidades): qualquer usuário registra; muda/exclui quem escreveu ou o administrador
   'notas.list'(b) {
-    session(b, ['admin', 'logistica', 'gerente', 'gv']); const t = String(b.tipo || '');
+    session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']); const t = String(b.tipo || '');
     return { notas: rows('Notas').filter(n => n.excluida !== 'sim' && (!t || n.tipo === t)).map(notaPub_) };
   },
   'notas.add'(b) {
-    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']); const itens = (b.itens || []).slice(0, 200);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']); const itens = (b.itens || []).slice(0, 200);
     if (!itens.length) throw new Error('Nada para registrar');
     const out = locked(() => itens.map(it => {
       const texto = String(it.texto || '').trim().slice(0, 4000); if (!texto) throw new Error('Texto vazio');
@@ -387,7 +449,7 @@ const ACTIONS = {
     log(u.email, 'notas.add', out.length + ' nota(s)'); return { notas: out.map(notaPub_) };
   },
   'notas.set'(b) {
-    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']);
     return locked(() => {
       const n = rows('Notas').find(x => x.id === String(b.id || '')); if (!n || n.excluida === 'sim') throw new Error('Anotação não encontrada');
       if (!adm_(u) && n.autor !== u.email) throw new Error('Só quem escreveu (ou a Logística) pode mudar esta anotação');

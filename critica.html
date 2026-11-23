@@ -148,6 +148,8 @@ const title=s=>String(s||'').toLowerCase().replace(/(^|\s)\S/g,t=>t.toUpperCase(
 const fmt=(n,d=0)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 let V,ALL=[],C=[],S={u:'',f:'',view:'plan',col:'sel',lasso:false,only:false},SEL=new Set(),B=[],EFF=new Map(),JAN=new Map(),SCOL={};
 let REGD={items:[]},REGF='';
+const EU=(window.PlannerAuth&&PlannerAuth.user())||{},SNS=EU.perfil==='sns';let SNSV={gvs:[],revenda:''};
+const REVRX={Agreste:/alagoinhas|serrinha/i,Nordeste:/pombal|paulo\s*afonso/i};
 const isReq=code=>EFF.has(code)||JAN.has(code);
 let mA,mB,lyA,lyB;
 
@@ -160,7 +162,11 @@ let mA,mB,lyA,lyB;
   $('vsub').textContent=`Planner com vigência ${V.vig.split('-').reverse().join('/')} · selecione PDVs no mapa e defina o destino`;
   for(const r of V.clients){const[u,code,n,st,sa,pa,ma,sb,pb,mb,lat,lon,city]=r;if(!mb)continue;
     ALL.push({u,code,n:n.trim(),st,sb,pb,mb,lat,lon,city,addr:r[15]||'',vol:r[18],jb:r[21]||''})}
-  try{$('gv').value=localStorage.getItem('criticaGV')||''}catch(e){}
+  if(SNS){try{SNSV=await PlannerAuth.call('sns.me')}catch(e){}
+    if(REVRX[SNSV.revenda])V.units=V.units.filter(u=>REVRX[SNSV.revenda].test(u.name));
+    $('gv').value=EU.nome||'';$('gv').readOnly=true;$('gv').title='SNS';$('send').textContent='📤 Enviar para aprovação do GV';
+    if(!SNSV.gvs.length)$('vsub').innerHTML+=' · <b style="color:#fcd34d">você ainda não está vinculado a um GV: peça à Logística o vínculo antes de enviar</b>'}
+  else try{$('gv').value=localStorage.getItem('criticaGV')||''}catch(e){}
   $('gv').oninput=()=>{try{localStorage.setItem('criticaGV',$('gv').value)}catch(e){}};
   $('unit').innerHTML=V.units.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
   S.u=h.u&&V.units.some(x=>x.id===h.u)?h.u:V.units[0].id;$('unit').value=S.u;
@@ -371,7 +377,7 @@ function sendStatus(){
   let st=null;try{st=JSON.parse(localStorage.getItem(sentKey())||'null')}catch(e){}
   const tot=totalReq();const dirty=!st||st.stamp!==draftStamp();
   $('send').disabled=false;$('send').style.opacity=tot||st?1:.6;
-  $('sendInfo').innerHTML=!PlannerAPI.ok()?'<span style="color:#fcd34d">Conexão com a Logística ainda não configurada.</span>':st?(dirty?`<span style="color:#fcd34d">⚠️ Há alterações não enviadas.</span> Último envio: ${new Date(st.at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:`<span style="color:#4ade80">✓ Enviado para a Logística em ${new Date(st.at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</span>`):(tot?'<span style="color:#fcd34d">Ainda não enviado.</span>':'');
+  $('sendInfo').innerHTML=!PlannerAPI.ok()?'<span style="color:#fcd34d">Conexão com a Logística ainda não configurada.</span>':st?(dirty?`<span style="color:#fcd34d">⚠️ Há alterações não enviadas.</span> Último envio: ${new Date(st.at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:`<span style="color:#4ade80">✓ Enviado para ${SNS?'aprovação do GV':'a Logística'} em ${new Date(st.at).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</span>`):(tot?'<span style="color:#fcd34d">Ainda não enviado.</span>':'');
 }
 async function sendAll(){
   if(!PlannerAPI.ok()){alert('A conexão com a Logística ainda não foi configurada.');return}
@@ -382,6 +388,11 @@ async function sendAll(){
     novoDia:r.p.m!==r.e.m?visitTxt(r.e.m):'',novaJanela:r.j,novaFreq:r.p.p!==r.e.p||wkTxt(r.p.m)!==wkTxt(r.e.m)?(FREQ[r.e.p]||r.e.p)+' '+wkTxt(r.e.m):'',just:r.just,alvo:{s:r.e.s,p:r.e.p,m:r.e.m,j:r.j}})});
   if(!items.length&&!confirm('Você não tem solicitações. Enviar assim vai retirar da Logística as suas solicitações pendentes destas unidades. Continuar?'))return;
   const b=$('send');b.disabled=true;const o=b.textContent;b.textContent='Enviando…';
+  if(SNS){try{const r=await PlannerAuth.call('sns.submit',{v:V.id,units,itens:items});
+      localStorage.setItem(sentKey(),JSON.stringify({at:new Date().toISOString(),stamp:draftStamp(),n:items.length}));
+      alert(`✓ Enviado para aprovação do GV!\n\n${items.length} PDVs com solicitação.\n${r.added} aguardando o GV${r.kept?` · ${r.kept} já tinham decisão do GV e foram mantidos`:''}.\n\nAcompanhe em "Pedidos dos SNS".`)}
+    catch(e){alert('Não consegui enviar: '+e.message+'\n\nSeu trabalho continua salvo aqui. Tente de novo em instantes.')}
+    finally{b.textContent=o;b.disabled=false;sendStatus()}return}
   try{const r=await PlannerAPI.post({action:'submit',v:V.id,gv,units,items});
     localStorage.setItem(sentKey(),JSON.stringify({at:new Date().toISOString(),stamp:draftStamp(),n:items.length}));
     alert(`✓ Enviado para a Logística!\n\n${items.length} PDVs com solicitação.\n${r.added} novos · ${r.updated} atualizados${r.removed?` · ${r.removed} retirados`:''}${r.kept?`\n${r.kept} já tinham parecer e foram mantidos.`:''}`);
