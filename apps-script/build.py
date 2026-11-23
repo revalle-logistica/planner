@@ -121,6 +121,10 @@ js = js.replace('<rect x="50" y="${150-120}" width="60" height="120" fill="#4472
 js = js.replace("title('Reunião','Planner','meet')", "title('Números do planner','Planner','meet')")
 js = js.replace("title('Reunião','Planner '+UI.p.replace(/\\./g,'/'),'meet')", "title('Números do planner','Planner '+UI.p.replace(/\\./g,'/'),'meet')")
 js = js.replace("># Números relacionados ao planner · ", ">Números relacionados ao planner · ")
+# Solicitações de ajuste: sistema + planilhas antigas + janelas TCD
+js = js.replace("const alt=altOf().n;", "const SI=solicInfo(UI.p),alt=SI.n;")
+js = js.replace("one('Solicitações de ajuste',alt,'Formulário / crítica')", "one('Solicitações de ajuste',alt,SI.cap)")
+js = js.replace("const altN=altOf().n;", "const altN=solicInfo(UI.p).n;")
 # vendedor só pelo código do setor (sem nome)
 rep("<div class=\"sub\">Setor ${esc(UI.setor)} · ${esc(s.vn[UI.setor]||'')}</div>", "<div class=\"sub\">Setor ${esc(UI.setor)}</div>")
 # preferências de tela continuam no navegador; o resto vai para o Drive

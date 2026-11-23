@@ -149,6 +149,11 @@ function tcdRows(k){if(!AJH||!AJH.length)return [];const ds=dates();const prox=d
   const P=(U().planners[k]||{}).pos;const st={};if(P)for(const r of P.rows)st[String(r[0])]=String(r[1]);const DD=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
   return AJH.filter(a=>a.unb===un&&a.em>=de&&a.em<ate).map(a=>{const r=Array(11).fill('');r[0]=a.cod;r[1]=st[a.cod]||'';r[2]=a.pdv;r[5]='Janela de entrega (TCD)';
     r[7]=(a.dias||[]).map((x,j)=>x?DD[j]:'').filter(Boolean).join('/');r[8]=[a.ajuste,a.req?'pedido por '+a.req:''].filter(Boolean).join(' · ');r[9]='Aprovado';r[10]='TCD · pedido '+(a.pedido||'—');return r})}
+function solicInfo(k){const AO=altOf();const tcd=tcdRows(k).length;let sys=0,pend=false;const v=vidDe(k);
+  if(!(k in SOLIC)){SOLIC[k]=null;if(window.PlannerAPI&&v)PlannerAPI.list(v).then(it=>{SOLIC[k]=it||[];render()}).catch(()=>{SOLIC[k]=[];render()});else SOLIC[k]=[]}
+  if(SOLIC[k]===null)pend=true;else{const un=unbDe(UI.u);sys=SOLIC[k].filter(r=>!un||String(r.u)===un).length}
+  const cap=pend?'Carregando…':[sys&&sys+' no sistema',AO.n&&AO.n+' em planilha',tcd&&tcd+' janelas TCD'].filter(Boolean).join(' · ')||'Nenhuma';
+  return {n:AO.n+sys+tcd,sys,tcd,old:AO.n,pend,cap}}
 function instalarResumo(){const altOrig=R.alt;
   R.alt=()=>{const AO=altOf();const nota=t=>`<p class="note" style="margin:0 0 10px">${t}</p>`;
     const tcd=tcdRows(UI.p),nt=tcd.length?` Inclui ${tcd.length} ajuste(s) de janela aprovados pela TCD (planilha semanal).`:'';
