@@ -126,6 +126,10 @@ js = js.replace("># Números relacionados ao planner · ", ">Números relacionad
 js = js.replace("const alt=altOf().n;", "const SI=solicInfo(UI.p),alt=SI.n;")
 js = js.replace("one('Solicitações de ajuste',alt,'Formulário / crítica')", "one('Solicitações de ajuste',alt,SI.cap)")
 js = js.replace("const altN=altOf().n;", "const altN=solicInfo(UI.p).n;")
+# Buffer: barras empilhadas somam o total (vermelho = PDV com pedido não roteirizado; amarelo = só adiado) e eixo com valores redondos
+js = js.replace("const sAd=s=>m==='pdv'?s.pab/s.pdv:s.tad/s.t,sNr=s=>m==='pdv'?s.pnr/s.pdv:s.tnr/s.t,sT=s=>m==='pdv'?s.pp:s.pv;", "const sT=s=>(m==='pdv'?s.pp:s.pv)||0,sNr=s=>Math.min(sT(s),(m==='pdv'?s.pnr/s.pdv:s.tnr/s.t)||0),sAd=s=>sT(s)-sNr(s);")
+js = js.replace("const mx=Math.max(.05,...DS.filter(s=>!BA.off.has(s.d)).map(sT));", "const mx=niceMax(Math.max(.05,...DS.filter(s=>!s.off).map(sT)));")
+js = js.replace('<span style="color:#F59E0B;font-weight:800">■ Adiado</span> (roteirizado para depois da data original) &nbsp; <span style="color:#E0141E;font-weight:800">■ Não roteirizado</span>', '<b>Altura da barra = % de buffer.</b> Ela se divide em <span style="color:#F59E0B;font-weight:800">■ Adiado</span> (roteirizado para depois da data original) e <span style="color:#E0141E;font-weight:800">■ Não roteirizado</span> (ficou sem rota)')
 # Buffer: visão por mês (padrão, clique abre por dia) e filtro de data a data
 js = js.replace("const days=Object.keys(byD).sort().filter(d=>dow(d)<6&&byD[d].length>=20).slice(-60);", "const DD=bufDaily(Uu);const _dd=Object.keys(DD).sort().filter(d=>dow(d)<6&&DD[d].n>=20),_dmin=_dd[0]||'',_dmax=_dd[_dd.length-1]||'';const _rg=!!(UI.bfDe||UI.bfAte);const days=_rg?_dd.filter(d=>(!UI.bfDe||d>=UI.bfDe)&&(!UI.bfAte||d<=UI.bfAte)):_dd.slice(-60);const _d0=days[0]||UI.bfDe||'',_d1=days[days.length-1]||UI.bfAte||'';const _vm=UI.bfv!=='dia';")
 js = js.replace("const DS=days.map(d=>({d,...bufStat(byD[d])}));", "const DS=days.map(d=>({d,...DD[d]}));")

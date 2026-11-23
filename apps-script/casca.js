@@ -174,15 +174,16 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener('change',e=>{const t=e.target;if(t&&(t.id==='bfDe'||t.id==='bfAte')){UI[t.id]=t.value||'';if(UI.bfDe&&UI.bfAte&&UI.bfDe>UI.bfAte){const x=UI.bfDe;UI.bfDe=UI.bfAte;UI.bfAte=x}UI.bfp=(UI.bfDe||UI.bfAte)?'r':'4';render()}});
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='bfLimpa'){UI.bfDe='';UI.bfAte='';UI.bfp='4';render()}});
 
+function niceMax(v){const st=[.01,.02,.025,.05,.1,.2,.25,.5,1];for(const x of st)if(v<=x*4)return x*4;return Math.ceil(v)}
 function bufMesChart(Uu,m){const M=bufMonthly(Uu);const ks=Object.keys(M).sort();if(!ks.length)return '<p class="note">Sem pedidos para montar a visão mensal.</p>';
-  const sAd=s=>m==='pdv'?s.pab/s.pdv:s.tad/s.t,sNr=s=>m==='pdv'?s.pnr/s.pdv:s.tnr/s.t,sT=s=>m==='pdv'?s.pp:s.pv;
-  const W=900,H=220,pl=40,pb=30,pt=22;const mx=Math.max(.05,...ks.map(k=>sT(M[k])||0))*1.12;const n=ks.length,slot=(W-pl-10)/n,bw=Math.min(56,slot*.62);
+  const sT=s=>(m==='pdv'?s.pp:s.pv)||0,sNr=s=>Math.min(sT(s),(m==='pdv'?s.pnr/s.pdv:s.tnr/s.t)||0),sAd=s=>sT(s)-sNr(s);
+  const W=900,H=220,pl=40,pb=30,pt=22;const mx=niceMax(Math.max(.05,...ks.map(k=>sT(M[k])))*1.08);const n=ks.length,slot=(W-pl-10)/n,bw=Math.min(56,slot*.62);
   const y=v=>pt+(1-v/mx)*(H-pt-pb);const sel=UI.bfDe&&UI.bfAte&&UI.bfDe.slice(0,7)===UI.bfAte.slice(0,7)?UI.bfDe.slice(0,7):'';
   let ch=`<svg viewBox="0 0 ${W} ${H}" class="mchart">`;for(let i=0;i<=4;i++){const v=mx*i/4;ch+=`<line x1="${pl}" x2="${W-10}" y1="${y(v)}" y2="${y(v)}" stroke="#3d5373"/><text x="${pl-6}" y="${y(v)+3}" text-anchor="end">${pct(v,0)}</text>`}
   ks.forEach((k,i)=>{const s=M[k];const cx=pl+slot*(i+.5);const h1=(sAd(s)||0)/mx*(H-pt-pb),h2=(sNr(s)||0)/mx*(H-pt-pb);const lab=MESES[+k.slice(5)-1].toLowerCase()+'/'+k.slice(2,4);
     ch+=`<g data-bfmes="${k}" style="cursor:pointer"><rect x="${cx-slot/2}" y="${pt}" width="${slot}" height="${H-pt-pb}" fill="${k===sel?'#3b9eff22':'transparent'}"/><rect x="${cx-bw/2}" y="${H-pb-h1}" width="${bw}" height="${h1}" fill="#F59E0B"/><rect x="${cx-bw/2}" y="${H-pb-h1-h2}" width="${bw}" height="${h2}" fill="#E0141E"/>`+
       `<text x="${cx}" y="${H-pb-h1-h2-5}" text-anchor="middle" fill="#e6edf7" style="font-weight:700">${pct(sT(s),1)}</text><text x="${cx}" y="${H-10}" text-anchor="middle">${lab}</text>`+
-      `<title>${lab}: buffer PDV ${pct(s.pp,1)} (${s.pdvb} de ${s.pdv}) · buffer volume ${pct(s.pv,1)} · clique para ver por dia</title></g>`});
+      `<title>${lab}: buffer ${m==='pdv'?'PDV':'volume'} ${pct(sT(s),1)} = ${pct(sAd(s),1)} só adiado + ${pct(sNr(s),1)} não roteirizado · clique para ver por dia</title></g>`});
   return ch+'</svg>'}
 document.addEventListener('click',e=>{const g=e.target.closest&&e.target.closest('[data-bfmes]');if(g){const k=g.dataset.bfmes;const [y,mm]=k.split('-').map(Number);const ult=new Date(Date.UTC(y,mm,0)).getUTCDate();UI.bfDe=k+'-01';UI.bfAte=k+'-'+String(ult).padStart(2,'0');UI.bfv='dia';UI.bfp='r';render();return}
   const v=e.target.closest&&e.target.closest('[data-bfv]');if(v){UI.bfv=v.dataset.bfv;render()}});
