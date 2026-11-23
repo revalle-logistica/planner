@@ -373,7 +373,7 @@ const IS_ADMIN=EU.perfil==='admin';
 let LSO={};
 function avisoLeitura(){if(avisoLeitura.ok)return;avisoLeitura.ok=1;alertMsg('Só a Logística altera esta parte. Você pode consultar à vontade.')}
 function grupoDe(id){for(const g in GRUPOS)if(GRUPOS[g].ids.includes(id))return g;return 'sem'}
-function irPara(i){const s=SLIDES[i];if(!s)return;const g=grupoDe(s.id);if(g===M){UI.slide=i;render();window.scrollTo(0,0)}else location.href='rotina.html?m='+g+'&s='+s.id}
+function irPara(i){const s=SLIDES[i];if(!s)return;const g=grupoDe(s.id);if(g===M){UI.slide=i;render();window.scrollTo(0,0)}else if(g==='imp'||M==='imp')location.href='rotina.html?m='+g+'&s='+s.id;else{history.pushState({},'','rotina.html?m='+g+'&s='+s.id);irGrupo(g,s.id)}}
 function grupoTabs(){const G=GRUPOS[M];const el=document.getElementById('gtabs');if(!el)return;
   const NOMES={mon:'📡 Monitor semanal',alt:'📊 Resumo das solicitações'};
   el.innerHTML=(M==='alt'&&PlannerAuth.can('alteracoes.html')?'<a href="alteracoes.html"><button>📝 Solicitações dos GVs</button></a>':'')+(G.ids.length>1?G.ids.map(id=>{const i=SLIDES.findIndex(s=>s.id===id);return `<button data-s="${i}" aria-pressed="${i===UI.slide}">${NOMES[id]||SLIDES[i].n}</button>`}).join(''):'');
@@ -385,11 +385,20 @@ function b64para(t){const s=atob(t);const b=new Uint8Array(s.length);for(let i=0
 async function gz(str){return b64de(await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer())}
 async function gunz(t){return await new Response(new Blob([b64para(t)]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}
 function carregando(m){const s=document.getElementById('slide');if(s)s.innerHTML=`<div class="rload">${m}</div>`}
-async function carregarEstado(){
-  let meta;try{meta=JSON.parse(await PlannerData.text('rotina/meta.json'))}catch(e){return null}
-  const c=await IDB.get('rz');if(c&&c.v===meta.v&&c.st)return c.st;
+async function carregarEstado(meta){
+  if(!meta){try{meta=JSON.parse(await PlannerData.text('rotina/meta.json'))}catch(e){return null}}
   carregando('Baixando os dados da rotina do Drive… (só na primeira vez ou quando houver atualização)');
-  const z=await PlannerData.text('rotina/estado.gz');ESTZ=z;const st=JSON.parse(await gunz(z));IDB.set('rz',{v:meta.v,st});return st}
+  const z=await PlannerData.text('rotina/estado.gz');ESTZ=z;return JSON.parse(await gunz(z))}
+// cache local do estado já completo: abre na hora e atualiza em segundo plano
+function assinatura(){return Object.entries(ST.units||{}).map(([u,U])=>u+':'+Object.keys(U.planners||{}).sort().join(',')+':'+Object.keys(U.clients||{}).length).join('|')+'|'+(AJH||[]).length}
+function guardarCache(v){try{IDB.set('rzc',{v,st:ST,ls:LSO,ajh:AJH})}catch(e){}}
+let CACHE_V=null;
+async function atualizarFundo(){
+  try{let meta;try{meta=JSON.parse(await PlannerData.text('rotina/meta.json'))}catch(e){return}
+    const ls=await carregarLS();let mudou=JSON.stringify(ls||{})!==JSON.stringify(LSO||{});LSO=ls||{};
+    if(meta.v!==CACHE_V){const z=await PlannerData.text('rotina/estado.gz');ESTZ=z;ST=JSON.parse(await gunz(z));mudou=true}
+    const a=assinatura();await completar();if(assinatura()!==a)mudou=true;
+    CACHE_V=meta.v;guardarCache(meta.v);if(mudou)render()}catch(e){}}
 async function carregarLS(){try{return JSON.parse(await PlannerData.text('rotina/ls.json'))}catch(e){return {}}}
 function statusRotina(){const out={};for(const u in ST.units){const Uu=ST.units[u];const mk=Object.values(Uu.maps||{});
   const ped=Object.values(Uu.ped||{});
@@ -402,20 +411,22 @@ async function salvarEstado(){
     if(!ESTZ){try{ESTZ=await PlannerData.text('rotina/estado.gz')}catch(e){}}
     if(ESTZ)await PlannerData.put('rotina/estado-anterior.gz',ESTZ);
     await PlannerData.put('rotina/estado.gz',z);ESTZ=z;await PlannerData.put('rotina/meta.json',JSON.stringify({v,status:statusRotina()}));
-    IDB.set('rz',{v,st:ST});return `<div class="ok">✓ Salvo no Drive (${(z.length/1048576).toFixed(1)} MB) e já disponível para o time.</div>`}
+    CACHE_V=v;guardarCache(v);return `<div class="ok">✓ Salvo no Drive (${(z.length/1048576).toFixed(1)} MB) e já disponível para o time.</div>`}
   catch(e){return `<div class="err">✗ Não salvou no Drive: ${esc(e.message)}. Os números valem só até fechar a página.</div>`}}
 async function iniciar(){
   if(M==='imp'&&!IS_ADMIN){location.replace('rotina.html?m=sem');return}
   document.getElementById('bImp').hidden=true;document.getElementById('bDir').hidden=!IS_ADMIN||M!=='imp';
   document.title=GRUPOS[M].t+' · Planner Revalle';
-  try{const [ls,st]=await Promise.all([carregarLS(),carregarEstado()]);LSO=ls||{};if(st)ST=st;if(ST&&ST.units&&Object.keys(ST.units).length)await completar()}
-  catch(e){carregando('Não consegui abrir os dados da rotina: '+esc(e.message));return}
+  IDB.del('rz');let rapido=false;
+  if(M!=='imp'){const c=await IDB.get('rzc');if(c&&c.st&&c.st.units){ST=c.st;LSO=c.ls||{};AJH=c.ajh||[];CACHE_V=c.v;rapido=true}}
+  if(!rapido){try{const meta=await PlannerData.text('rotina/meta.json').then(JSON.parse).catch(()=>null);const [ls,st]=await Promise.all([carregarLS(),meta?carregarEstado(meta):null]);LSO=ls||{};if(st)ST=st;if(ST&&ST.units&&Object.keys(ST.units).length)await completar();if(meta){CACHE_V=meta.v;guardarCache(meta.v)}}
+  catch(e){carregando('Não consegui abrir os dados da rotina: '+esc(e.message));return}}
   const G=GRUPOS[M];const sp=new URLSearchParams(location.search).get('s');
   let i=SLIDES.findIndex(x=>x.id===sp);
   if(i<0)i=SLIDES[UI.slide]&&G.ids.includes(SLIDES[UI.slide].id)?UI.slide:SLIDES.findIndex(x=>x.id===G.ids[0]);
   instalarResumo();UI.slide=i;delete UI.wk; // a semana abre sempre na mais recente
   if(!UI.pInit){for(const u in ST.units){const ds=Object.keys(ST.units[u].planners||{});if(ds.length){UI.p=ds.sort((a,b)=>{const x=pd(a),y=pd(b);return (x.y*1e4+x.m*100+x.d)-(y.y*1e4+y.m*100+y.d)}).pop();UI.pInit=1;break}}}
-  render()}
+  render();if(rapido)setTimeout(atualizarFundo,50)}
 // ---- sem dados ainda: o administrador traz o HTML antigo (todo o histórico) ou importa as bases
 function semDados(){grupoTabs();
   if(!IS_ADMIN)return `<div class="cbox" style="padding:18px"><b>Os dados da rotina ainda não foram carregados no sistema.</b><p class="note">Assim que a Logística importar as bases, esta tela aparece aqui.</p></div>`;
@@ -544,6 +555,15 @@ function bufMesChart(Uu,m){const M=bufMonthly(Uu);const ks=Object.keys(M).sort()
   return ch+'</svg>'}
 document.addEventListener('click',e=>{const g=e.target.closest&&e.target.closest('[data-bfmes]');if(g){const k=g.dataset.bfmes;const [y,mm]=k.split('-').map(Number);const ult=new Date(Date.UTC(y,mm,0)).getUTCDate();UI.bfDe=k+'-01';UI.bfAte=k+'-'+String(ult).padStart(2,'0');UI.bfv='dia';UI.bfp='r';render();return}
   const v=e.target.closest&&e.target.closest('[data-bfv]');if(v){UI.bfv=v.dataset.bfv;render()}});
+
+// troca de módulo da rotina sem recarregar a página (abre na hora)
+function marcarMenu(){document.querySelectorAll('a.on').forEach(a=>{if(/rotina\.html|alteracoes\.html/.test(a.getAttribute('href')||''))a.classList.remove('on')});document.querySelectorAll('a[href="rotina.html?m='+M+'"]').forEach(a=>a.classList.add('on'))}
+function irGrupo(g,sid){M=g;const G=GRUPOS[M];let i=SLIDES.findIndex(x=>x.id===sid);if(i<0||!G.ids.includes(SLIDES[i].id))i=SLIDES.findIndex(x=>x.id===G.ids[0]);UI.slide=i;document.title=G.t+' · Planner Revalle';
+  document.getElementById('bDir').hidden=true;marcarMenu();render();window.scrollTo(0,0)}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a||e.defaultPrevented||e.ctrlKey||e.metaKey||e.shiftKey||e.button)return;if(!ST||!ST.units||!Object.keys(ST.units).length)return;
+  const u=new URL(a.getAttribute('href'),location.href);if(!/rotina\.html$/.test(u.pathname))return;let m=u.searchParams.get('m')||'sem';if(m==='mon')m='alt';if(m==='opp'||m==='imp'||M==='imp'||!GRUPOS[m])return;
+  e.preventDefault();history.pushState({},'','rotina.html'+u.search);irGrupo(m,u.searchParams.get('s'))},true);
+window.addEventListener('popstate',()=>{if(!/rotina\.html$/.test(location.pathname))return;let m=new URLSearchParams(location.search).get('m')||'sem';if(m==='mon')m='alt';if(m==='imp'||M==='imp'||!GRUPOS[m]){location.reload();return}irGrupo(m,new URLSearchParams(location.search).get('s'))});
 
 
 /* =========================================================
