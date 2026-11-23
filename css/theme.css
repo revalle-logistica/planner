@@ -102,3 +102,7 @@ html.link-mode .bn{display:none}
 /* tom único: botão de troca de cor removido */
 .sb-theme{display:none!important}
 img.sb-logo{width:40px;background:none;padding:0;object-fit:contain}
+/* Listas suspensas legíveis (texto claro sobre fundo escuro em todas as opções) */
+html{color-scheme:dark}
+select option,select optgroup{background:#304567!important;color:#f5f8fd!important}
+select option:checked{background:#f5b301!important;color:#111!important}
