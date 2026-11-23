@@ -116,6 +116,13 @@ def rep(a, b, n=1):
 
 rep("const __SRC=document.currentScript?document.currentScript.textContent:'';const __APP0=document.getElementById('app').outerHTML;", "")
 js = js.replace('class="sb"', 'class="sgb"')
+# Números do planner (título) e barra zerada sem preenchimento
+js = js.replace('<rect x="50" y="${150-120}" width="60" height="120" fill="#4472C4"/><rect x="55" y="8" width="50" height="18" fill="#2B3A55"/><text x="80" y="21"', '${v?\'<rect x="50" y="30" width="60" height="120" fill="#4472C4"/>\':\'\'}<rect x="55" y="${v?8:124}" width="50" height="18" fill="#2B3A55"/><text x="80" y="${v?21:137}"')
+js = js.replace("title('Reunião','Planner','meet')", "title('Números do planner','Planner','meet')")
+js = js.replace("title('Reunião','Planner '+UI.p.replace(/\\./g,'/'),'meet')", "title('Números do planner','Planner '+UI.p.replace(/\\./g,'/'),'meet')")
+js = js.replace("># Números relacionados ao planner · ", ">Números relacionados ao planner · ")
+# vendedor só pelo código do setor (sem nome)
+rep("<div class=\"sub\">Setor ${esc(UI.setor)} · ${esc(s.vn[UI.setor]||'')}</div>", "<div class=\"sub\">Setor ${esc(UI.setor)}</div>")
 # preferências de tela continuam no navegador; o resto vai para o Drive
 rep("localStorage.getItem('planner-ui')", "localStorage.getItem('rotina-ui')")
 rep("localStorage.setItem('planner-ui',JSON.stringify(UI))", "localStorage.setItem('rotina-ui',JSON.stringify(UI))")
