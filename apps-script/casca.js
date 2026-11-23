@@ -12,7 +12,7 @@ const GRUPOS={
   imp:{t:'Bases da rotina',ids:['imp']}};
 let M=new URLSearchParams(location.search).get('m')||'sem';if(M==='opp')location.replace('oportunidades.html');if(M==='mon')M='alt';if(!GRUPOS[M])M='sem';
 const EU=(window.PlannerAuth&&PlannerAuth.user())||{};
-const IS_ADMIN=EU.perfil==='admin';
+const IS_ADMIN=EU.perfil==='admin'||EU.perfil==='logistica';
 let LSO={};
 function avisoLeitura(){if(avisoLeitura.ok)return;avisoLeitura.ok=1;alertMsg('Só a Logística altera esta parte. Você pode consultar à vontade.')}
 function grupoDe(id){for(const g in GRUPOS)if(GRUPOS[g].ids.includes(id))return g;return 'sem'}

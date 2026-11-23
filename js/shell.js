@@ -69,13 +69,13 @@
   }
 
   var A = window.PlannerAuth;
-  function allowed(n) { if (!n) return false; var isA = !!(A && A.user() && A.user().perfil === 'admin'); if (n.adm && !isA) return false; if (n.naoAdm && isA) return false; return !n.href || !A || !A.configured() || A.can(n.href.replace('./', 'index.html').split(/[?#]/)[0]); }
+  function allowed(n) { if (!n) return false; var isA = !!(A && A.user() && (A.user().perfil === 'admin' || A.user().perfil === 'logistica')); if (n.adm && !isA) return false; if (n.naoAdm && isA) return false; return !n.href || !A || !A.configured() || A.can(n.href.replace('./', 'index.html').split(/[?#]/)[0]); }
   function build() {
     if (A && A.linkK) { html.classList.remove('has-side'); return; } // vendedor pelo link: só a Minha rota
     var cur = current();
     var VIS = NAV.filter(function (n, i) {
-      if (n.sec) { for (var j = i + 1; j < NAV.length && !NAV[j].sec; j++) if (allowed(NAV[j]) && !NAV[j].soon) return true; return n.sec === 'Próximos módulos' && A && A.user() && A.user().perfil === 'admin'; }
-      return n.soon ? (A && A.user() && A.user().perfil === 'admin') : allowed(n);
+      if (n.sec) { for (var j = i + 1; j < NAV.length && !NAV[j].sec; j++) if (allowed(NAV[j]) && !NAV[j].soon) return true; return n.sec === 'Próximos módulos' && A && A.user() && (A.user().perfil === 'admin' || A.user().perfil === 'logistica'); }
+      return n.soon ? (A && A.user() && (A.user().perfil === 'admin' || A.user().perfil === 'logistica')) : allowed(n);
     });
     var h = '<a class="sb-top" href="./"><img class="sb-logo" src="img/icon.svg" alt=""><div class="sb-name"><b>Planner <span>Revalle</span></b><small>Logística · Agreste e Nordeste</small></div></a><nav class="sb-nav">';
     VIS.forEach(function (n) {
@@ -87,7 +87,7 @@
         : '<a class="' + cls + '" href="' + n.href + '" data-tip="' + n.t + '">' + svg(n.ic) + '<span>' + n.t + '</span>' + tail + '</a>';
     });
     var me = A && A.user();
-    h += '</nav><div class="sb-foot">' + (me ? '<div class="sb-me" title="' + me.email + '"><div class="sb-av">' + me.nome.split(' ').map(function (x) { return x[0]; }).slice(0, 2).join('').toUpperCase() + '</div><div class="sb-mn"><b>' + me.nome.split(' ')[0] + '</b><small>' + (me.perfil === 'admin' ? 'Administrador' : me.perfil === 'gerente' ? 'Gerente comercial' : 'GV') + '</small></div><button class="sb-out" title="Sair">' + svg('out') + '</button></div>' : '') + '<div class="sb-theme" title="Tom das telas"><button data-th="medio">Médio</button><button data-th="escuro">Escuro</button><button class="sb-th1" title="Trocar o tom (médio / escuro)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:middle"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button></div>' +
+    h += '</nav><div class="sb-foot">' + (me ? '<div class="sb-me" title="' + me.email + '"><div class="sb-av">' + me.nome.split(' ').map(function (x) { return x[0]; }).slice(0, 2).join('').toUpperCase() + '</div><div class="sb-mn"><b>' + me.nome.split(' ')[0] + '</b><small>' + (me.perfil === 'admin' ? 'Administrador' : me.perfil === 'logistica' ? 'Logística' : me.perfil === 'gerente' ? 'Gerente comercial' : 'GV') + '</small></div><button class="sb-out" title="Sair">' + svg('out') + '</button></div>' : '') + '<div class="sb-theme" title="Tom das telas"><button data-th="medio">Médio</button><button data-th="escuro">Escuro</button><button class="sb-th1" title="Trocar o tom (médio / escuro)"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:middle"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button></div>' +
       '<button class="sb-min" title="Recolher / expandir a barra">' + svg('chev') + '<span>Recolher menu</span></button></div>';
     var sb = document.createElement('aside'); sb.className = 'sb'; sb.innerHTML = h;
     document.body.appendChild(sb);
@@ -150,7 +150,7 @@
   }
   // Relatórios semanais que faltam atualizar nesta semana (só administrador)
   function relBadge() {
-    if (!A || !A.user() || A.user().perfil !== 'admin' || !window.PlannerData) return;
+    if (!A || !A.user() || (A.user().perfil !== 'admin' && A.user().perfil !== 'logistica') || !window.PlannerData) return;
     var show = function (n) { document.querySelectorAll('[data-badge2]').forEach(function (b) { b.textContent = n; b.hidden = !n; b.title = n + ' relatórios para atualizar'; }); };
     try { var c = JSON.parse(sessionStorage.getItem('plannerRelPend') || 'null'); if (c && Date.now() - c.t < 300000) { show(c.n); return; } } catch (e) {}
     window.PlannerData.text('rel/index.json').then(function (t) { return JSON.parse(t); }).catch(function () { return { r: {} }; }).then(function (ix) {

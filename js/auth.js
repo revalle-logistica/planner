@@ -12,7 +12,7 @@
 
   function sess() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); return s && s.expira > new Date().toISOString() ? s : null; } catch (e) { return null; } }
   function setSess(s) { try { if (s) localStorage.setItem(KEY, JSON.stringify(s)); else localStorage.removeItem(KEY); } catch (e) {} }
-  function can(p, s) { s = s || sess(); if (!s) return false; if (s.user.perfil === 'admin') return true; return (PERM[p] || []).indexOf(s.user.perfil) >= 0; }
+  function can(p, s) { s = s || sess(); if (!s) return false; if (s.user.perfil === 'admin') return true; if (s.user.perfil === 'logistica') return p !== 'usuarios.html'; return (PERM[p] || []).indexOf(s.user.perfil) >= 0; }
   function goLogin() { location.replace('login.html?next=' + encodeURIComponent(page + location.search + location.hash)); }
   function configured() { return /^https:\/\/script\.google\.com\//.test(window.PLANNER_SYS_API || ''); }
 

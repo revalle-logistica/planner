@@ -102,7 +102,8 @@ function session(b, perfis) {
   return u;
 }
 function pub(u) { return { email: u.email, nome: u.nome, area: u.area, perfil: u.perfil, status: u.status, criado: u.criado, aprovado_em: u.aprovado_em, ultimo_acesso: u.ultimo_acesso }; }
-function veTudo_(u) { return u.perfil === 'admin' || u.perfil === 'gerente'; }
+function adm_(u) { return u.perfil === 'admin' || u.perfil === 'logistica'; }
+function veTudo_(u) { return adm_(u) || u.perfil === 'gerente'; }
 function gvOwns(u, unb, setor) {
   if (veTudo_(u)) return true;
   return rows('Equipes').some(e => e.gv_email === u.email && e.unb === String(unb) && e.setor === String(setor));
@@ -183,16 +184,16 @@ function esc_(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ 
 function emailHtml_(tipo, nome, perfil) {
   const pn = String(nome || '').split(' ')[0];
   const ok = tipo === 'aprovado';
-  const perfilTxt = perfil === 'admin' ? 'Administrador' : perfil === 'gerente' ? 'Gerente comercial (todos os GVs)' : 'Gerente de Vendas (GV)';
+  const perfilTxt = perfil === 'admin' ? 'Administrador' : perfil === 'logistica' ? 'Logística' : perfil === 'gerente' ? 'Gerente comercial (todos os GVs)' : 'Gerente de Vendas (GV)';
   const F = "font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;";
   let corpo;
   if (ok) {
-    const mods = MODULOS[perfil === 'admin' ? 'admin' : 'gv'].map(m =>
+    const mods = MODULOS[perfil === 'admin' || perfil === 'logistica' ? 'admin' : 'gv'].filter(m => perfil !== 'logistica' || !/Usuários/.test(m[1])).map(m =>
       '<tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6fa;border-radius:12px"><tr>' +
       '<td width="52" valign="top" style="padding:14px 0 14px 14px;font-size:22px;line-height:1">' + m[0] + '</td>' +
       '<td style="padding:13px 16px 13px 4px;' + F + '"><div style="font-size:15px;font-weight:700;color:#152033">' + esc_(m[1]) + '</div>' +
       '<div style="font-size:13.5px;line-height:1.5;color:#55627a;margin-top:2px">' + esc_(m[2]) + '</div></td></tr></table></td></tr>').join('');
-    const cuid = CUIDADOS[perfil === 'admin' ? 'admin' : 'gv'].map(c => '<li style="margin:0 0 6px">' + esc_(c) + '</li>').join('');
+    const cuid = CUIDADOS[perfil === 'admin' || perfil === 'logistica' ? 'admin' : 'gv'].map(c => '<li style="margin:0 0 6px">' + esc_(c) + '</li>').join('');
     corpo =
       '<p style="margin:0 0 6px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#22a35a">✓ Cadastro aprovado</p>' +
       '<h1 style="margin:0 0 12px;font-size:26px;line-height:1.2;color:#152033">Bem-vindo ao Planner, ' + esc_(pn) + '!</h1>' +
@@ -227,7 +228,7 @@ function enviarEmail_(tipo, u, perfil) {
       ? (perfil === 'admin' ? 'Seu acesso de administrador ao Planner Revalle foi aprovado' : 'Seu acesso ao Planner Revalle foi aprovado')
       : 'Seu pedido de acesso ao Planner Revalle';
     const texto = tipo === 'aprovado'
-      ? 'Olá, ' + u.nome + '! Seu acesso ao Planner Revalle foi aprovado (' + (perfil === 'admin' ? 'Administrador' : perfil === 'gerente' ? 'Gerente comercial' : 'GV') + '). Acesse ' + SITE_URL + ' com o seu e-mail e a senha do cadastro.'
+      ? 'Olá, ' + u.nome + '! Seu acesso ao Planner Revalle foi aprovado (' + (perfil === 'admin' ? 'Administrador' : perfil === 'logistica' ? 'Logística' : perfil === 'gerente' ? 'Gerente comercial' : 'GV') + '). Acesse ' + SITE_URL + ' com o seu e-mail e a senha do cadastro.'
       : 'Olá, ' + u.nome + '. Seu pedido de acesso ao Planner Revalle não foi aprovado neste momento. Fale com a Logística se precisar.';
     MailApp.sendEmail({ to: u.email, subject: assunto, body: texto, htmlBody: emailHtml_(tipo, u.nome, perfil), name: 'Planner Revalle · Logística' });
     log(u.email, 'email', tipo);
@@ -289,7 +290,7 @@ const ACTIONS = {
       const u = userOf(b.email); if (!u) throw new Error('Usuário não encontrado');
       if (u.email === a.email && (b.status && b.status !== 'ativo' || b.perfil && b.perfil !== 'admin')) throw new Error('Você não pode tirar o seu próprio acesso de administrador');
       const p = {};
-      if (b.perfil) { if (['admin', 'gerente', 'gv'].indexOf(b.perfil) < 0) throw new Error('Perfil inválido'); p.perfil = b.perfil; }
+      if (b.perfil) { if (['admin', 'logistica', 'gerente', 'gv'].indexOf(b.perfil) < 0) throw new Error('Perfil inválido'); p.perfil = b.perfil; }
       if (b.status) { if (['ativo', 'bloqueado', 'recusado'].indexOf(b.status) < 0) throw new Error('Situação inválida'); p.status = b.status; }
       if (p.status === 'ativo' && u.status === 'pendente') { p.aprovado_por = a.email; p.aprovado_em = now(); if (!p.perfil && !u.perfil) p.perfil = 'gv'; }
       update('Usuarios', u._row, p);
@@ -322,7 +323,7 @@ const ACTIONS = {
 
   // links dos vendedores (administrador e gerente: todos · GV: só a equipe)
   'links.list'(b) {
-    const u = session(b, ['admin', 'gerente', 'gv']);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
     const eq = rows('Equipes').filter(e => veTudo_(u) || e.gv_email === u.email);
     const mine = new Set(eq.map(e => e.unb + '|' + e.setor));
     const links = rows('Links').filter(l => l.ativo === 'sim' && (veTudo_(u) || mine.has(l.unb + '|' + l.setor)))
@@ -330,7 +331,7 @@ const ACTIONS = {
     return { perfil: u.perfil, equipe: eq.map(e => ({ unb: e.unb, setor: e.setor, gv: e.gv_email })), links };
   },
   'links.generate'(b) {
-    const u = session(b, ['admin', 'gerente', 'gv']);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
     const lista = b.setores || [{ unb: b.unb, setor: b.setor }];
     return locked(() => {
       const all = rows('Links'), out = [];
@@ -348,7 +349,7 @@ const ACTIONS = {
     });
   },
   'links.disable'(b) {
-    const u = session(b, ['admin', 'gerente', 'gv']);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
     const unb = String(b.unb), setor = String(b.setor);
     if (!gvOwns(u, unb, setor)) throw new Error('O setor ' + setor + ' não é da sua equipe');
     return locked(() => {
@@ -360,22 +361,22 @@ const ACTIONS = {
 
   // dados (planner, relatórios, janelas)
   'data.get'(b) {
-    const u = session(b, ['admin', 'gerente', 'gv']), nome = String(b.name || '');
-    if (u.perfil !== 'admin' && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome) || /^rel\/(index\.json|coord\/\d+\.json)$/.test(nome) || nome === 'janelas/ajustes-hist.json')) throw new Error('Sem permissão para este arquivo');
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']), nome = String(b.name || '');
+    if (!adm_(u) && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome) || /^rel\/(index\.json|coord\/\d+\.json)$/.test(nome) || nome === 'janelas/ajustes-hist.json')) throw new Error('Sem permissão para este arquivo');
     return readFile(nome);
   },
   'data.put'(b) {
-    const u = session(b, ['admin']);
+    const u = session(b, ['admin', 'logistica']);
     const nome = String(b.name || ''); if (!/^[\w\-./]+$/.test(nome) || nome.indexOf('..') >= 0) throw new Error('Nome de arquivo inválido');
     const r = writeFile(nome, String(b.content == null ? '' : b.content), u.email); log(u.email, 'data.put', nome); return r;
   },
   // anotações do time (Oportunidades): qualquer usuário registra; muda/exclui quem escreveu ou o administrador
   'notas.list'(b) {
-    session(b, ['admin', 'gerente', 'gv']); const t = String(b.tipo || '');
+    session(b, ['admin', 'logistica', 'gerente', 'gv']); const t = String(b.tipo || '');
     return { notas: rows('Notas').filter(n => n.excluida !== 'sim' && (!t || n.tipo === t)).map(notaPub_) };
   },
   'notas.add'(b) {
-    const u = session(b, ['admin', 'gerente', 'gv']); const itens = (b.itens || []).slice(0, 200);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']); const itens = (b.itens || []).slice(0, 200);
     if (!itens.length) throw new Error('Nada para registrar');
     const out = locked(() => itens.map(it => {
       const texto = String(it.texto || '').trim().slice(0, 4000); if (!texto) throw new Error('Texto vazio');
@@ -386,10 +387,10 @@ const ACTIONS = {
     log(u.email, 'notas.add', out.length + ' nota(s)'); return { notas: out.map(notaPub_) };
   },
   'notas.set'(b) {
-    const u = session(b, ['admin', 'gerente', 'gv']);
+    const u = session(b, ['admin', 'logistica', 'gerente', 'gv']);
     return locked(() => {
       const n = rows('Notas').find(x => x.id === String(b.id || '')); if (!n || n.excluida === 'sim') throw new Error('Anotação não encontrada');
-      if (u.perfil !== 'admin' && n.autor !== u.email) throw new Error('Só quem escreveu (ou a Logística) pode mudar esta anotação');
+      if (!adm_(u) && n.autor !== u.email) throw new Error('Só quem escreveu (ou a Logística) pode mudar esta anotação');
       const p = { atualizado: now() };
       if (b.excluir) p.excluida = 'sim';
       if (b.status) { if (['aberta', 'andamento', 'feita', 'descartada'].indexOf(b.status) < 0) throw new Error('Situação inválida'); p.status = b.status; }
@@ -401,7 +402,7 @@ const ACTIONS = {
     });
   },
   'data.list'(b) {
-    session(b, ['admin']); const p = String(b.prefix || '');
+    session(b, ['admin', 'logistica']); const p = String(b.prefix || '');
     return { files: rows('Arquivos').filter(a => a.nome.indexOf(p) === 0).map(a => ({ nome: a.nome, atualizado: a.atualizado, por: a.por, bytes: +a.bytes || 0 })) };
   }
 };
