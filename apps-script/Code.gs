@@ -153,18 +153,24 @@ function linkView(k, nome) {
 const SITE_URL = 'https://revalle-logistica.github.io/planner/';
 const MODULOS = {
   gv: [
-    ['🏠', 'Início', 'Resumo do planner em vigor em cada unidade.'],
-    ['📊', 'Antes × Depois', 'Visitas por dia, o que mudou, planificador por vendedor, frequência, mapa e relação de clientes.'],
-    ['🧭', 'Minha rota', 'A semana e o roteiro do dia de cada setor, com mapa.'],
+    ['🏠', 'Início', 'Resumo do planner em vigor em cada unidade e as etapas do planner, do começo ao fim.'],
+    ['📊', 'Antes × Depois', 'Visitas por dia, o que mudou, planificador por vendedor, frequência, mapa e relação de clientes. Dá para filtrar por GV.'],
+    ['🧭', 'Minha rota', 'A semana e o roteiro do dia de cada setor, com mapa, janelas de entrega e busca por PDV.'],
+    ['🔎', 'Análise do planner', 'Visão por setor, por dia, por volume do PDV e números do planner de cada unidade.'],
+    ['📝', 'Oportunidades', 'Anotações rápidas durante o planner (ponto de apoio, visita, janela, cadastro…) para não se perder.'],
     ['✍️', 'Crítica do planner', 'Selecione clientes no mapa e proponha vendedor, dia e frequência. Vai direto para a Logística.'],
-    ['🔗', 'Links dos vendedores', 'Gere o link pessoal da Minha rota de cada setor da sua equipe e mande no WhatsApp. O vendedor não precisa de senha.']
+    ['🔁', 'Alterações', 'Acompanhe as suas solicitações e o parecer da Logística, inclusive os ajustes de janela.'],
+    ['🔗', 'Links dos vendedores', 'Gere o link pessoal da Minha rota de cada setor da sua equipe e mande no WhatsApp. O vendedor não precisa de senha.'],
+    ['📅', 'Rotina e indicadores', 'Reunião semanal, indicadores, buffer e plano de ação do planner.']
   ],
   admin: [
-    ['📊', 'Planner', 'Início, Antes × Depois e Minha rota de qualquer unidade e setor.'],
-    ['✍️', 'Crítica e Alterações', 'Solicitações dos GVs com o parecer da Logística.'],
+    ['📊', 'Planner de visitas', 'Início, Antes × Depois, Minha rota, Análise do planner e Oportunidades de qualquer unidade e setor.'],
+    ['✍️', 'Crítica e Alterações', 'Solicitações dos GVs com o parecer da Logística, monitor semanal e resumo das solicitações (visitas e janelas).'],
     ['🔗', 'Links dos vendedores', 'Links da Minha rota de todos os setores.'],
-    ['⬆️', 'Importar planner', 'Publica uma nova versão do planner (visitas, janelas, clientes e volume).'],
     ['🚚', 'Janelas BEES', 'Gera o arquivo semanal de importação das janelas de entrega e guarda o histórico.'],
+    ['📅', 'Rotina e indicadores', 'Reunião semanal, indicadores, buffer e plano de ação.'],
+    ['🗂️', 'Central de relatórios', 'Onde sobem os relatórios de clientes e os ajustes de janelas do TCD.'],
+    ['⬆️', 'Importar planner e Bases da rotina', 'Publica uma nova versão do planner e atualiza as bases da rotina (03.05.30 e demais).'],
     ['👥', 'Usuários e equipes', 'Aprova os pedidos de acesso, define perfis e os setores de cada GV.']
   ]
 };
@@ -206,7 +212,7 @@ function emailHtml_(tipo, nome, perfil) {
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#e9edf3"><tr><td align="center" style="padding:28px 12px">' +
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden">' +
     '<tr><td style="background:#152033;padding:22px 28px"><table role="presentation" cellspacing="0" cellpadding="0"><tr>' +
-    '<td style="width:44px;height:44px;background:#f5b301;border-radius:12px;text-align:center;' + F + 'font-size:20px;font-weight:900;color:#111111">R</td>' +
+    '<td style="width:44px;height:44px"><img src="' + SITE_URL + 'img/icon-192.png" width="44" height="44" alt="" style="display:block;border-radius:12px"></td>' +
     '<td style="padding-left:12px;' + F + '"><div style="font-size:18px;font-weight:800;color:#ffffff">Planner <span style="color:#f5b301">Revalle</span></div>' +
     '<div style="font-size:12px;color:#a2afc6;margin-top:2px">Logística · Agreste e Nordeste</div></td></tr></table></td></tr>' +
     '<tr><td style="padding:30px 28px 26px;' + F + '">' + corpo + '</td></tr>' +
