@@ -1483,7 +1483,7 @@ function syncCtl(){
   const us=Object.keys(ST.units);if(!us.includes(UI.u))UI.u=us[0];$('#uTabs').innerHTML=us.map(u=>`<button data-u="${u}" aria-pressed="${u===UI.u}">${u}</button>`).join('');
   const ds=dates();if(!ds.includes(UI.p))UI.p=ds[0];$('#selP').innerHTML=ds.map(d=>`<option value="${d}" ${d===UI.p?'selected':''}>${d.replace(/\./g,'/')}</option>`).join('');
   const P=U().planners[UI.p]||{};$('#bPre').disabled=!P.pre;$('#bPos').disabled=!P.pos;if(!P[UI.k])UI.k=P.pre?'pre':'pos';
-  $('#bPre').setAttribute('aria-pressed',UI.k==='pre');$('#bPos').setAttribute('aria-pressed',UI.k==='pos');
+  $('#bPre').setAttribute('aria-pressed',UI.k==='pre');$('#bPos').setAttribute('aria-pressed',UI.k==='pos');{const id=(SLIDES[UI.slide]||{}).id;const usaP=['sem','ind','kdia','chk','res','todos','setor','dia','pdvvol','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol'].includes(id);$('#selP').parentElement.style.display=usaP?'':'none';$('#bPre').parentElement.style.display=usaK?'':'none'}
   let g=null,h='';SLIDES.forEach((s,i)=>{if(s.g!==g){g=s.g;if(g)h+=`<div class="sg">${g}</div>`}h+=`<button data-s="${i}" aria-current="${i===UI.slide}">${icon(s.ic)}<span>${s.n}</span></button>`});$('#nav').innerHTML=h;
   const sl=SLIDES[UI.slide];$('#pgT').textContent=sl.n;$('#pgS').textContent=sl.sub;
   const lastDay=Object.keys(U().days).sort().pop();$('#sfoot').innerHTML=`Base atualizada em ${new Date(ST.updated).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}<br>dados até ${lastDay?br(lastDay):'—'}`;

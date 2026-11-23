@@ -142,6 +142,8 @@ js = js.replace("const per=UI.bfp||'4';", "const per=UI.bfp==='r'&&!(UI.bfDe||UI
 js = js.replace('<button data-bfp="1" aria-pressed="${per===', '${(UI.bfDe||UI.bfAte)?`<button data-bfp="r" aria-pressed="${per===\'r\'}">${br(_d0).slice(0,5)} a ${br(_d1).slice(0,5)}</button>`:\'\'}<button data-bfp="1" aria-pressed="${per===')
 js = js.replace("bufTables(Uu,d=>sel.includes(wkStart(d)))", "bufTables(Uu,per==='r'?d=>d>=_d0&&d<=_d1:d=>sel.includes(wkStart(d)))")
 js = js.replace("Sem pedidos no período. Importe o relatório de pedidos.", "Sem o detalhe dos pedidos neste período. O detalhe por dia da semana, setor, município e PDV fica guardado só dos últimos 70 dias (para não pesar a base); os meses anteriores aparecem no gráfico pelo resumo de cada dia.")
+# Filtros de planner e cenário só nas telas que usam
+js = js.replace("$('#bPos').setAttribute('aria-pressed',UI.k==='pos');", "$('#bPos').setAttribute('aria-pressed',UI.k==='pos');{const id=(SLIDES[UI.slide]||{}).id;const usaP=['sem','ind','kdia','chk','res','todos','setor','dia','pdvvol','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol'].includes(id);$('#selP').parentElement.style.display=usaP?'':'none';$('#bPre').parentElement.style.display=usaK?'':'none'}",1)
 # vendedor só pelo código do setor (sem nome)
 rep("<div class=\"sub\">Setor ${esc(UI.setor)} · ${esc(s.vn[UI.setor]||'')}</div>", "<div class=\"sub\">Setor ${esc(UI.setor)}</div>")
 # preferências de tela continuam no navegador; o resto vai para o Drive
