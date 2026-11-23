@@ -398,7 +398,7 @@ async function atualizarFundo(){
     const ls=await carregarLS();let mudou=JSON.stringify(ls||{})!==JSON.stringify(LSO||{});LSO=ls||{};
     if(meta.v!==CACHE_V){const z=await PlannerData.text('rotina/estado.gz');ESTZ=z;ST=JSON.parse(await gunz(z));mudou=true}
     const a=assinatura();await completar();if(assinatura()!==a)mudou=true;
-    CACHE_V=meta.v;guardarCache(meta.v);if(mudou)render()}catch(e){}}
+    const nv=meta.v!==CACHE_V;CACHE_V=meta.v;if(mudou||nv)guardarCache(meta.v);if(mudou)render()}catch(e){}}
 async function carregarLS(){try{return JSON.parse(await PlannerData.text('rotina/ls.json'))}catch(e){return {}}}
 function statusRotina(){const out={};for(const u in ST.units){const Uu=ST.units[u];const mk=Object.values(Uu.maps||{});
   const ped=Object.values(Uu.ped||{});
