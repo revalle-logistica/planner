@@ -80,11 +80,11 @@ async function load(){
   try{
     const j=await PlannerAuth.call('links.list');perfil=j.perfil;
     LINKS=new Map(j.links.map(l=>[l.unb+'|'+l.setor,l]));GV=new Map(j.equipe.map(e=>[e.unb+'|'+e.setor,e.gv]));
-    if(perfil==='admin'){ // administrador: todos os setores do planner publicado
+    if(perfil==='admin'||perfil==='gerente'){ // administrador e gerente comercial: todos os setores do planner publicado
       const ix=await PlannerData.json('index.json');const v=ix.versions.sort((a,b)=>b.vig.localeCompare(a.vig))[0];const V=await PlannerData.json(`v/${v.id}.json`);
       const set=new Set();for(const c of V.clients)if(c[7]&&c[9])set.add(c[0]+'|'+c[7]);
       SCOPE=[...set].map(k=>{const[unb,setor]=k.split('|');return{unb,setor}});
-      $('scope').textContent='Você é administrador: aparecem todos os setores do planner publicado.';
+      $('scope').textContent=(perfil==='gerente'?'Você é gerente comercial':'Você é administrador')+': aparecem todos os setores do planner publicado.';
     }else{SCOPE=j.equipe.map(e=>({unb:e.unb,setor:e.setor}));$('scope').textContent=SCOPE.length?`Setores da sua equipe: ${SCOPE.length}.`:''}
     render();
   }catch(e){$('list').innerHTML='';say('err',esc(e.message))}

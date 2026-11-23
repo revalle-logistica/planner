@@ -102,8 +102,9 @@ function session(b, perfis) {
   return u;
 }
 function pub(u) { return { email: u.email, nome: u.nome, area: u.area, perfil: u.perfil, status: u.status, criado: u.criado, aprovado_em: u.aprovado_em, ultimo_acesso: u.ultimo_acesso }; }
+function veTudo_(u) { return u.perfil === 'admin' || u.perfil === 'gerente'; }
 function gvOwns(u, unb, setor) {
-  if (u.perfil === 'admin') return true;
+  if (veTudo_(u)) return true;
   return rows('Equipes').some(e => e.gv_email === u.email && e.unb === String(unb) && e.setor === String(setor));
 }
 
@@ -182,7 +183,7 @@ function esc_(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ 
 function emailHtml_(tipo, nome, perfil) {
   const pn = String(nome || '').split(' ')[0];
   const ok = tipo === 'aprovado';
-  const perfilTxt = perfil === 'admin' ? 'Administrador' : 'Gerente de Vendas (GV)';
+  const perfilTxt = perfil === 'admin' ? 'Administrador' : perfil === 'gerente' ? 'Gerente comercial (todos os GVs)' : 'Gerente de Vendas (GV)';
   const F = "font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;";
   let corpo;
   if (ok) {
@@ -226,7 +227,7 @@ function enviarEmail_(tipo, u, perfil) {
       ? (perfil === 'admin' ? 'Seu acesso de administrador ao Planner Revalle foi aprovado' : 'Seu acesso ao Planner Revalle foi aprovado')
       : 'Seu pedido de acesso ao Planner Revalle';
     const texto = tipo === 'aprovado'
-      ? 'Olá, ' + u.nome + '! Seu acesso ao Planner Revalle foi aprovado (' + (perfil === 'admin' ? 'Administrador' : 'GV') + '). Acesse ' + SITE_URL + ' com o seu e-mail e a senha do cadastro.'
+      ? 'Olá, ' + u.nome + '! Seu acesso ao Planner Revalle foi aprovado (' + (perfil === 'admin' ? 'Administrador' : perfil === 'gerente' ? 'Gerente comercial' : 'GV') + '). Acesse ' + SITE_URL + ' com o seu e-mail e a senha do cadastro.'
       : 'Olá, ' + u.nome + '. Seu pedido de acesso ao Planner Revalle não foi aprovado neste momento. Fale com a Logística se precisar.';
     MailApp.sendEmail({ to: u.email, subject: assunto, body: texto, htmlBody: emailHtml_(tipo, u.nome, perfil), name: 'Planner Revalle · Logística' });
     log(u.email, 'email', tipo);
@@ -288,7 +289,7 @@ const ACTIONS = {
       const u = userOf(b.email); if (!u) throw new Error('Usuário não encontrado');
       if (u.email === a.email && (b.status && b.status !== 'ativo' || b.perfil && b.perfil !== 'admin')) throw new Error('Você não pode tirar o seu próprio acesso de administrador');
       const p = {};
-      if (b.perfil) { if (['admin', 'gv'].indexOf(b.perfil) < 0) throw new Error('Perfil inválido'); p.perfil = b.perfil; }
+      if (b.perfil) { if (['admin', 'gerente', 'gv'].indexOf(b.perfil) < 0) throw new Error('Perfil inválido'); p.perfil = b.perfil; }
       if (b.status) { if (['ativo', 'bloqueado', 'recusado'].indexOf(b.status) < 0) throw new Error('Situação inválida'); p.status = b.status; }
       if (p.status === 'ativo' && u.status === 'pendente') { p.aprovado_por = a.email; p.aprovado_em = now(); if (!p.perfil && !u.perfil) p.perfil = 'gv'; }
       update('Usuarios', u._row, p);
@@ -319,17 +320,17 @@ const ACTIONS = {
     });
   },
 
-  // links dos vendedores (administrador: todos · GV: só a equipe)
+  // links dos vendedores (administrador e gerente: todos · GV: só a equipe)
   'links.list'(b) {
-    const u = session(b, ['admin', 'gv']);
-    const eq = rows('Equipes').filter(e => u.perfil === 'admin' || e.gv_email === u.email);
+    const u = session(b, ['admin', 'gerente', 'gv']);
+    const eq = rows('Equipes').filter(e => veTudo_(u) || e.gv_email === u.email);
     const mine = new Set(eq.map(e => e.unb + '|' + e.setor));
-    const links = rows('Links').filter(l => l.ativo === 'sim' && (u.perfil === 'admin' || mine.has(l.unb + '|' + l.setor)))
+    const links = rows('Links').filter(l => l.ativo === 'sim' && (veTudo_(u) || mine.has(l.unb + '|' + l.setor)))
       .map(l => ({ unb: l.unb, setor: l.setor, token: l.token, criado_em: l.criado_em, criado_por: l.criado_por }));
     return { perfil: u.perfil, equipe: eq.map(e => ({ unb: e.unb, setor: e.setor, gv: e.gv_email })), links };
   },
   'links.generate'(b) {
-    const u = session(b, ['admin', 'gv']);
+    const u = session(b, ['admin', 'gerente', 'gv']);
     const lista = b.setores || [{ unb: b.unb, setor: b.setor }];
     return locked(() => {
       const all = rows('Links'), out = [];
@@ -347,7 +348,7 @@ const ACTIONS = {
     });
   },
   'links.disable'(b) {
-    const u = session(b, ['admin', 'gv']);
+    const u = session(b, ['admin', 'gerente', 'gv']);
     const unb = String(b.unb), setor = String(b.setor);
     if (!gvOwns(u, unb, setor)) throw new Error('O setor ' + setor + ' não é da sua equipe');
     return locked(() => {
@@ -359,7 +360,7 @@ const ACTIONS = {
 
   // dados (planner, relatórios, janelas)
   'data.get'(b) {
-    const u = session(b, ['admin', 'gv']), nome = String(b.name || '');
+    const u = session(b, ['admin', 'gerente', 'gv']), nome = String(b.name || '');
     if (u.perfil !== 'admin' && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome) || /^rel\/(index\.json|coord\/\d+\.json)$/.test(nome) || nome === 'janelas/ajustes-hist.json')) throw new Error('Sem permissão para este arquivo');
     return readFile(nome);
   },
@@ -370,11 +371,11 @@ const ACTIONS = {
   },
   // anotações do time (Oportunidades): qualquer usuário registra; muda/exclui quem escreveu ou o administrador
   'notas.list'(b) {
-    session(b, ['admin', 'gv']); const t = String(b.tipo || '');
+    session(b, ['admin', 'gerente', 'gv']); const t = String(b.tipo || '');
     return { notas: rows('Notas').filter(n => n.excluida !== 'sim' && (!t || n.tipo === t)).map(notaPub_) };
   },
   'notas.add'(b) {
-    const u = session(b, ['admin', 'gv']); const itens = (b.itens || []).slice(0, 200);
+    const u = session(b, ['admin', 'gerente', 'gv']); const itens = (b.itens || []).slice(0, 200);
     if (!itens.length) throw new Error('Nada para registrar');
     const out = locked(() => itens.map(it => {
       const texto = String(it.texto || '').trim().slice(0, 4000); if (!texto) throw new Error('Texto vazio');
@@ -385,7 +386,7 @@ const ACTIONS = {
     log(u.email, 'notas.add', out.length + ' nota(s)'); return { notas: out.map(notaPub_) };
   },
   'notas.set'(b) {
-    const u = session(b, ['admin', 'gv']);
+    const u = session(b, ['admin', 'gerente', 'gv']);
     return locked(() => {
       const n = rows('Notas').find(x => x.id === String(b.id || '')); if (!n || n.excluida === 'sim') throw new Error('Anotação não encontrada');
       if (u.perfil !== 'admin' && n.autor !== u.email) throw new Error('Só quem escreveu (ou a Logística) pode mudar esta anotação');

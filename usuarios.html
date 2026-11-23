@@ -99,13 +99,13 @@ function render(){
   const pend=U.filter(u=>u.status==='pendente');
   $('pc').hidden=!pend.length;$('pc').textContent=pend.length;
   $('pend').innerHTML=pend.length?`<div class="pend">${pend.map(u=>`<div class="pc"><b>${esc(u.nome)}</b><small>${esc(u.email)} · ${esc(u.area||'')} · pediu em ${fmtDT(u.criado)}</small>
-    <div class="a"><button class="btn pri" data-a="ap" data-e="${esc(u.email)}" data-p="gv">Aprovar como GV</button><button class="btn" data-a="ap" data-e="${esc(u.email)}" data-p="admin">Aprovar como administrador</button><button class="btn red" data-a="st" data-e="${esc(u.email)}" data-s="recusado">Recusar</button></div></div>`).join('')}</div>`:'<div class="empty">Nenhum pedido aguardando.</div>';
+    <div class="a"><button class="btn pri" data-a="ap" data-e="${esc(u.email)}" data-p="gv">Aprovar como GV</button><button class="btn" data-a="ap" data-e="${esc(u.email)}" data-p="gerente">Aprovar como gerente comercial</button><button class="btn" data-a="ap" data-e="${esc(u.email)}" data-p="admin">Aprovar como administrador</button><button class="btn red" data-a="st" data-e="${esc(u.email)}" data-s="recusado">Recusar</button></div></div>`).join('')}</div>`:'<div class="empty">Nenhum pedido aguardando.</div>';
   const lst=U.filter(u=>u.status!=='pendente'&&u.status!=='recusado').sort((a,b)=>a.nome.localeCompare(b.nome));
   $('users').innerHTML=lst.length?`<table><thead><tr><th>Nome</th><th>Perfil</th><th>Último acesso</th><th>Equipe</th><th>Situação</th></tr></thead><tbody>${lst.map(u=>{const n=EQ.filter(e=>e.gv===u.email);const nu=new Set(n.map(e=>e.unb)).size;
     return `<tr><td><b>${esc(u.nome)}</b><br><small>${esc(u.email)}</small></td>
-    <td><select data-a="pf" data-e="${esc(u.email)}" ${u.email===me.email?'disabled':''}><option value="gv" ${u.perfil==='gv'?'selected':''}>GV</option><option value="admin" ${u.perfil==='admin'?'selected':''}>Administrador</option></select></td>
+    <td><select data-a="pf" data-e="${esc(u.email)}" ${u.email===me.email?'disabled':''}><option value="gv" ${u.perfil==='gv'?'selected':''}>GV</option><option value="gerente" ${u.perfil==='gerente'?'selected':''}>Gerente comercial</option><option value="admin" ${u.perfil==='admin'?'selected':''}>Administrador</option></select></td>
     <td><small>${fmtDT(u.ultimo_acesso)||'—'}</small></td>
-    <td>${u.perfil==='gv'?`<button class="btn" data-a="eq" data-e="${esc(u.email)}">Equipe · ${n.length} setores${nu>1?` em ${nu} unidades`:''}</button>`:'<small>vê tudo</small>'}</td>
+    <td>${u.perfil==='gv'?`<button class="btn" data-a="eq" data-e="${esc(u.email)}">Equipe · ${n.length} setores${nu>1?` em ${nu} unidades`:''}</button>`:(u.perfil==='gerente'?'<small>vê todos os GVs e setores</small>':'<small>vê tudo</small>')}</td>
     <td>${u.status==='ativo'?`<span class="tag t-ok">Ativo</span> ${u.email!==me.email?`<button class="btn red" data-a="st" data-e="${esc(u.email)}" data-s="bloqueado">Bloquear</button>`:''}`:`<span class="tag t-off">Bloqueado</span> <button class="btn" data-a="st" data-e="${esc(u.email)}" data-s="ativo">Reativar</button>`}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">Nenhum usuário ativo.</div>';
   // setores sem GV
   const own=new Set(EQ.map(e=>e.unb+'|'+e.setor));
