@@ -1267,7 +1267,7 @@ function bufCompact(U,keep=70){const P=U.ped;if(!P)return;let mx=0;for(const p i
   U.pedD=U.pedD||{};for(const d in by){const s=bufStat(by[d]);U.pedD[d]=[...BK.map(k=>+(+s[k]).toFixed(2)),(dow(d)===6||s.ad/s.n>=.8)?1:0,Object.fromEntries(Object.entries(cx[d]||{}).map(([k,v])=>[k,+v.toFixed(2)]))]}}
 function bufStrat(Uu,inR){const R=bufRows(Uu).filter(r=>inR(r.o));const S=pdvSetor(Uu);const g=key=>{const o={};R.forEach(r=>{const k=key(r);if(k==null)return;(o[k]||(o[k]=[])).push(r)});return Object.entries(o).map(([k,a])=>({k,...bufStat(a)}))};
   return {all:bufStat(R),dia:g(r=>dow(r.o)).sort((a,b)=>a.k-b.k),setor:g(r=>S[r.c]||'(sem setor)'),cid:g(r=>(Uu.clients[r.c]||[])[2]||'(sem cidade)'),pdv:g(r=>r.c),R}}
-function bufTables(Uu,inR){const B=bufStrat(Uu,inR);if(!B.all.n)return '<p class="note">Sem pedidos no período. Importe o relatório de pedidos.</p>';
+function bufTables(Uu,inR){const B=bufStrat(Uu,inR);if(!B.all.n)return '<p class="note">Sem o detalhe dos pedidos neste período. O detalhe por dia da semana, setor, município e PDV fica guardado só dos últimos 70 dias (para não pesar a base); os meses anteriores aparecem no gráfico pelo resumo de cada dia.</p>';
   const bar=(v,mx,col)=>`<span class="sbar"><i style="width:${Math.max(2,Math.min(100,v/(mx||1)*100))}%;background:${col}"></i></span>`;
   const tab=(head,rows,note)=>`<div class="tbl"><table class="stb"><thead><tr>${head.map((h,j)=>`<th class="${j?'':'l'}">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>${note?`<p class="note" style="margin-top:6px">${note}</p>`:''}`;
   const A=B.all;const nm=c=>esc((Uu.vnm||{})[c]||'');const S=pdvSetor(Uu);const cl=(v,ref)=>v>ref*1.1?'r':v<ref*.9?'g':'';
