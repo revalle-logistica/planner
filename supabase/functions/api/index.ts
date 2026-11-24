@@ -2,7 +2,11 @@
 // Gerado por supabase/build-api.py: este arquivo junta (1) esta camada de adaptação, (2) o apps-script/Code.gs sem mudanças
 // e (3) as ações novas. As abas da planilha viram tabelas e os arquivos do Drive viram o bucket privado "dados".
 import { createClient } from 'npm:@supabase/supabase-js@2';
-const SB = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } });
+function chave_() {
+  const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'); if (k) return k;
+  const s = Deno.env.get('SUPABASE_SECRET_KEYS') || ''; try { const j = JSON.parse(s); return typeof j === 'string' ? j : (j.default || Object.values(j)[0]); } catch (e) { return s; }
+}
+const SB = createClient(Deno.env.get('SUPABASE_URL'), chave_(), { auth: { persistSession: false } });
 const BUCKET = 'dados';
 const TAB = { Usuarios: ['usuarios', ['email']], Sessoes: ['sessoes', ['token']], Equipes: ['equipes', ['unb', 'setor']], Links: ['links', ['token']],
   Arquivos: ['arquivos', ['nome']], Notas: ['notas', ['id']], SnsVinculo: ['sns_vinculo', ['sns_email']], PedidosSNS: ['pedidos_sns', ['id']], Log: ['log', null] };
@@ -664,7 +668,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const json = o => new Response(JSON.stringify(o), { headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
-  if (req.method !== 'POST') return json({ ok: true, app: 'planner-revalle' });
+  if (req.method !== 'POST') return json({ ok: true, app: 'planner-revalle', banco: !!chave_() });
   let res;
   try {
     const b = JSON.parse(await req.text() || '{}');

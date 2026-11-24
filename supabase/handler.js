@@ -113,7 +113,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const json = o => new Response(JSON.stringify(o), { headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
-  if (req.method !== 'POST') return json({ ok: true, app: 'planner-revalle' });
+  if (req.method !== 'POST') return json({ ok: true, app: 'planner-revalle', banco: !!chave_() });
   let res;
   try {
     const b = JSON.parse(await req.text() || '{}');
