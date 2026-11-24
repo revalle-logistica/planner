@@ -278,7 +278,7 @@ function emailHtml_(tipo, nome, perfil) {
     '<div style="margin-top:14px;font-size:11.5px;color:#98a2b3">Mensagem automática do Planner Revalle. Dúvidas: responda este e-mail.</div></td></tr>' +
     '</table></td></tr></table></body></html>';
 }
-function enviarEmail_(tipo, u, perfil) {
+function enviarEmail___gs(tipo, u, perfil) {
   try {
     const assunto = tipo === 'aprovado'
       ? (perfil === 'admin' ? 'Seu acesso de administrador ao Planner Revalle foi aprovado' : 'Seu acesso ao Planner Revalle foi aprovado')
@@ -299,8 +299,22 @@ function testeEmails() {
   enviarEmail_('recusado', { email: me, nome: 'Alyson Gomes' }, 'gv');
 }
 
+// ---------- e-mail pedido pelo sistema novo (Supabase): confere lá se a aprovação/recusa é real e recente antes de enviar
+const SUPA_API = 'https://krlkencgakuaisyrxeho.supabase.co/functions/v1/planner-api';
+function supa_(body) { return JSON.parse(UrlFetchApp.fetch(SUPA_API, { method: 'post', contentType: 'text/plain', payload: JSON.stringify(body), muteHttpExceptions: true }).getContentText()); }
+/** Rode uma vez pelo editor para autorizar a conexão com o Supabase. */
+function autorizarSupabase() { Logger.log(UrlFetchApp.fetch(SUPA_API).getContentText()); }
+
 // ---------- ações
 const ACTIONS = {
+  'mail.notify'(b) {
+    const tipo = b.tipo === 'recusado' ? 'recusado' : 'aprovado';
+    const r = supa_({ action: 'mail.check', email: String(b.email || ''), tipo });
+    if (!r.ok || !r.enviar) return { enviado: false };
+    const ok = enviarEmail_(tipo, { email: r.email, nome: r.nome }, r.perfil);
+    supa_({ action: 'mail.done', email: r.email, tipo, ok });
+    return { enviado: ok };
+  },
   // cadastro e acesso
   signup(b) {
     return locked(() => {
@@ -558,6 +572,8 @@ function writeFile(nome, content, por) {
 }
 function ss() { throw new Error('planilha não existe no Supabase'); }
 function folder() { throw new Error('Drive não existe no Supabase'); }
+// e-mails: o Supabase pede ao Apps Script (conta Log Agreste) para enviar, depois de responder
+function enviarEmail_(tipo, u, perfil) { MAILS.push({ email: u.email, tipo }); return true; }
 
 // ===== carga, gravação e ações novas
 async function loadAll_() {
@@ -585,10 +601,6 @@ async function flush_() {
     const { error } = await SB.storage.from(BUCKET).upload(nome, new Blob([content], { type: nome.endsWith('.json') ? 'application/json' : 'text/plain' }), { upsert: true });
     if (error) throw new Error('arquivo ' + nome + ': ' + error.message);
   }
-  for (const m of MAILS) {
-    try { await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + Deno.env.get('RESEND_API_KEY'), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: Deno.env.get('MAIL_FROM') || 'Planner Revalle <onboarding@resend.dev>', to: [m.to], subject: m.subject, html: m.htmlBody, text: m.body }) }); } catch (e) {}
-  }
 }
 async function fetchFile_(nome) {
   const { data, error } = await SB.storage.from(BUCKET).download(nome);
@@ -606,7 +618,21 @@ async function critRows_(filtro) {
   return out;
 }
 const pendente_ = p => !p || /^pendente$/i.test(p);
+const OLD_API = 'https://script.google.com/macros/s/AKfycbyISEBjWi-M6CzVY7QknghkBf_cUDTYLGw4JTOag7LJQdbPivem_YjcPALSZpFKBqMy/exec';
 const ASYNC = {
+  // o Apps Script pergunta se pode enviar: só para aprovação/recusa feita nos últimos 15 min e ainda sem e-mail
+  async 'mail.check'(b) {
+    const u = userOf(b.email); const lim = new Date(Date.now() - 15 * 60000).toISOString();
+    if (!u) return { enviar: false };
+    const okTipo = b.tipo === 'aprovado' ? (u.status === 'ativo' && u.aprovado_em >= lim) : u.status === 'recusado';
+    if (!okTipo) return { enviar: false };
+    const { data } = await SB.from('planner_log').select('id').eq('email', u.email).eq('acao', 'email.pedido.' + b.tipo).gte('quando', lim);
+    const pedidos = (data || []).length; // precisa de um pedido do sistema e nenhum envio ainda
+    const { data: env } = await SB.from('planner_log').select('id').eq('email', u.email).eq('acao', 'email').gte('quando', lim);
+    if (!pedidos || (env || []).length) return { enviar: false };
+    return { enviar: true, email: u.email, nome: u.nome, perfil: u.perfil };
+  },
+  async 'mail.done'(b) { const u = userOf(b.email); if (u) log(u.email, b.ok ? 'email' : 'email.erro', String(b.tipo || '')); return {}; },
   async 'crit.list'(b) { session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']); return { items: (await critRows_({ v: String(b.v || '') })).map(critOut_) }; },
   async 'crit.submit'(b) {
     session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']);
@@ -684,9 +710,13 @@ Deno.serve(async req => {
       const fa = ASYNC[b.action], fn = ACTIONS[b.action];
       if (!fa && !fn) throw new Error('ação desconhecida');
       const res = (fa ? await fa(b) : fn(b)) || {};
-      await flush_(); res.ok = true; return res;
+      const mails = MAILS.slice(); mails.forEach(m => log(m.email, 'email.pedido.' + m.tipo, ''));
+      await flush_(); res.ok = true; Object.defineProperty(res, '_mails', { value: mails }); return res;
     } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
   };
   const p = FILA.then(run, run); FILA = p.catch(() => {});
-  return json(await p);
+  const res = await p;
+  // e-mails fora da fila (o Apps Script consulta de volta esta função antes de enviar)
+  for (const m of (res._mails || [])) { try { await fetch(OLD_API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'mail.notify', email: m.email, tipo: m.tipo }) }); } catch (e) {} }
+  return json(res);
 });

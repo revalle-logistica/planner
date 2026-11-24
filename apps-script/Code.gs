@@ -250,8 +250,22 @@ function testeEmails() {
   enviarEmail_('recusado', { email: me, nome: 'Alyson Gomes' }, 'gv');
 }
 
+// ---------- e-mail pedido pelo sistema novo (Supabase): confere lá se a aprovação/recusa é real e recente antes de enviar
+const SUPA_API = 'https://krlkencgakuaisyrxeho.supabase.co/functions/v1/planner-api';
+function supa_(body) { return JSON.parse(UrlFetchApp.fetch(SUPA_API, { method: 'post', contentType: 'text/plain', payload: JSON.stringify(body), muteHttpExceptions: true }).getContentText()); }
+/** Rode uma vez pelo editor para autorizar a conexão com o Supabase. */
+function autorizarSupabase() { Logger.log(UrlFetchApp.fetch(SUPA_API).getContentText()); }
+
 // ---------- ações
 const ACTIONS = {
+  'mail.notify'(b) {
+    const tipo = b.tipo === 'recusado' ? 'recusado' : 'aprovado';
+    const r = supa_({ action: 'mail.check', email: String(b.email || ''), tipo });
+    if (!r.ok || !r.enviar) return { enviado: false };
+    const ok = enviarEmail_(tipo, { email: r.email, nome: r.nome }, r.perfil);
+    supa_({ action: 'mail.done', email: r.email, tipo, ok });
+    return { enviado: ok };
+  },
   // cadastro e acesso
   signup(b) {
     return locked(() => {

@@ -31,3 +31,5 @@ function writeFile(nome, content, por) {
 }
 function ss() { throw new Error('planilha não existe no Supabase'); }
 function folder() { throw new Error('Drive não existe no Supabase'); }
+// e-mails: o Supabase pede ao Apps Script (conta Log Agreste) para enviar, depois de responder
+function enviarEmail_(tipo, u, perfil) { MAILS.push({ email: u.email, tipo }); return true; }
