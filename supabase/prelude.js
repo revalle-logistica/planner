@@ -2,6 +2,7 @@
 // Gerado por supabase/build-api.py: este arquivo junta (1) esta camada de adaptação, (2) o apps-script/Code.gs sem mudanças
 // e (3) as ações novas. As abas da planilha viram tabelas e os arquivos do Drive viram o bucket privado "dados".
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { AsyncLocalStorage } from 'node:async_hooks';
 function chave_() {
   const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'); if (k) return k;
   const s = Deno.env.get('SUPABASE_SECRET_KEYS') || ''; try { const j = JSON.parse(s); return typeof j === 'string' ? j : (j.default || Object.values(j)[0]); } catch (e) { return s; }
@@ -10,7 +11,9 @@ const SB = createClient(Deno.env.get('SUPABASE_URL'), chave_(), { auth: { persis
 const BUCKET = 'planner-dados';
 const TAB = { Usuarios: ['planner_usuarios', ['email']], Sessoes: ['planner_sessoes', ['token']], Equipes: ['planner_equipes', ['unb', 'setor']], Links: ['planner_links', ['token']],
   Arquivos: ['planner_arquivos', ['nome']], Notas: ['planner_notas', ['id']], SnsVinculo: ['planner_sns_vinculo', ['sns_email']], PedidosSNS: ['planner_pedidos_sns', ['id']], Log: ['planner_log', null] };
-let DB = {}, CHG = [], FILES = {}, WRITES = [], MAILS = [];
+// estado da "planilha" isolado por requisição (várias consultas ao mesmo tempo sem se atropelar)
+const ALS = new AsyncLocalStorage();
+for (const k of ['DB', 'CHG', 'FILES', 'WRITES', 'MAILS']) Object.defineProperty(globalThis, k, { get() { return ALS.getStore()[k]; }, set(v) { ALS.getStore()[k] = v; }, configurable: true });
 
 // ---- SHA-256 síncrono (mesmo resultado do Utilities.computeDigest do Apps Script, para as senhas continuarem valendo)
 function sha256(bytes) {

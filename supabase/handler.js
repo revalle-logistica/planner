@@ -119,14 +119,12 @@ const ASYNC = {
   }
 };
 
-let FILA = Promise.resolve();
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, GET, OPTIONS' };
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const json = o => new Response(JSON.stringify(o), { headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
   if (req.method !== 'POST') return json({ ok: true, app: 'planner-revalle', banco: !!chave_() });
   const texto = await req.text();
-  // uma requisição por vez nesta instância: o estado da "planilha" em memória é global
   const run = async () => {
     try {
       const b = JSON.parse(texto || '{}');
@@ -138,8 +136,7 @@ Deno.serve(async req => {
       await flush_(); res.ok = true; Object.defineProperty(res, '_mails', { value: mails }); return res;
     } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
   };
-  const p = FILA.then(run, run); FILA = p.catch(() => {});
-  const res = await p;
+  const res = await ALS.run({}, run);
   // e-mails fora da fila (o Apps Script consulta de volta esta função antes de enviar)
   for (const m of (res._mails || [])) { try { await fetch(OLD_API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'mail.notify', email: m.email, tipo: m.tipo }) }); } catch (e) {} }
   return json(res);
