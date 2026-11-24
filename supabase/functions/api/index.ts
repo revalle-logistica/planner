@@ -669,19 +669,24 @@ const ASYNC = {
   }
 };
 
+let FILA = Promise.resolve();
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, GET, OPTIONS' };
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const json = o => new Response(JSON.stringify(o), { headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
   if (req.method !== 'POST') return json({ ok: true, app: 'planner-revalle', banco: !!chave_() });
-  let res;
-  try {
-    const b = JSON.parse(await req.text() || '{}');
-    await loadAll_();
-    const fa = ASYNC[b.action], fn = ACTIONS[b.action];
-    if (!fa && !fn) throw new Error('ação desconhecida');
-    res = (fa ? await fa(b) : fn(b)) || {};
-    await flush_(); res.ok = true;
-  } catch (err) { res = { ok: false, error: String(err && err.message || err) }; }
-  return json(res);
+  const texto = await req.text();
+  // uma requisição por vez nesta instância: o estado da "planilha" em memória é global
+  const run = async () => {
+    try {
+      const b = JSON.parse(texto || '{}');
+      await loadAll_();
+      const fa = ASYNC[b.action], fn = ACTIONS[b.action];
+      if (!fa && !fn) throw new Error('ação desconhecida');
+      const res = (fa ? await fa(b) : fn(b)) || {};
+      await flush_(); res.ok = true; return res;
+    } catch (err) { return { ok: false, error: String(err && err.message || err) }; }
+  };
+  const p = FILA.then(run, run); FILA = p.catch(() => {});
+  return json(await p);
 });
