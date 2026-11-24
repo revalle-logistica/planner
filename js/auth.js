@@ -14,7 +14,7 @@
   function setSess(s) { try { if (s) localStorage.setItem(KEY, JSON.stringify(s)); else localStorage.removeItem(KEY); } catch (e) {} }
   function can(p, s) { s = s || sess(); if (!s) return false; if (s.user.perfil === 'admin') return true; if (s.user.perfil === 'logistica') return p !== 'usuarios.html'; return (PERM[p] || []).indexOf(s.user.perfil) >= 0; }
   function goLogin() { location.replace('login.html?next=' + encodeURIComponent(page + location.search + location.hash)); }
-  function configured() { return /^https:\/\/script\.google\.com\//.test(window.PLANNER_SYS_API || ''); }
+  function configured() { return /^https:\/\/(script\.google\.com|[a-z0-9]+\.supabase\.co)\//.test(window.PLANNER_SYS_API || ''); }
 
   // guarda da tela (antes de desenhar)
   var s0 = sess();
@@ -56,9 +56,11 @@
     var ck = UPD[name] ? 'pd:' + name + ':' + UPD[name] : null;
     if (ck) { try { var c = sessionStorage.getItem(ck); if (c) return (MEM[name] = c); } catch (e) {} }
     var j = linkK ? await call('link.get', { k: linkK, name: name }) : await call('data.get', { name: name });
-    if (ck) { try { sessionStorage.setItem(ck, j.content); } catch (e) {} }
-    if (name !== 'index.json') MEM[name] = j.content;
-    return j.content;
+    // Supabase: arquivos grandes vêm por um link temporário do Storage
+    var c = j.url ? await fetch(j.url).then(function (r) { if (!r.ok) throw new Error('not_found: ' + name); return r.text(); }) : j.content;
+    if (ck) { try { sessionStorage.setItem(ck, c); } catch (e) {} }
+    if (name !== 'index.json') MEM[name] = c;
+    return c;
   }
   async function json(name) { var o = JSON.parse(await text(name)); if (name === 'index.json' || /index\.json$/.test(name) && o.versions) rememberIndex(o); return o; }
   async function put(name, content) { var r = await call('data.put', { name: name, content: content }); delete MEM[name]; return r; }

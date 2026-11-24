@@ -271,9 +271,9 @@ async function importFiles(list){
   say('info',`${notes.join('<br>')}<br><b>${added}</b> novas · <b>${upd}</b> atualizadas no registro${skipped.length?` · ${skipped.length} sem unidade identificada (escolha a aba da unidade e importe de novo)`:''}.`);
 }
 // ---- salvar parecer no registro
-function publishAsk(){if(!PEND.size){say('info','Nenhum parecer novo para salvar.');return}if($('tok').value.trim())publish();else $('tokModal').style.display='flex'}
+function publishAsk(){if(!PEND.size){say('info','Nenhum parecer novo para salvar.');return}if(PlannerAPI.semPin||$('tok').value.trim())publish();else $('tokModal').style.display='flex'}
 async function publish(){
-  $('tokModal').style.display='none';const pin=$('tok').value.trim();if(!pin){$('tokModal').style.display='flex';return}
+  $('tokModal').style.display='none';const pin=$('tok').value.trim();if(!pin&&!PlannerAPI.semPin){$('tokModal').style.display='flex';return}
   try{say('info','Salvando parecer…');const r=await PlannerAPI.post({action:'parecer',pin,updates:[...PEND.values()]});
     try{if($('rem').checked)localStorage.setItem('plannerPin',pin)}catch(e){}
     PEND=new Map();setDirty(false);say('ok',`✓ ${r.updated} parecer(es) salvos. O time e os GVs já veem.`);await refresh(false);

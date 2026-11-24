@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/api.js"></script>
 <style>
   body{margin:0;font-family:Inter,system-ui,sans-serif;background:#eef1f6;color:#152033}
   .w{max-width:760px;margin:0 auto;padding:28px 16px 60px}
@@ -44,7 +43,7 @@
 </div>
 <script>
 const NEW = 'https://krlkencgakuaisyrxeho.supabase.co/functions/v1/planner-api';
-const ABAS = [['Equipes', 'Equipes dos GVs'], ['Links', 'Links dos vendedores'], ['Notas', 'Anotações (Oportunidades)'], ['SnsVinculo', 'Vínculos dos SNS'], ['PedidosSNS', 'Pedidos dos SNS'], ['Log', 'Histórico (log)']];
+const ABAS = [['Sessoes', 'Sessões abertas (ninguém precisa entrar de novo)'], ['Equipes', 'Equipes dos GVs'], ['Links', 'Links dos vendedores'], ['Notas', 'Anotações (Oportunidades)'], ['SnsVinculo', 'Vínculos dos SNS'], ['PedidosSNS', 'Pedidos dos SNS'], ['Log', 'Histórico (log)']];
 let TOKEN = null;
 const $ = id => document.getElementById(id);
 const linha = (k, nome) => { let tr = $('r_' + k); if (!tr) { tr = document.createElement('tr'); tr.id = 'r_' + k; tr.innerHTML = '<td>' + nome + '</td><td class="n"></td><td class="n"></td><td></td>'; $('tb').appendChild(tr); } return tr; };
@@ -53,7 +52,14 @@ async function novo(action, body) {
   const r = await fetch(NEW, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: TOKEN }, body || {})) });
   const j = await r.json(); if (!j.ok) throw new Error(j.error || 'erro no Supabase'); return j;
 }
-const velho = (action, body) => PlannerAuth.call(action, body);
+const OLD = 'https://script.google.com/macros/s/AKfycbyISEBjWi-M6CzVY7QknghkBf_cUDTYLGw4JTOag7LJQdbPivem_YjcPALSZpFKBqMy/exec';
+const OLD_CRIT = 'https://script.google.com/macros/s/AKfycbwzX45zmN6QDqWLcpKnwRoTnxMQwyL1nSXHnJUOvLg5EIa9XJ9A-Z686gzvJ4Dqy4eMPA/exec';
+async function velho(action, body) {
+  const s = PlannerAuth.sess();
+  const r = await fetch(OLD, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: s && s.token }, body || {})) });
+  const j = await r.json(); if (!j.ok) throw new Error(j.error === 'auth' ? 'sessão do sistema atual expirou: entre de novo no Planner' : j.error); return j;
+}
+async function critVelho(v) { const r = await fetch(OLD_CRIT + '?v=' + encodeURIComponent(v) + '&t=' + Date.now(), { redirect: 'follow' }); const j = await r.json(); if (!j.ok) throw new Error(j.error); return j.items || []; }
 let feitos = 0, total = 1; const passo = () => { feitos++; $('pb').style.width = Math.min(100, Math.round(feitos / total * 100)) + '%'; };
 
 $('go').onclick = async () => {
@@ -97,7 +103,7 @@ $('go').onclick = async () => {
     let ct = 0, cn = 0;
     marca('c', 'Críticas e pareceres', 0, 0, 'run');
     for (const v of vers) {
-      const its = await PlannerAPI.list(v); ct += its.length;
+      const its = await critVelho(v); ct += its.length;
       await novo('import.crit', { v, items: its, limpar: true });
       cn += (await novo('crit.list', { v })).items.length;
       marca('c', 'Críticas e pareceres', ct, cn, 'run'); passo();
