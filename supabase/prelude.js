@@ -7,9 +7,9 @@ function chave_() {
   const s = Deno.env.get('SUPABASE_SECRET_KEYS') || ''; try { const j = JSON.parse(s); return typeof j === 'string' ? j : (j.default || Object.values(j)[0]); } catch (e) { return s; }
 }
 const SB = createClient(Deno.env.get('SUPABASE_URL'), chave_(), { auth: { persistSession: false } });
-const BUCKET = 'dados';
-const TAB = { Usuarios: ['usuarios', ['email']], Sessoes: ['sessoes', ['token']], Equipes: ['equipes', ['unb', 'setor']], Links: ['links', ['token']],
-  Arquivos: ['arquivos', ['nome']], Notas: ['notas', ['id']], SnsVinculo: ['sns_vinculo', ['sns_email']], PedidosSNS: ['pedidos_sns', ['id']], Log: ['log', null] };
+const BUCKET = 'planner-dados';
+const TAB = { Usuarios: ['planner_usuarios', ['email']], Sessoes: ['planner_sessoes', ['token']], Equipes: ['planner_equipes', ['unb', 'setor']], Links: ['planner_links', ['token']],
+  Arquivos: ['planner_arquivos', ['nome']], Notas: ['planner_notas', ['id']], SnsVinculo: ['planner_sns_vinculo', ['sns_email']], PedidosSNS: ['planner_pedidos_sns', ['id']], Log: ['planner_log', null] };
 let DB = {}, CHG = [], FILES = {}, WRITES = [], MAILS = [];
 
 // ---- SHA-256 síncrono (mesmo resultado do Utilities.computeDigest do Apps Script, para as senhas continuarem valendo)

@@ -7,9 +7,9 @@ function chave_() {
   const s = Deno.env.get('SUPABASE_SECRET_KEYS') || ''; try { const j = JSON.parse(s); return typeof j === 'string' ? j : (j.default || Object.values(j)[0]); } catch (e) { return s; }
 }
 const SB = createClient(Deno.env.get('SUPABASE_URL'), chave_(), { auth: { persistSession: false } });
-const BUCKET = 'dados';
-const TAB = { Usuarios: ['usuarios', ['email']], Sessoes: ['sessoes', ['token']], Equipes: ['equipes', ['unb', 'setor']], Links: ['links', ['token']],
-  Arquivos: ['arquivos', ['nome']], Notas: ['notas', ['id']], SnsVinculo: ['sns_vinculo', ['sns_email']], PedidosSNS: ['pedidos_sns', ['id']], Log: ['log', null] };
+const BUCKET = 'planner-dados';
+const TAB = { Usuarios: ['planner_usuarios', ['email']], Sessoes: ['planner_sessoes', ['token']], Equipes: ['planner_equipes', ['unb', 'setor']], Links: ['planner_links', ['token']],
+  Arquivos: ['planner_arquivos', ['nome']], Notas: ['planner_notas', ['id']], SnsVinculo: ['planner_sns_vinculo', ['sns_email']], PedidosSNS: ['planner_pedidos_sns', ['id']], Log: ['planner_log', null] };
 let DB = {}, CHG = [], FILES = {}, WRITES = [], MAILS = [];
 
 // ---- SHA-256 síncrono (mesmo resultado do Utilities.computeDigest do Apps Script, para as senhas continuarem valendo)
@@ -567,12 +567,12 @@ async function loadAll_() {
     DB[name] = out;
   }));
 }
-function row_(name, o) { const t = TAB[name][0], r = Object.assign({}, o); if (t === 'arquivos') r.bytes = +r.bytes || 0; if (t === 'log') delete r.id; return r; }
+function row_(name, o) { const t = TAB[name][0], r = Object.assign({}, o); if (t === 'planner_arquivos') r.bytes = +r.bytes || 0; if (t === 'planner_log') delete r.id; return r; }
 async function flush_() {
   for (let i = 0; i < CHG.length; i++) {
     const [op, name] = CHG[i], t = TAB[name][0]; let res;
     if (op === 'ins') { const batch = [row_(name, CHG[i][2])]; while (i + 1 < CHG.length && CHG[i + 1][0] === 'ins' && CHG[i + 1][1] === name) batch.push(row_(name, CHG[++i][2])); res = await SB.from(t).insert(batch); }
-    else if (op === 'upd') { const p = row_(name, CHG[i][3]); if (t === 'arquivos' && !('bytes' in CHG[i][3])) delete p.bytes; let q = SB.from(t).update(p); Object.entries(CHG[i][2]).forEach(([k, v]) => q = q.eq(k, v)); res = await q; }
+    else if (op === 'upd') { const p = row_(name, CHG[i][3]); if (t === 'planner_arquivos' && !('bytes' in CHG[i][3])) delete p.bytes; let q = SB.from(t).update(p); Object.entries(CHG[i][2]).forEach(([k, v]) => q = q.eq(k, v)); res = await q; }
     else { let q = SB.from(t).delete(); Object.entries(CHG[i][2]).forEach(([k, v]) => q = q.eq(k, v)); res = await q; }
     if (res.error) throw new Error('gravar ' + t + ': ' + res.error.message);
   }
@@ -596,7 +596,7 @@ const CRIT_KEYS = ['id', 'v', 'u', 'code', 'gv', 'parecer'];
 function critOut_(r) { return Object.assign({}, r.dados || {}, { id: r.id, v: r.v, u: r.u, code: r.code, gv: r.gv, parecer: r.parecer }); }
 async function critRows_(filtro) {
   const out = []; let from = 0;
-  for (;;) { let q = SB.from('criticas').select('*'); Object.entries(filtro).forEach(([k, v]) => q = q.eq(k, v)); const { data, error } = await q.range(from, from + 999);
+  for (;;) { let q = SB.from('planner_criticas').select('*'); Object.entries(filtro).forEach(([k, v]) => q = q.eq(k, v)); const { data, error } = await q.range(from, from + 999);
     if (error) throw new Error('banco: ' + error.message); out.push(...data); if (data.length < 1000) break; from += 1000; }
   return out;
 }
@@ -612,19 +612,19 @@ const ASYNC = {
       const u = String(it.u), code = String(it.code), k = u + '|' + code; vistos.add(k); const cur = porK.get(k);
       const dados = Object.assign({}, it); CRIT_KEYS.forEach(x => delete dados[x]); dados.upd = agora;
       if (cur && !pendente_(cur.parecer)) { kept++; continue; }
-      if (cur) { const { error } = await SB.from('criticas').update({ dados: Object.assign({}, cur.dados, dados, { em: (cur.dados || {}).em || agora }), parecer: it.parecer || cur.parecer || 'Pendente' }).eq('id', cur.id); if (error) throw new Error(error.message); updated++; }
-      else { dados.em = dados.em || agora; const { error } = await SB.from('criticas').insert({ id: uid('c'), v, u, code, gv, parecer: it.parecer || 'Pendente', dados }); if (error) throw new Error(error.message); added++; }
+      if (cur) { const { error } = await SB.from('planner_criticas').update({ dados: Object.assign({}, cur.dados, dados, { em: (cur.dados || {}).em || agora }), parecer: it.parecer || cur.parecer || 'Pendente' }).eq('id', cur.id); if (error) throw new Error(error.message); updated++; }
+      else { dados.em = dados.em || agora; const { error } = await SB.from('planner_criticas').insert({ id: uid('c'), v, u, code, gv, parecer: it.parecer || 'Pendente', dados }); if (error) throw new Error(error.message); added++; }
     }
     const tirar = atuais.filter(r => !vistos.has(r.u + '|' + r.code) && pendente_(r.parecer)).map(r => r.id);
-    if (tirar.length) { const { error } = await SB.from('criticas').delete().in('id', tirar); if (error) throw new Error(error.message); removed = tirar.length; }
+    if (tirar.length) { const { error } = await SB.from('planner_criticas').delete().in('id', tirar); if (error) throw new Error(error.message); removed = tirar.length; }
     kept += atuais.filter(r => !vistos.has(r.u + '|' + r.code) && !pendente_(r.parecer)).length;
     return { added, updated, removed, kept };
   },
   async 'crit.parecer'(b) {
     const u = session(b, ['admin', 'logistica']); let n = 0;
     for (const p of (b.updates || [])) {
-      const { data } = await SB.from('criticas').select('dados').eq('id', String(p.id)).maybeSingle(); if (!data) continue;
-      const { error } = await SB.from('criticas').update({ parecer: String(p.parecer || 'Pendente'), dados: Object.assign({}, data.dados, { obs: String(p.obs || ''), parAt: now(), parPor: u.email }) }).eq('id', String(p.id));
+      const { data } = await SB.from('planner_criticas').select('dados').eq('id', String(p.id)).maybeSingle(); if (!data) continue;
+      const { error } = await SB.from('planner_criticas').update({ parecer: String(p.parecer || 'Pendente'), dados: Object.assign({}, data.dados, { obs: String(p.obs || ''), parAt: now(), parPor: u.email }) }).eq('id', String(p.id));
       if (error) throw new Error(error.message); n++;
     }
     log(u.email, 'crit.parecer', n + ' parecer(es)'); return { updated: n };
@@ -656,10 +656,10 @@ const ASYNC = {
   },
   async 'import.crit'(b) {
     session(b, ['admin']); const v = String(b.v || ''); const its = b.items || [];
-    if (b.limpar) await SB.from('criticas').delete().eq('v', v);
+    if (b.limpar) await SB.from('planner_criticas').delete().eq('v', v);
     const recs = its.map(it => { const dados = Object.assign({}, it); CRIT_KEYS.forEach(x => delete dados[x]);
       return { id: String(it.id || uid('c')), v, u: String(it.u), code: String(it.code), gv: String(it.gv || ''), parecer: String(it.parecer || 'Pendente'), dados }; });
-    for (let i = 0; i < recs.length; i += 500) { const { error } = await SB.from('criticas').upsert(recs.slice(i, i + 500)); if (error) throw new Error(error.message); }
+    for (let i = 0; i < recs.length; i += 500) { const { error } = await SB.from('planner_criticas').upsert(recs.slice(i, i + 500)); if (error) throw new Error(error.message); }
     return { n: recs.length };
   }
 };
