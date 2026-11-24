@@ -85,6 +85,7 @@ $('go').onclick = async () => {
       const rs = (await velho('export.rows', { sheet: aba })).rows;
       if (!rs.length) await novo('import.rows', { sheet: aba, rows: [], limpar: true });
       for (let i = 0; i < rs.length; i += 400) await novo('import.rows', { sheet: aba, rows: rs.slice(i, i + 400), limpar: i === 0 });
+      if (aba === 'Sessoes') TOKEN = PlannerAuth.sess().token; // a sessão atual passou a valer também no Supabase
       marca(aba, nome, rs.length, rs.length, 'ok'); passo();
     }
 
