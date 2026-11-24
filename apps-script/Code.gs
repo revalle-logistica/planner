@@ -463,6 +463,11 @@ const ACTIONS = {
       return { nota: notaPub_(Object.assign(n, p)) };
     });
   },
+  // migração para o Supabase: devolve as linhas cruas de uma aba (só administrador)
+  'export.rows'(b) {
+    session(b, ['admin']); const name = String(b.sheet || ''); if (!SHEETS[name]) throw new Error('Aba inválida');
+    return { rows: rows(name).map(r => { const o = {}; SHEETS[name].forEach(k => o[k] = r[k]); return o; }) };
+  },
   'data.list'(b) {
     session(b, ['admin', 'logistica']); const p = String(b.prefix || '');
     return { files: rows('Arquivos').filter(a => a.nome.indexOf(p) === 0).map(a => ({ nome: a.nome, atualizado: a.atualizado, por: a.por, bytes: +a.bytes || 0 })) };
