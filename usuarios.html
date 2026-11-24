@@ -82,9 +82,8 @@ select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);pa
 
   <div class="card"><h2>Setores sem GV</h2><div class="sub">Setores do planner publicado que ainda não estão na equipe de nenhum GV.</div><div id="free"><div class="empty">Carregando…</div></div></div>
 
-  <div class="card"><h2>Dados no Drive</h2><div class="sub">Arquivos do sistema guardados no Drive da Logística. Na primeira vez, traga os planners que ainda estão no site.</div>
+  <div class="card"><h2>Arquivos do sistema</h2><div class="sub">Planners, relatórios e bases guardados no Supabase (projeto Projetos Log Revalle).</div>
     <div id="files"></div>
-    <div style="margin-top:12px"><button class="btn" id="mig">Trazer os planners do site para o Drive</button></div>
     <div class="msg" id="msgM"></div></div>
 </main>
 <script>
@@ -121,7 +120,7 @@ function render(){
   // setores sem GV
   const own=new Set(EQ.map(e=>e.unb+'|'+e.setor));
   const free=ORDEM.filter(u=>SET.has(u)).map(u=>[u,[...SET.get(u)].filter(s=>!own.has(u+'|'+s)).sort((a,b)=>+a-+b)]).filter(x=>x[1].length);
-  $('free').innerHTML=!SET.size?'<div class="empty">Sem planner publicado no Drive ainda (veja "Dados no Drive" abaixo).</div>':free.length?free.map(([u,l])=>`<div style="margin-bottom:10px"><b style="font-size:13px">${esc(UN[u])}</b> <small style="color:var(--mut)">${l.length} setores</small><div class="free" style="margin-top:6px">${l.map(s=>`<span>Setor ${esc(s)}</span>`).join('')}</div></div>`).join(''):'<div class="empty">✓ Todos os setores têm GV.</div>';
+  $('free').innerHTML=!SET.size?'<div class="empty">Sem planner publicado ainda.</div>':free.length?free.map(([u,l])=>`<div style="margin-bottom:10px"><b style="font-size:13px">${esc(UN[u])}</b> <small style="color:var(--mut)">${l.length} setores</small><div class="free" style="margin-top:6px">${l.map(s=>`<span>Setor ${esc(s)}</span>`).join('')}</div></div>`).join(''):'<div class="empty">✓ Todos os setores têm GV.</div>';
   if(cur)drawEq();
 }
 function drawEq(){
@@ -162,18 +161,10 @@ $('eqSave').onclick=async()=>{
   catch(err){say('msgE','err',esc(err.message))}finally{$('eqSave').disabled=false}
 };
 async function files(){
-  try{const f=await PlannerData.list('');$('files').innerHTML=f.length?`<table><thead><tr><th>Arquivo</th><th>Tamanho</th><th>Atualizado</th></tr></thead><tbody>${f.sort((a,b)=>a.nome.localeCompare(b.nome)).map(x=>`<tr><td>${esc(x.nome)}</td><td><small>${(x.bytes/1024).toLocaleString('pt-BR',{maximumFractionDigits:0})} KB</small></td><td><small>${fmtDT(x.atualizado)} · ${esc(x.por)}</small></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum arquivo no Drive ainda.</div>'}
+  try{const f=await PlannerData.list('');$('files').innerHTML=f.length?`<table><thead><tr><th>Arquivo</th><th>Tamanho</th><th>Atualizado</th></tr></thead><tbody>${f.sort((a,b)=>a.nome.localeCompare(b.nome)).map(x=>`<tr><td>${esc(x.nome)}</td><td><small>${(x.bytes/1024).toLocaleString('pt-BR',{maximumFractionDigits:0})} KB</small></td><td><small>${fmtDT(x.atualizado)} · ${esc(x.por)}</small></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum arquivo ainda.</div>'}
   catch(e){$('files').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
 }
-$('mig').onclick=async()=>{
-  $('mig').disabled=true;
-  try{say('msgM','info','Lendo os planners do site…');
-    const ix=await fetch('data/index.json?t='+Date.now()).then(r=>{if(!r.ok)throw new Error('não há planners no site (já foram migrados?)');return r.json()});
-    for(const v of ix.versions){say('msgM','info',`Copiando ${v.label||v.id}…`);const t=await fetch(`data/v/${v.id}.json?t=`+Date.now()).then(r=>r.text());await PlannerData.put(`v/${v.id}.json`,t)}
-    await PlannerData.put('index.json',JSON.stringify(ix,null,1));
-    say('msgM','ok',`✓ ${ix.versions.length} versão(ões) copiada(s) para o Drive. Agora os arquivos da pasta <b>data/</b> podem sair do repositório.`);await load();
-  }catch(e){say('msgM','err','Não consegui copiar: '+esc(e.message))}finally{$('mig').disabled=false}
-};
+
 load();
 }
 </script>
