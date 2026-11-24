@@ -1,15 +1,20 @@
 
 // ===== carga, gravação e ações novas
-async function loadAll_() {
+// consultas só de leitura carregam só o que usam (login e sessão sempre); as que gravam carregam tudo
+const LEITURA = { me: [], 'data.get': ['Arquivos'], 'data.list': ['Arquivos'], 'crit.list': [], 'notas.list': ['Notas'], 'links.list': ['Equipes', 'Links', 'SnsVinculo'],
+  'link.get': ['Links', 'Arquivos'], 'users.list': ['Equipes', 'SnsVinculo'], 'sns.me': ['SnsVinculo'], 'sns.list': ['SnsVinculo', 'PedidosSNS'], 'mail.check': [] };
+async function loadAll_(action) {
   DB = {}; CHG = []; FILES = {}; WRITES = []; MAILS = [];
-  await Promise.all(Object.keys(TAB).filter(n => n !== 'Log').map(async name => {
+  const so = LEITURA[action]; const quais = so ? ['Usuarios', 'Sessoes'].concat(so) : Object.keys(TAB).filter(n => n !== 'Log');
+  const db = DB; quais.forEach(n => db[n] = []);
+  await Promise.all(quais.map(async name => {
     const out = []; let from = 0;
     for (;;) {
       const { data, error } = await SB.from(TAB[name][0]).select('*').range(from, from + 999);
       if (error) throw new Error('banco: ' + error.message);
       data.forEach(r => out.push(norm_(name, r))); if (data.length < 1000) break; from += 1000;
     }
-    DB[name] = out;
+    db[name] = out;
   }));
 }
 function row_(name, o) { const t = TAB[name][0], r = Object.assign({}, o); if (t === 'planner_arquivos') r.bytes = +r.bytes || 0; if (t === 'planner_log') delete r.id; return r; }
@@ -89,6 +94,8 @@ const ASYNC = {
     const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']), nome = String(b.name || '');
     if (!adm_(u) && !(nome === 'index.json' || /^v\/[\w-]+\.json$/.test(nome) || /^rotina\/(estado\.gz|meta\.json|ls\.json)$/.test(nome) || /^rel\/(index\.json|coord\/\d+\.json)$/.test(nome) || nome === 'janelas/ajustes-hist.json')) throw new Error('Sem permissão para este arquivo');
     const a = fileRow(nome); if (!a) throw new Error('not_found: ' + nome);
+    if (b.tem && b.tem === a.atualizado) return { same: true, atualizado: a.atualizado }; // o navegador já tem esta versão guardada
+    if ((+a.bytes || 0) < 300000) { const { data, error } = await SB.storage.from(BUCKET).download(nome); if (error || !data) throw new Error('not_found: ' + nome); return { content: await data.text(), atualizado: a.atualizado }; }
     const { data, error } = await SB.storage.from(BUCKET).createSignedUrl(nome, 120); if (error) throw new Error('not_found: ' + nome);
     return { url: data.signedUrl, atualizado: a.atualizado };
   },
@@ -128,7 +135,7 @@ Deno.serve(async req => {
   const run = async () => {
     try {
       const b = JSON.parse(texto || '{}');
-      await loadAll_();
+      await loadAll_(b.action);
       const fa = ASYNC[b.action], fn = ACTIONS[b.action];
       if (!fa && !fn) throw new Error('ação desconhecida');
       const res = (fa ? await fa(b) : fn(b)) || {};

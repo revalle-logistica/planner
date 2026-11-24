@@ -51,16 +51,26 @@
   // ---- dados
   var MEM = {}, UPD = {};
   function rememberIndex(ix) { (ix.versions || []).forEach(function (v) { UPD['v/' + v.id + '.json'] = v.updated || v.created || ''; }); }
+  // cache dos arquivos no navegador (IndexedDB), por versão: abrir de novo não baixa o arquivo outra vez
+  var idbP = null;
+  function idb() { if (!idbP) idbP = new Promise(function (ok) { try { var r = indexedDB.open('plannerFiles', 1); r.onupgradeneeded = function () { r.result.createObjectStore('f'); }; r.onsuccess = function () { ok(r.result); }; r.onerror = function () { ok(null); }; } catch (e) { ok(null); } }); return idbP; }
+  async function cacheGet(k) { var d = await idb(); if (!d) return null; return new Promise(function (ok) { try { var q = d.transaction('f').objectStore('f').get(k); q.onsuccess = function () { ok(q.result || null); }; q.onerror = function () { ok(null); }; } catch (e) { ok(null); } }); }
+  async function cachePut(k, v) { var d = await idb(); if (!d) return; try { d.transaction('f', 'readwrite').objectStore('f').put(v, k); } catch (e) {} }
+  var VOLTA = {};
   async function text(name) {
     if (MEM[name] != null) return MEM[name];
-    var ck = UPD[name] ? 'pd:' + name + ':' + UPD[name] : null;
-    if (ck) { try { var c = sessionStorage.getItem(ck); if (c) return (MEM[name] = c); } catch (e) {} }
-    var j = linkK ? await call('link.get', { k: linkK, name: name }) : await call('data.get', { name: name });
-    // Supabase: arquivos grandes vêm por um link temporário do Storage
-    var c = j.url ? await fetch(j.url).then(function (r) { if (!r.ok) throw new Error('not_found: ' + name); return r.text(); }) : j.content;
-    if (ck) { try { sessionStorage.setItem(ck, c); } catch (e) {} }
-    if (name !== 'index.json') MEM[name] = c;
-    return c;
+    if (VOLTA[name]) return VOLTA[name];
+    return (VOLTA[name] = (async function () {
+      try {
+        if (linkK) { var l = await call('link.get', { k: linkK, name: name }); if (name !== 'index.json') MEM[name] = l.content; return l.content; }
+        var ck = 'u:' + ((sess() || {}).user || {}).email + ':' + name, c0 = window.PLANNER_SUPABASE ? await cacheGet(ck) : null;
+        var j = await call('data.get', c0 ? { name: name, tem: c0.at } : { name: name });
+        var c = j.same ? c0.c : j.url ? await fetch(j.url).then(function (r) { if (!r.ok) throw new Error('not_found: ' + name); return r.text(); }) : j.content;
+        if (!j.same && window.PLANNER_SUPABASE && j.atualizado) cachePut(ck, { at: j.atualizado, c: c });
+        if (name !== 'index.json') MEM[name] = c;
+        return c;
+      } finally { delete VOLTA[name]; }
+    })());
   }
   async function json(name) { var o = JSON.parse(await text(name)); if (name === 'index.json' || /index\.json$/.test(name) && o.versions) rememberIndex(o); return o; }
   async function put(name, content) { var r = await call('data.put', { name: name, content: content }); delete MEM[name]; return r; }
@@ -69,7 +79,7 @@
     page: page, linkK: linkK, sess: sess, can: can, call: call, configured: configured,
     user: function () { var s = sess(); return s && s.user; },
     async login(email, senha) { var j = await call('login', { email: email, senha: senha }); setSess({ token: j.token, expira: j.expira, user: j.user }); try { sessionStorage.setItem('plannerMe', '1'); } catch (e) {} return j.user; },
-    async logout() { try { await call('logout'); } catch (e) {} setSess(null); try { sessionStorage.clear(); } catch (e) {} location.replace('login.html'); },
+    async logout() { try { await call('logout'); } catch (e) {} setSess(null); try { sessionStorage.clear(); indexedDB.deleteDatabase('plannerFiles'); } catch (e) {} location.replace('login.html'); },
     signup: function (d) { return call('signup', d); }
   };
   window.PlannerData = { text: text, json: json, put: put, list: function (p) { return call('data.list', { prefix: p || '' }).then(function (j) { return j.files; }); } };
