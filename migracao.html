@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Migração para o Supabase · Planner Revalle</title>
+<link rel="icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<style>
+  body{margin:0;font-family:Inter,system-ui,sans-serif;background:#eef1f6;color:#152033}
+  .w{max-width:760px;margin:0 auto;padding:28px 16px 60px}
+  .card{background:#fff;border-radius:16px;padding:22px 24px;box-shadow:0 1px 3px rgba(20,32,51,.08);margin-bottom:16px}
+  h1{font-size:22px;margin:0 0 6px} p{color:#55627a;line-height:1.55;margin:6px 0}
+  label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+  input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #cfd6e2;border-radius:10px;font:inherit}
+  button{margin-top:16px;background:#1f3050;color:#fff;border:0;border-radius:12px;padding:13px 22px;font:700 15px Inter,sans-serif;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;border-bottom:1px solid #edf0f5;text-align:left}
+  th{color:#6b778d;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .ok{color:#178a4c;font-weight:700} .er{color:#c0392b;font-weight:700} .run{color:#b07800;font-weight:700}
+  .bar{height:8px;background:#edf0f5;border-radius:99px;overflow:hidden;margin-top:14px} .bar i{display:block;height:100%;width:0;background:#f5b301;transition:width .3s}
+  #msg{margin-top:12px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="card">
+    <h1>Copiar o Planner para o Supabase</h1>
+    <p>Copia usuários, equipes, links, anotações, pedidos dos SNS, críticas e arquivos do sistema atual (Google) para o novo (Supabase). O sistema atual não muda e continua sendo o que o time usa.</p>
+    <p>Pode rodar de novo quando quiser: cada rodada substitui a cópia anterior.</p>
+    <label for="senha">Sua senha do Planner (a mesma de sempre)</label>
+    <input id="senha" type="password" autocomplete="current-password">
+    <button id="go">Copiar tudo</button>
+    <div class="bar"><i id="pb"></i></div>
+    <div id="msg"></div>
+  </div>
+  <div class="card">
+    <table><thead><tr><th>Item</th><th class="n">Sistema atual</th><th class="n">Supabase</th><th>Situação</th></tr></thead><tbody id="tb"></tbody></table>
+  </div>
+</div>
+<script>
+const NEW = 'https://krlkencgakuaisyrxeho.supabase.co/functions/v1/planner-api';
+const ABAS = [['Equipes', 'Equipes dos GVs'], ['Links', 'Links dos vendedores'], ['Notas', 'Anotações (Oportunidades)'], ['SnsVinculo', 'Vínculos dos SNS'], ['PedidosSNS', 'Pedidos dos SNS'], ['Log', 'Histórico (log)']];
+let TOKEN = null;
+const $ = id => document.getElementById(id);
+const linha = (k, nome) => { let tr = $('r_' + k); if (!tr) { tr = document.createElement('tr'); tr.id = 'r_' + k; tr.innerHTML = '<td>' + nome + '</td><td class="n"></td><td class="n"></td><td></td>'; $('tb').appendChild(tr); } return tr; };
+const marca = (k, nome, a, b, st) => { const c = linha(k, nome).children; if (a != null) c[1].textContent = a; if (b != null) c[2].textContent = b; c[3].innerHTML = st === 'ok' ? '<span class="ok">✓ igual</span>' : st === 'run' ? '<span class="run">copiando…</span>' : '<span class="er">' + st + '</span>'; };
+async function novo(action, body) {
+  const r = await fetch(NEW, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: TOKEN }, body || {})) });
+  const j = await r.json(); if (!j.ok) throw new Error(j.error || 'erro no Supabase'); return j;
+}
+const velho = (action, body) => PlannerAuth.call(action, body);
+let feitos = 0, total = 1; const passo = () => { feitos++; $('pb').style.width = Math.min(100, Math.round(feitos / total * 100)) + '%'; };
+
+$('go').onclick = async () => {
+  const me = PlannerAuth.user(), senha = $('senha').value;
+  if (!me || me.perfil !== 'admin') { $('msg').textContent = 'Entre no Planner como administrador antes.'; return; }
+  if (!senha) { $('msg').textContent = 'Digite a sua senha.'; return; }
+  $('go').disabled = true; $('msg').textContent = 'Copiando… não feche esta página.'; $('tb').innerHTML = ''; feitos = 0;
+  try {
+    // 1. usuários (com as senhas como estão, para todo mundo continuar entrando com a mesma senha)
+    marca('u', 'Usuários', null, null, 'run');
+    const us = (await velho('export.rows', { sheet: 'Usuarios' })).rows;
+    try { await novo('import.usuarios', { rows: us }); } catch (e) { if (!/Já existem usuários/.test(e.message)) throw e; }
+    const lg = await novo('login', { email: me.email, senha }); TOKEN = lg.token;
+    const files = (await velho('data.list', { prefix: '' })).files;
+    const ix = JSON.parse((await velho('data.get', { name: 'index.json' })).content);
+    const vers = (ix.versions || []).map(v => v.id);
+    total = 2 + ABAS.length + files.length + vers.length;
+    const nu = (await novo('users.list')).users.length; marca('u', 'Usuários', us.length, nu, nu >= us.length ? 'ok' : 'faltam ' + (us.length - nu)); passo();
+
+    // 2. demais abas (em lotes)
+    for (const [aba, nome] of ABAS) {
+      marca(aba, nome, null, null, 'run');
+      const rs = (await velho('export.rows', { sheet: aba })).rows;
+      if (!rs.length) await novo('import.rows', { sheet: aba, rows: [], limpar: true });
+      for (let i = 0; i < rs.length; i += 400) await novo('import.rows', { sheet: aba, rows: rs.slice(i, i + 400), limpar: i === 0 });
+      marca(aba, nome, rs.length, rs.length, 'ok'); passo();
+    }
+
+    // 3. arquivos (planners, rotina, relatórios, janelas)
+    let fa = 0, fe = [];
+    marca('f', 'Arquivos', files.length, 0, 'run');
+    for (const f of files) {
+      try { const c = (await velho('data.get', { name: f.nome })).content; await novo('import.file', { name: f.nome, content: c, atualizado: f.atualizado, por: f.por }); fa++; }
+      catch (e) { fe.push(f.nome + ': ' + e.message); }
+      marca('f', 'Arquivos', files.length, fa, 'run'); passo();
+    }
+    const nf = (await novo('data.list', { prefix: '' })).files.length;
+    marca('f', 'Arquivos', files.length, nf, fe.length ? fe.length + ' com erro' : nf >= files.length ? 'ok' : 'faltam ' + (files.length - nf));
+
+    // 4. críticas e pareceres, por versão do planner
+    let ct = 0, cn = 0;
+    marca('c', 'Críticas e pareceres', 0, 0, 'run');
+    for (const v of vers) {
+      const its = await PlannerAPI.list(v); ct += its.length;
+      await novo('import.crit', { v, items: its, limpar: true });
+      cn += (await novo('crit.list', { v })).items.length;
+      marca('c', 'Críticas e pareceres', ct, cn, 'run'); passo();
+    }
+    marca('c', 'Críticas e pareceres', ct, cn, cn === ct ? 'ok' : 'diferença de ' + (ct - cn));
+    passo();
+    $('pb').style.width = '100%';
+    $('msg').innerHTML = fe.length ? '<span class="er">Terminou com erros em ' + fe.length + ' arquivo(s):</span><br>' + fe.join('<br>') : '<span class="ok">Cópia concluída.</span> Pode fechar esta página.';
+  } catch (e) { $('msg').innerHTML = '<span class="er">Parou: ' + e.message + '</span>'; }
+  $('go').disabled = false;
+};
+</script>
+</body>
+</html>
