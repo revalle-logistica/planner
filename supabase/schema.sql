@@ -31,3 +31,10 @@ alter default privileges in schema public grant all on sequences to service_role
 
 -- arquivos (planners, rotina, relatórios, janelas): bucket privado
 insert into storage.buckets (id, name, public) values ('dados', 'dados', false) on conflict (id) do nothing;
+
+-- registro da crítica (solicitações dos GVs e parecer da Logística)
+create table if not exists public.criticas (id text primary key, v text not null, u text, code text, gv text, parecer text, dados jsonb);
+create index if not exists criticas_v on public.criticas(v, gv);
+alter table public.criticas enable row level security;
+alter table public.arquivos add column if not exists file_id text;
+grant all on public.criticas to service_role;
