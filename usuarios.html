@@ -71,8 +71,9 @@ select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);pa
 
   <div class="card" id="vinCard" hidden>
     <h2>Vínculo do SNS <span id="vinName"></span></h2>
-    <div class="sub">O SNS pede alterações de visita na Crítica do planner. O pedido vai primeiro para um dos GVs marcados aqui e, depois de aprovado, para o parecer da Logística. Ele só pode pedir para as unidades da revenda escolhida e vê os links da Minha rota dos setores desses GVs.</div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><b style="font-size:13px">Revenda</b><select id="vinRev"><option value="">Escolha…</option><option value="Agreste">Agreste (Alagoinhas e Serrinha)</option><option value="Nordeste">Nordeste (Ribeira do Pombal e Paulo Afonso)</option></select></div>
+    <div class="sub">O SNS pede alterações de visita na Crítica do planner. O pedido vai primeiro para um dos GVs marcados aqui e, depois de aprovado, para o parecer da Logística. Ele só pode pedir para as <b>unidades marcadas</b> e vê os links da Minha rota dos setores desses GVs nessas unidades.</div>
+    <b style="font-size:13px">Unidades que ele atende</b>
+    <div class="chk" id="vinUn" style="margin:8px 0 14px"></div>
     <b style="font-size:13px">GVs que aprovam os pedidos</b>
     <div class="chk" id="vinGv" style="margin-top:8px"></div>
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn pri" id="vinSave">Salvar vínculo</button><button class="btn" id="vinClose">Fechar</button></div>
@@ -115,7 +116,7 @@ function render(){
     return `<tr><td><b>${esc(u.nome)}</b><br><small>${esc(u.email)}</small></td>
     <td><select data-a="pf" data-e="${esc(u.email)}" ${u.email===me.email?'disabled':''}><option value="gv" ${u.perfil==='gv'?'selected':''}>GV</option><option value="gerente" ${u.perfil==='gerente'?'selected':''}>Gerente comercial</option><option value="logistica" ${u.perfil==='logistica'?'selected':''}>Logística</option><option value="sns" ${u.perfil==='sns'?'selected':''}>SNS</option><option value="admin" ${u.perfil==='admin'?'selected':''}>Administrador</option></select></td>
     <td><small>${fmtDT(u.ultimo_acesso)||'—'}</small></td>
-    <td>${u.perfil==='gv'?`<button class="btn" data-a="eq" data-e="${esc(u.email)}">Equipe · ${n.length} setores${nu>1?` em ${nu} unidades`:''}</button>`:(u.perfil==='sns'?(()=>{const v=VIN.find(x=>x.sns===u.email)||{gvs:[],revenda:''};return `<button class="btn" data-a="vin" data-e="${esc(u.email)}">Vínculo · ${v.revenda?esc(v.revenda):'sem revenda'} · ${v.gvs.length} GV${v.gvs.length===1?'':'s'}</button>`})():u.perfil==='gerente'?'<small>vê todos os GVs e setores</small>':'<small>vê tudo</small>')}</td>
+    <td>${u.perfil==='gv'?`<button class="btn" data-a="eq" data-e="${esc(u.email)}">Equipe · ${n.length} setores${nu>1?` em ${nu} unidades`:''}</button>`:(u.perfil==='sns'?(()=>{const v=VIN.find(x=>x.sns===u.email)||{gvs:[],revenda:'',unidades:[]};const vu=(v.unidades||[]).map(x=>UN[x]||x);return `<button class="btn" data-a="vin" data-e="${esc(u.email)}">Vínculo · ${vu.length?esc(vu.join(', ')):'<b style="color:#fcd34d">sem unidade</b>'} · ${v.gvs.length} GV${v.gvs.length===1?'':'s'}</button>`})():u.perfil==='gerente'?'<small>vê todos os GVs e setores</small>':'<small>vê tudo</small>')}</td>
     <td>${u.status==='ativo'?`<span class="tag t-ok">Ativo</span> ${u.email!==me.email?`<button class="btn red" data-a="st" data-e="${esc(u.email)}" data-s="bloqueado">Bloquear</button>`:''}`:`<span class="tag t-off">Bloqueado</span> <button class="btn" data-a="st" data-e="${esc(u.email)}" data-s="ativo">Reativar</button>`}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">Nenhum usuário ativo.</div>';
   // setores sem GV
   const own=new Set(EQ.map(e=>e.unb+'|'+e.setor));
@@ -139,7 +140,8 @@ document.addEventListener('change',async e=>{
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='ap'||a==='st'){b.disabled=true;try{const r=await PlannerAuth.call('users.set',a==='ap'?{email:b.dataset.e,status:'ativo',perfil:b.dataset.p}:{email:b.dataset.e,status:b.dataset.s});say('msgU','ok',r.email===true?`Atualizado. E-mail enviado para <b>${esc(b.dataset.e)}</b>.`:r.email===false?'Atualizado, mas o e-mail não foi enviado (avise a pessoa por outro meio).':'Atualizado.');await load()}catch(err){say('msgU','err',esc(err.message));b.disabled=false}}
-  if(a==='vin'){vcur=b.dataset.e;const u=U.find(x=>x.email===vcur),v=VIN.find(x=>x.sns===vcur)||{gvs:[],revenda:''};$('vinCard').hidden=false;$('vinName').textContent=u.nome;$('vinRev').value=v.revenda||'';$('msgV').className='msg';
+  if(a==='vin'){vcur=b.dataset.e;const u=U.find(x=>x.email===vcur),v=VIN.find(x=>x.sns===vcur)||{gvs:[],revenda:'',unidades:[]};$('vinCard').hidden=false;$('vinName').textContent=u.nome;
+    const uns=Object.keys(UN).sort((a,b)=>UN[a].localeCompare(UN[b]));$('vinUn').innerHTML=uns.length?uns.map(id=>`<label><input type="checkbox" value="${esc(id)}" ${(v.unidades||[]).includes(id)?'checked':''}> ${esc(UN[id])}</label>`).join(''):'<div class="empty">Não consegui ler as unidades do planner publicado.</div>';$('msgV').className='msg';
     const gvs=U.filter(x=>x.perfil==='gv'&&x.status==='ativo').sort((a,b)=>a.nome.localeCompare(b.nome));
     $('vinGv').innerHTML=gvs.length?gvs.map(g=>{const n=EQ.filter(e=>e.gv===g.email);const un=[...new Set(n.map(e=>UN[e.unb]||e.unb))].join(', ');return `<label><input type="checkbox" value="${esc(g.email)}" ${v.gvs.includes(g.email)?'checked':''}> ${esc(g.nome)}${un?` <em>${esc(un)}</em>`:''}</label>`}).join(''):'<div class="empty">Nenhum GV ativo.</div>';
     $('vinCard').scrollIntoView({behavior:'smooth',block:'start'})}
@@ -147,9 +149,9 @@ document.addEventListener('click',async e=>{
   if(a==='all'){const bs=[...document.querySelectorAll(`#eq input[data-u="${b.dataset.u}"]`)];const on=bs.some(x=>!x.checked);bs.forEach(x=>x.checked=on);b.textContent=on?'Desmarcar todos':'Marcar todos';sum()}
 });
 $('vinClose').onclick=()=>{vcur=null;$('vinCard').hidden=true};
-$('vinSave').onclick=async()=>{const gvs=[...document.querySelectorAll('#vinGv input:checked')].map(x=>x.value),revenda=$('vinRev').value;
-  if(!revenda){say('msgV','err','Escolha a revenda.');return}if(!gvs.length){say('msgV','err','Marque pelo menos um GV.');return}
-  $('vinSave').disabled=true;try{await PlannerAuth.call('sns.vinculo.set',{email:vcur,gvs,revenda});say('msgV','ok','Vínculo salvo.');await load()}catch(err){say('msgV','err',esc(err.message))}finally{$('vinSave').disabled=false}};
+$('vinSave').onclick=async()=>{const gvs=[...document.querySelectorAll('#vinGv input:checked')].map(x=>x.value),unidades=[...document.querySelectorAll('#vinUn input:checked')].map(x=>x.value);
+  if(!unidades.length){say('msgV','err','Marque pelo menos uma unidade.');return}if(!gvs.length){say('msgV','err','Marque pelo menos um GV.');return}
+  $('vinSave').disabled=true;try{await PlannerAuth.call('sns.vinculo.set',{email:vcur,gvs,unidades});say('msgV','ok','Vínculo salvo.');await load()}catch(err){say('msgV','err',esc(err.message))}finally{$('vinSave').disabled=false}};
 $('eqClose').onclick=()=>{cur=null;$('eqCard').hidden=true};
 $('eqSave').onclick=async()=>{
   const sel=[...document.querySelectorAll('#eq input:checked')].map(x=>({unb:x.dataset.u,setor:x.value}));

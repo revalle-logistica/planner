@@ -35,3 +35,4 @@ create index if not exists planner_criticas_v on public.planner_criticas(v, gv);
 alter table public.planner_criticas enable row level security;
 alter table public.planner_arquivos add column if not exists file_id text;
 grant all on public.planner_criticas to service_role;
+alter table public.planner_sns_vinculo add column if not exists unidades text default '';

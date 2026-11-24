@@ -163,7 +163,8 @@ let mA,mB,lyA,lyB;
   for(const r of V.clients){const[u,code,n,st,sa,pa,ma,sb,pb,mb,lat,lon,city]=r;if(!mb)continue;
     ALL.push({u,code,n:n.trim(),st,sb,pb,mb,lat,lon,city,addr:r[15]||'',vol:r[18],jb:r[21]||''})}
   if(SNS){try{SNSV=await PlannerAuth.call('sns.me')}catch(e){}
-    if(REVRX[SNSV.revenda])V.units=V.units.filter(u=>REVRX[SNSV.revenda].test(u.name));
+    if((SNSV.unidades||[]).length){const ok=new Set(SNSV.unidades);V.units=V.units.filter(u=>ok.has(String(u.id)));for(let i=ALL.length-1;i>=0;i--)if(!ok.has(String(ALL[i].u)))ALL.splice(i,1)}
+    else if(REVRX[SNSV.revenda])V.units=V.units.filter(u=>REVRX[SNSV.revenda].test(u.name));
     $('gv').value=EU.nome||'';$('gv').readOnly=true;$('gv').title='SNS';$('send').textContent='📤 Enviar para aprovação do GV';
     if(!SNSV.gvs.length)$('vsub').innerHTML+=' · <b style="color:#fcd34d">você ainda não está vinculado a um GV: peça à Logística o vínculo antes de enviar</b>'}
   else try{$('gv').value=localStorage.getItem('criticaGV')||''}catch(e){}

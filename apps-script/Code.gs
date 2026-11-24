@@ -15,7 +15,7 @@ const SHEETS = {
   Arquivos: ['nome', 'file_id', 'atualizado', 'por', 'bytes'],
   Log: ['quando', 'email', 'acao', 'detalhe'],
   Notas: ['id', 'tipo', 'unidade', 'planner', 'pdv', 'setor', 'texto', 'status', 'autor', 'autor_nome', 'criado', 'atualizado', 'excluida', 'categoria', 'regiao'],
-  SnsVinculo: ['sns_email', 'gvs', 'revenda', 'atualizado'],
+  SnsVinculo: ['sns_email', 'gvs', 'revenda', 'atualizado', 'unidades'],
   PedidosSNS: ['id', 'v', 'unb', 'un', 'code', 'sns_email', 'sns_nome', 'item', 'status', 'gv_email', 'gv_nome', 'gv_obs', 'gv_em', 'criado', 'atualizado']
 };
 
@@ -108,11 +108,13 @@ function adm_(u) { return u.perfil === 'admin' || u.perfil === 'logistica'; }
 function veTudo_(u) { return adm_(u) || u.perfil === 'gerente'; }
 // SNS: vinculado a um ou mais GVs e a uma revenda (Agreste = Alagoinhas + Serrinha · Nordeste = Ribeira do Pombal + Paulo Afonso)
 const REVENDAS = { Agreste: /alagoinhas|serrinha/i, Nordeste: /pombal|paulo\s*afonso/i };
-function vinculo_(email) { const v = rows('SnsVinculo').find(x => x.sns_email === email); return v ? { gvs: v.gvs ? v.gvs.split(',').filter(Boolean) : [], revenda: v.revenda } : { gvs: [], revenda: '' }; }
+function vinculo_(email) { const v = rows('SnsVinculo').find(x => x.sns_email === email); return v ? { gvs: v.gvs ? v.gvs.split(',').filter(Boolean) : [], revenda: v.revenda, unidades: v.unidades ? v.unidades.split(',').filter(Boolean) : [] } : { gvs: [], revenda: '', unidades: [] }; }
+// SNS: unidade liberada (vínculo por unidade; vínculos antigos sem unidade seguem pela revenda)
+function snsUnidadeOk_(vin, unb) { return !vin.unidades.length || vin.unidades.indexOf(String(unb)) >= 0; }
 function equipeEmails_(u) { return u.perfil === 'sns' ? vinculo_(u.email).gvs : [u.email]; }
 function gvOwns(u, unb, setor) {
   if (veTudo_(u)) return true;
-  if (u.perfil === 'sns') { const gvs = vinculo_(u.email).gvs; return rows('Equipes').some(e => gvs.indexOf(e.gv_email) >= 0 && e.unb === String(unb) && e.setor === String(setor)); }
+  if (u.perfil === 'sns') { const vin = vinculo_(u.email); return snsUnidadeOk_(vin, unb) && rows('Equipes').some(e => vin.gvs.indexOf(e.gv_email) >= 0 && e.unb === String(unb) && e.setor === String(setor)); }
   return rows('Equipes').some(e => e.gv_email === u.email && e.unb === String(unb) && e.setor === String(setor));
 }
 
@@ -304,18 +306,19 @@ const ACTIONS = {
   },
 
   // usuários (administrador)
-  'users.list'(b) { session(b, ['admin']); return { users: rows('Usuarios').map(pub), equipes: rows('Equipes').map(e => ({ unb: e.unb, setor: e.setor, gv: e.gv_email })), vinculos: rows('SnsVinculo').map(v => ({ sns: v.sns_email, gvs: v.gvs ? v.gvs.split(',').filter(Boolean) : [], revenda: v.revenda })) }; },
+  'users.list'(b) { session(b, ['admin']); return { users: rows('Usuarios').map(pub), equipes: rows('Equipes').map(e => ({ unb: e.unb, setor: e.setor, gv: e.gv_email })), vinculos: rows('SnsVinculo').map(v => ({ sns: v.sns_email, gvs: v.gvs ? v.gvs.split(',').filter(Boolean) : [], revenda: v.revenda, unidades: v.unidades ? v.unidades.split(',').filter(Boolean) : [] })) }; },
   'sns.vinculo.set'(b) {
     const a = session(b, ['admin']);
     return locked(() => {
       const u = userOf(b.email); if (!u) throw new Error('Usuário não encontrado');
       const gvs = (b.gvs || []).map(String).filter(e => { const g = userOf(e); return g && g.perfil === 'gv'; });
       const revenda = String(b.revenda || ''); if (revenda && !REVENDAS[revenda]) throw new Error('Revenda inválida');
+      const unidades = (b.unidades || []).map(String).filter(x => /^\d+$/.test(x));
       const r = rows('SnsVinculo').find(x => x.sns_email === u.email);
-      const o = { sns_email: u.email, gvs: gvs.join(','), revenda, atualizado: now() };
+      const o = { sns_email: u.email, gvs: gvs.join(','), revenda, unidades: unidades.join(','), atualizado: now() };
       if (r) update('SnsVinculo', r._row, o); else append('SnsVinculo', o);
-      log(a.email, 'sns.vinculo.set', u.email + ' ' + revenda + ' ' + gvs.join(','));
-      return { gvs, revenda };
+      log(a.email, 'sns.vinculo.set', u.email + ' unidades ' + unidades.join(',') + ' gvs ' + gvs.join(','));
+      return { gvs, revenda, unidades };
     });
   },
   // pedidos dos SNS: o SNS pede, um GV vinculado aprova ou reprova, e o aprovado segue para o parecer da Logística
@@ -324,7 +327,10 @@ const ACTIONS = {
     const u = session(b, ['sns']); const v = String(b.v || ''); if (!v) throw new Error('Planner não informado');
     const vin = vinculo_(u.email); if (!vin.gvs.length) throw new Error('Você ainda não está vinculado a nenhum GV. Peça à Logística para fazer o vínculo.');
     const rx = REVENDAS[vin.revenda]; const units = (b.units || []).map(String); const itens = (b.itens || []).slice(0, 2000);
-    itens.forEach(it => { if (rx && !rx.test(String(it.un || ''))) throw new Error('A unidade ' + it.un + ' não é da sua revenda (' + vin.revenda + ')'); });
+    itens.forEach(it => {
+      if (vin.unidades.length) { if (!snsUnidadeOk_(vin, it.u)) throw new Error('A unidade ' + (it.un || it.u) + ' não está liberada para você. Fale com a Logística.'); }
+      else if (rx && !rx.test(String(it.un || ''))) throw new Error('A unidade ' + it.un + ' não é da sua revenda (' + vin.revenda + ')');
+    });
     return locked(() => {
       const meus = rows('PedidosSNS').filter(r => r.sns_email === u.email && r.v === v && units.indexOf(r.unb) >= 0);
       const pend = meus.filter(r => r.status === 'aguardando_gv'), decid = new Set(meus.filter(r => r.status !== 'aguardando_gv').map(r => r.unb + '|' + r.code));
@@ -400,7 +406,7 @@ const ACTIONS = {
   // links dos vendedores (administrador e gerente: todos · GV: só a equipe)
   'links.list'(b) {
     const u = session(b, ['admin', 'logistica', 'gerente', 'gv', 'sns']);
-    const meus = equipeEmails_(u); const eq = rows('Equipes').filter(e => veTudo_(u) || meus.indexOf(e.gv_email) >= 0);
+    const meus = equipeEmails_(u), vinU = u.perfil === 'sns' ? vinculo_(u.email) : null; const eq = rows('Equipes').filter(e => veTudo_(u) || (meus.indexOf(e.gv_email) >= 0 && (!vinU || snsUnidadeOk_(vinU, e.unb))));
     const mine = new Set(eq.map(e => e.unb + '|' + e.setor));
     const links = rows('Links').filter(l => l.ativo === 'sim' && (veTudo_(u) || mine.has(l.unb + '|' + l.setor)))
       .map(l => ({ unb: l.unb, setor: l.setor, token: l.token, criado_em: l.criado_em, criado_por: l.criado_por }));
