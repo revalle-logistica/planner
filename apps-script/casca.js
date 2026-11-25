@@ -33,7 +33,7 @@ async function carregarEstado(meta){
   carregando('Baixando os dados da rotina do Drive… (só na primeira vez ou quando houver atualização)');
   const z=await PlannerData.text('rotina/estado.gz');ESTZ=z;return JSON.parse(await gunz(z))}
 // cache local do estado já completo: abre na hora e atualiza em segundo plano
-function assinatura(){return Object.entries(ST.units||{}).map(([u,U])=>u+':'+Object.keys(U.planners||{}).sort().join(',')+':'+Object.keys(U.clients||{}).length).join('|')+'|'+(AJH||[]).length}
+function assinatura(){return Object.entries(ST.units||{}).map(([u,U])=>u+':'+Object.keys(U.planners||{}).sort().map(k=>k+'@'+(U.planners[k].upd||'')).join(',')+':'+Object.keys(U.clients||{}).length).join('|')+'|'+(AJH||[]).length}
 function guardarCache(v){try{IDB.set('rzc',{v,st:ST,ls:LSO,ajh:AJH})}catch(e){}}
 let CACHE_V=null;
 async function atualizarFundo(){
@@ -138,11 +138,11 @@ async function completar(){
   const tarefas=[];
   tarefas.push((async()=>{try{const ix=await PlannerData.json('index.json');
     await Promise.all((ix.versions||[]).map(async v=>{const V=await PlannerData.json('v/'+v.id+'.json');const [a,m,d]=v.vig.split('-');const key=`${d}.${m}.${a.slice(2)}`;
-      for(const un of V.units){const u=nomeU(un.id);if(!u)continue;const U=ST.units[u]||(ST.units[u]=emptyUnit());if(U.planners[key]&&U.planners[key].pre&&U.planners[key].pos)continue;
+      for(const un of V.units){const u=nomeU(un.id);if(!u)continue;const U=ST.units[u]||(ST.units[u]=emptyUnit());const upd=String(v.updated||V.updated||v.id);if(U.planners[key]&&U.planners[key].pre&&U.planners[key].pos&&(U.planners[key].fonte!=='Importar planner'||U.planners[key].upd===upd))continue; // recopia quando o planner do site for republicado
         const cl=V.clients.filter(r=>r[0]===un.id);const vn=(V.sellers||{})[un.id]||{};
         const pre=cl.filter(r=>r[6]).map(r=>[String(r[1]),String(r[4]||''),1,r[5],mascara(r[6]),String(r[2]||'').trim()]);
         const pos=cl.filter(r=>r[9]).map(r=>[String(r[1]),String(r[7]||''),1,r[8],mascara(r[9]),String(r[2]||'').trim()]);
-        U.planners[key]={pre:{rows:pre,vn},pos:{rows:pos,vn},fonte:'Importar planner'}}}))}catch(e){}})());
+        U.planners[key]={pre:{rows:pre,vn},pos:{rows:pos,vn},fonte:'Importar planner',upd}}}))}catch(e){}})());
   for(const un in UNB)tarefas.push((async()=>{try{const o=JSON.parse(await PlannerData.text('rel/coord/'+un+'.json'));const u=nomeU(un);if(!u||!ST.units[u])return;const U=ST.units[u];
     for(const c in o){const v=o[c];U.clients[String(+c)]=[+(+v[0]).toFixed(4),+(+v[1]).toFixed(4),v[2]||(U.clients[String(+c)]||[])[2]||'']}}catch(e){}})());
   tarefas.push(carregarAJH());
