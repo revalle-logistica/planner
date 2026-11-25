@@ -363,7 +363,7 @@ const GRUPOS={
   alt:{t:'Alterações',ids:['mon','alt']},
   ind:{t:'Indicadores',ids:['ind','kdia','chk','res']},
   buf:{t:'Buffer',ids:['buf']},
-  analise:{t:'Análise do planner',ids:['todos','setor','dia','pdvvol','num']},
+  analise:{t:'Análise do planner',ids:['todos','setor','dia','pdvvol','vj','num']},
   opp:{t:'Oportunidades',ids:['opp']},
   pa:{t:'Plano de ação',ids:['pa']},
   imp:{t:'Bases da rotina',ids:['imp']}};
@@ -922,6 +922,7 @@ const SLIDES=[
  {id:'setor',n:'Por setor',g:'Planner',ic:'users',sub:'Balanceamento por setor de vendas'},
  {id:'dia',n:'Por dia',g:'Planner',ic:'sun',sub:'Setores que rodam em cada dia'},
  {id:'pdvvol',n:'PDVs e volume',g:'Planner',ic:'grid',sub:'PDVs e hl por dia, setor e município'},
+ {id:'vj',n:'Visita × janela',g:'Planner',ic:'chart',sub:'Dia de visita × próxima janela de entrega (D+1)'},
  {id:'num',n:'Números do planner',g:'Planner',ic:'pie',sub:'PDVs saneados, setores e ações'},
  {id:'mon',n:'Monitor de alterações',g:'Planner',ic:'swap',sub:'Visitas (01.02.78.03) e janelas de entrega semana a semana'},
  {id:'ind',n:'Indicadores',g:'Indicadores',ic:'line',sub:'KPIs mês a mês'},
@@ -987,6 +988,46 @@ R.dia=()=>{const s=SC();if(!s)return noData();const d=UI.dia;const g=s.rows.filt
   <div class="row"><div>${mapBox(`Planner: Revalle ${esc(UI.u)} · ${UI.p.replace(/\./g,'/')}`,drawMap(g,{colorBy:'setor'}))}</div>
   <div class="tbl"><table class="lt"><thead><tr><th class="l">Setor</th><th>PDVs</th><th>Volume</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="l"><i class="sw" style="background:${SETC[allSets.indexOf(r[0])%SETC.length]}"></i>${esc(r[0])}</td><td>${r[1]}</td><td>${fmt(r[2])}</td>${r[3].map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}
   <tr class="sub2"><td class="l">Total</td><td>${tot[0]}</td><td>${fmt(tot[1])}</td>${tot[2].map(x=>`<td>${x}</td>`).join('')}</tr></tbody></table></div></div><span class="chip">Checklist 3.4 · V1</span>`};
+// ===== Visita × próxima janela de entrega (planner e semanal) =====
+function vjProx(v,fr){let g=0;for(let k=1;k<=7;k++){const d=(v+k)%7;if(d===6)continue;g++;if(fr.has(d))return {d,g}}return null}
+function vjFr(j){const s=new Set();if(j)for(let i=0;i<6;i++)if(j[i]&&j[i]!=='N')s.add(i);return s}
+function vjCalc(itens){const M=Array.from({length:6},()=>Array(6).fill(0)),G={1:0,2:0,3:0,4:0,sj:0,nc:0},S={},L=[];let tot=0,soma=0,nd=0;
+  for(const it of itens){const fr=it.j==null?null:vjFr(it.j);for(const [v,w] of it.vis){if(v>5)continue;tot+=w;const s=S[it.s]||(S[it.s]={t:0,ok:0});s.t+=w;
+    if(fr==null){G.nc+=w;L.push({...it,v,d:null,g:null,w});continue}const p=vjProx(v,fr);
+    if(!p){G.sj+=w;L.push({...it,v,d:null,g:0,w});continue}M[v][p.d]+=w;G[Math.min(p.g,4)]+=w;soma+=p.g*w;nd+=w;if(p.g===1)s.ok+=w;else L.push({...it,v,d:p.d,g:p.g,w})}}
+  return {M,G,S,L,tot,ok:G[1],med:nd?soma/nd:NaN}}
+function vjItensPlanner(Uu,dj){const sc=SC();if(!sc)return null;const J=dj?Uu.jan[dj]:null;
+  return sc.rows.map(r=>({c:r.c,nm:r.nm,s:r.v,j:J?(J[r.c]??null):null,vis:r.dayW.map((n,d)=>[d,n/4]).filter(x=>x[1]>0)}))}
+function vjItensSemana(Uu,dv,dj){const V=Uu.vis[dv]||{},J=dj?Uu.jan[dj]:null,out=[];
+  for(const c in V){const v=V[c];if(!v[2])continue;out.push({c,nm:(Uu.vnm||{})[c]||'',s:v[0],j:J?(J[c]??null):null,vis:daysOf(v[1]).map(d=>[d,1])})}return out}
+function vjJanPara(Uu,d){const js=monJan(Uu);if(!js.length)return null;let b=null;for(const k of js)if(k<=addD(d,6))b=k;return b||js[0]}
+window.vjSet=(k,v)=>{UI[k]=v;if(k!=='vjc')UI.vjc=null;render()};
+R.vj=()=>{const Uu=U();const modo=UI.vjm||'p';const ws=monVis(Uu),js=monJan(Uu);
+  const chips=`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px"><div class="seg2"><button aria-pressed="${modo==='p'}" onclick="vjSet('vjm','p')">Planner</button><button aria-pressed="${modo==='s'}" onclick="vjSet('vjm','s')">Semanal (relatórios)</button></div>`;
+  let itens,dj,sub,trend='';
+  if(modo==='p'){dj=js.length?js[js.length-1]:null;itens=vjItensPlanner(Uu,dj);if(!itens)return noData();
+    sub=`${cen()} · planner ${esc(UI.p)} · janela: ${dj?'relatório de '+br(dj):'<b>sem relatório de janela importado</b>'}`;}
+  else{if(!ws.length)return title('Visita × janela','Semanal','chart')+chips+'</div><p class="note">Importe os relatórios de visitas (01.02.78.03) e de janela de entrega em <b>Bases da rotina</b>.</p>';
+    const dv=ws.includes(UI.vjw)?UI.vjw:ws[ws.length-1];dj=vjJanPara(Uu,dv);itens=vjItensSemana(Uu,dv,dj);
+    sub=`semana de ${br(dv)} · janela: ${dj?'relatório de '+br(dj):'—'}`;
+    const sel=`<select onchange="vjSet('vjw',this.value)">${ws.slice().reverse().map(w=>`<option value="${w}" ${w===dv?'selected':''}>Semana de ${br(w)}</option>`).join('')}</select>`;
+    const tr=ws.slice(-8).map(w=>{const r=vjCalc(vjItensSemana(Uu,w,vjJanPara(Uu,w)));return [w,r.tot?r.ok/r.tot:NaN]});
+    const mx=1;trend=`<div class="cbox" style="padding:14px;margin-top:14px"><b style="font-size:14px">Visitas casadas (D+1) · últimas ${tr.length} semanas</b><div style="display:flex;gap:10px;align-items:flex-end;height:120px;margin-top:10px">${tr.map(([w,p])=>`<div style="flex:1;text-align:center;font-size:11px"><div style="font-weight:700;margin-bottom:3px">${pct(p,0)}</div><div style="height:${isFinite(p)?Math.round(p/mx*80):0}px;background:${p>=.85?'#12A33A':p>=.7?'#F2C14E':'#E0141E'};border-radius:4px 4px 0 0"></div><div style="color:var(--mut,#98a2b3);margin-top:3px">${br(w).slice(0,5)}</div></div>`).join('')}</div></div>`;
+    sub+=' · '+sel}
+  const r=vjCalc(itens);const P=x=>r.tot?x/r.tot:NaN;const n0=x=>fmt(x,0);
+  const kp=(t,v,c)=>`<div class="cbox" style="padding:12px 14px"><div style="font-size:12px;opacity:.75">${t}</div><div style="font-size:24px;font-weight:800;color:${c}">${v}</div></div>`;
+  const kpis=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">${kp('Casadas (D+1)',pct(P(r.ok),0),'#12A33A')}${kp('Visitas descasadas',n0(r.tot-r.ok-r.G.nc),'#E0141E')}${kp('Dias até a próxima janela',fmt(r.med,1),'inherit')}${kp('Sem janela / sem cadastro',n0(r.G.sj+r.G.nc),'#F2C14E')}</div>`;
+  const cor=(v,d)=>{const p=vjProx(v,new Set([d]));const g=p?p.g:9;return g===1?['rgba(18,163,58,.22)','#5ee08a']:g===2?['rgba(242,193,78,.2)','#f2c14e']:['rgba(224,20,30,.2)','#ff8a8f']};
+  const mat=`<div class="cbox" style="padding:14px"><b style="font-size:14px">Dia da visita × próxima janela</b><div class="tbl"><table style="margin-top:8px"><thead><tr><th class="l">Visita ↓ · janela →</th>${DIAS.slice(0,6).map(d=>`<th>${d}</th>`).join('')}<th>Total</th></tr></thead><tbody>${r.M.map((row,v)=>`<tr><td class="l"><b>${DIAS[v]}</b></td>${row.map((x,d)=>{if(!x)return '<td></td>';const [bg,fg]=cor(v,d);const on=UI.vjc===v+'|'+d;return `<td style="cursor:pointer;background:${bg};color:${fg};font-weight:700;${on?'outline:2px solid #fff':''}" onclick="vjSet('vjc','${v}|${d}')">${n0(x)}</td>`}).join('')}<td>${n0(row.reduce((a,b)=>a+b,0))}</td></tr>`).join('')}</tbody></table></div><p class="note" style="margin-top:6px">Verde = D+1 (sábado → segunda conta como D+1) · amarelo = 1 dia a mais · vermelho = 2 ou mais. Clique numa célula para ver os PDVs.${modo==='p'?' No planner, visita quinzenal conta meia visita por semana.':''}</p></div>`;
+  const bar=(t,x,c)=>`<div style="display:grid;grid-template-columns:120px 1fr 56px;gap:8px;align-items:center;font-size:13px;margin:6px 0"><span>${t}</span><div style="height:12px;background:rgba(255,255,255,0.002);border-radius:4px"><div style="height:12px;width:${Math.round((P(x)||0)*100)}%;background:${c};border-radius:4px"></div></div><span style="text-align:right">${pct(P(x),0)}</span></div>`;
+  const dist=`<div class="cbox" style="padding:14px"><b style="font-size:14px">Dias até a próxima janela</b>${bar('D+1',r.G[1],'#12A33A')}${bar('D+2',r.G[2],'#F2C14E')}${bar('D+3',r.G[3],'#E0141E')}${bar('D+4 ou mais',r.G[4],'#8b1218')}${bar('Sem janela',r.G.sj,'#7F1D1D')}${bar('Sem cadastro',r.G.nc,'#9aa8c0')}</div>`;
+  const ss=Object.keys(r.S).sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));
+  const set=`<div class="cbox" style="padding:14px;margin-top:14px"><b style="font-size:14px">Por setor</b><div class="tbl"><table style="margin-top:8px"><thead><tr><th class="l">Setor</th><th>Visitas</th><th>Casadas D+1</th><th>Descasadas</th></tr></thead><tbody>${ss.map(s=>{const o=r.S[s],p=o.t?o.ok/o.t:NaN;return `<tr><td class="l">${esc(s)}</td><td>${n0(o.t)}</td><td style="color:${p>=.85?'#5ee08a':p>=.7?'#f2c14e':'#ff8a8f'};font-weight:700">${pct(p,0)}</td><td>${n0(o.t-o.ok)}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  const fl=UI.vjc?UI.vjc.split('|').map(Number):null;const lst=r.L.filter(x=>!fl||(x.v===fl[0]&&x.d===fl[1])).sort((a,b)=>(b.g??9)-(a.g??9)).slice(0,300);
+  const gtx=x=>x.d==null?(x.g===0?'Sem janela':'Sem cadastro'):'D+'+x.g;
+  const lista=`<div class="cbox" style="padding:14px;margin-top:14px"><b style="font-size:14px">PDVs com visita descasada${fl?` · visita ${DIAS[fl[0]]} → janela ${DIAS[fl[1]]} <button class="lk" onclick="vjSet('vjc',null)">ver todos</button>`:''}</b><div class="tbl"><table style="margin-top:8px"><thead><tr><th class="l">PDV</th><th>Setor</th><th>Visita</th><th>Próxima janela</th><th>Dias</th><th>Janelas cadastradas</th></tr></thead><tbody>${lst.map(x=>`<tr><td class="l">${esc(x.c)} ${esc(x.nm||'')}</td><td>${esc(x.s)}</td><td>${DIAS[x.v]}</td><td>${x.d==null?'—':DIAS[x.d]}</td><td>${gtx(x)}</td><td>${x.j?[...vjFr(x.j)].map(d=>DIAS[d]).join('/')||'—':'—'}</td></tr>`).join('')||'<tr><td colspan="6">Nenhum PDV descasado aqui.</td></tr>'}</tbody></table></div>${r.L.length>300&&!fl?'<p class="note">Mostrando 300. Clique numa célula da matriz para filtrar.</p>':''}</div>`;
+  return title('Visita × janela',modo==='p'?'Planner':'Semanal','chart')+chips+`<span class="note" style="margin:0">${sub}</span></div>`+kpis+`<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px">${mat}${dist}</div>`+trend+set+lista};
+
 R.pdvvol=()=>{const s=SC();if(!s)return noData();
   const grp=(key)=>{const m={};s.rows.forEach(r=>{const k=key(r)||'(sem cidade)';const o=m[k]||(m[k]={pdv:0,d:Array(6).fill(0),v:Array(6).fill(0),vol:0});o.pdv++;o.vol+=r.vol;for(let d=0;d<6;d++)if(r.dayW[d]){o.d[d]++;o.v[d]+=r.n?r.vol*r.dayW[d]/r.n:0}});return m};
   const tab=(m,lab,sort,minN=0)=>{if(minN){const o={pdv:0,d:Array(6).fill(0),v:Array(6).fill(0),vol:0};let n=0;for(const k of Object.keys(m))if(m[k].pdv<minN){const x=m[k];o.pdv+=x.pdv;o.vol+=x.vol;x.d.forEach((y,i)=>o.d[i]+=y);x.v.forEach((y,i)=>o.v[i]+=y);delete m[k];n++}if(n)m['Outros ('+n+' locais com menos de '+minN+' PDVs)']=o}const ks=Object.keys(m).sort(sort);const tot={pdv:0,d:Array(6).fill(0),v:Array(6).fill(0),vol:0};ks.forEach(k=>{const o=m[k];tot.pdv+=o.pdv;tot.vol+=o.vol;o.d.forEach((x,i)=>tot.d[i]+=x);o.v.forEach((x,i)=>tot.v[i]+=x)});
@@ -1503,7 +1544,7 @@ function syncCtl(){
   const us=Object.keys(ST.units);if(!us.includes(UI.u))UI.u=us[0];$('#uTabs').innerHTML=us.map(u=>`<button data-u="${u}" aria-pressed="${u===UI.u}">${u}</button>`).join('');
   const ds=dates();if(!ds.includes(UI.p))UI.p=ds[0];$('#selP').innerHTML=ds.map(d=>`<option value="${d}" ${d===UI.p?'selected':''}>${d.replace(/\./g,'/')}</option>`).join('');
   const P=U().planners[UI.p]||{};$('#bPre').disabled=!P.pre;$('#bPos').disabled=!P.pos;if(!P[UI.k])UI.k=P.pre?'pre':'pos';
-  $('#bPre').setAttribute('aria-pressed',UI.k==='pre');$('#bPos').setAttribute('aria-pressed',UI.k==='pos');{const id=(SLIDES[UI.slide]||{}).id;const usaP=['sem','ind','kdia','chk','res','todos','setor','dia','pdvvol','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol'].includes(id);$('#selP').parentElement.style.display=usaP?'':'none';$('#bPre').parentElement.style.display=usaK?'':'none'}
+  $('#bPre').setAttribute('aria-pressed',UI.k==='pre');$('#bPos').setAttribute('aria-pressed',UI.k==='pos');{const id=(SLIDES[UI.slide]||{}).id;const usaP=['sem','ind','kdia','chk','res','todos','setor','dia','pdvvol','vj','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol','vj'].includes(id);$('#selP').parentElement.style.display=usaP?'':'none';$('#bPre').parentElement.style.display=usaK?'':'none'}
   let g=null,h='';SLIDES.forEach((s,i)=>{if(s.g!==g){g=s.g;if(g)h+=`<div class="sg">${g}</div>`}h+=`<button data-s="${i}" aria-current="${i===UI.slide}">${icon(s.ic)}<span>${s.n}</span></button>`});$('#nav').innerHTML=h;
   const sl=SLIDES[UI.slide];$('#pgT').textContent=sl.n;$('#pgS').textContent=sl.sub;
   const lastDay=Object.keys(U().days).sort().pop();$('#sfoot').innerHTML=`Base atualizada em ${new Date(ST.updated).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}<br>dados até ${lastDay?br(lastDay):'—'}`;

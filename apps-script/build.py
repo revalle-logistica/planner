@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """Gera rotina.html (Planner Revalle) a partir do HTML de rotina/checklist 3.4.
 Mantém os cálculos e telas originais; troca a casca (menu, tema), o armazenamento
@@ -144,6 +145,10 @@ js = js.replace("bufTables(Uu,d=>sel.includes(wkStart(d)))", "bufTables(Uu,per==
 js = js.replace("Sem pedidos no período. Importe o relatório de pedidos.", "Sem o detalhe dos pedidos neste período. O detalhe por dia da semana, setor, município e PDV fica guardado só dos últimos 70 dias (para não pesar a base); os meses anteriores aparecem no gráfico pelo resumo de cada dia.")
 # Filtros de planner e cenário só nas telas que usam
 js = js.replace("$('#bPos').setAttribute('aria-pressed',UI.k==='pos');", "$('#bPos').setAttribute('aria-pressed',UI.k==='pos');{const id=(SLIDES[UI.slide]||{}).id;const usaP=['sem','ind','kdia','chk','res','todos','setor','dia','pdvvol','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol'].includes(id);$('#selP').parentElement.style.display=usaP?'':'none';$('#bPre').parentElement.style.display=usaK?'':'none'}",1)
+# Visita × próxima janela de entrega (Análise do planner: planner e semanal)
+js = js.replace("R.pdvvol=()=>{", open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'vj.js'),encoding='utf8').read()+"\nR.pdvvol=()=>{",1)
+js = js.replace(" {id:'num',n:'Números do planner'", " {id:'vj',n:'Visita × janela',g:'Planner',ic:'chart',sub:'Dia de visita × próxima janela de entrega (D+1)'},\n {id:'num',n:'Números do planner'",1)
+js = js.replace("'res','todos','setor','dia','pdvvol','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol']", "'res','todos','setor','dia','pdvvol','vj','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol','vj']",1)
 # vendedor só pelo código do setor (sem nome)
 rep("<div class=\"sub\">Setor ${esc(UI.setor)} · ${esc(s.vn[UI.setor]||'')}</div>", "<div class=\"sub\">Setor ${esc(UI.setor)}</div>")
 # preferências de tela continuam no navegador; o resto vai para o Drive

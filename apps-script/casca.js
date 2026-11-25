@@ -6,7 +6,7 @@ const GRUPOS={
   alt:{t:'Alterações',ids:['mon','alt']},
   ind:{t:'Indicadores',ids:['ind','kdia','chk','res']},
   buf:{t:'Buffer',ids:['buf']},
-  analise:{t:'Análise do planner',ids:['todos','setor','dia','pdvvol','num']},
+  analise:{t:'Análise do planner',ids:['todos','setor','dia','pdvvol','vj','num']},
   opp:{t:'Oportunidades',ids:['opp']},
   pa:{t:'Plano de ação',ids:['pa']},
   imp:{t:'Bases da rotina',ids:['imp']}};
