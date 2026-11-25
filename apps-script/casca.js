@@ -2,7 +2,7 @@
    Menu → ?m=<grupo>. Dados da rotina no Drive (rotina/estado.gz + rotina/meta.json),
    com cópia no navegador enquanto não muda. Preferências e plano de ação em rotina/ls.json. */
 const GRUPOS={
-  sem:{t:'Reunião semanal',ids:['sem']},
+  sem:{t:'Reunião semanal',ids:['sem','vjs']},
   alt:{t:'Alterações',ids:['mon','alt']},
   ind:{t:'Indicadores',ids:['ind','kdia','chk','res']},
   buf:{t:'Buffer',ids:['buf']},
@@ -18,7 +18,7 @@ function avisoLeitura(){if(avisoLeitura.ok)return;avisoLeitura.ok=1;alertMsg('S�
 function grupoDe(id){for(const g in GRUPOS)if(GRUPOS[g].ids.includes(id))return g;return 'sem'}
 function irPara(i){const s=SLIDES[i];if(!s)return;const g=grupoDe(s.id);if(g===M){UI.slide=i;render();window.scrollTo(0,0)}else if(g==='imp'||M==='imp')location.href='rotina.html?m='+g+'&s='+s.id;else{history.pushState({},'','rotina.html?m='+g+'&s='+s.id);irGrupo(g,s.id)}}
 function grupoTabs(){const G=GRUPOS[M];const el=document.getElementById('gtabs');if(!el)return;
-  const NOMES={mon:'📡 Monitor semanal',alt:'📊 Resumo das solicitações'};
+  const NOMES={mon:'📡 Monitor semanal',alt:'📊 Resumo das solicitações',sem:'📅 KPIs da semana',vjs:'🚚 Visita × janela'};
   el.innerHTML=(M==='alt'&&PlannerAuth.can('alteracoes.html')?'<a href="alteracoes.html"><button>📝 Solicitações dos GVs</button></a>':'')+(G.ids.length>1?G.ids.map(id=>{const i=SLIDES.findIndex(s=>s.id===id);return `<button data-s="${i}" aria-pressed="${i===UI.slide}">${NOMES[id]||SLIDES[i].n}</button>`}).join(''):'');
   const t=document.getElementById('pgT');if(t)t.textContent=G.ids.length>1?G.t:SLIDES[UI.slide].n;
   const p=document.getElementById('pgS');if(p)p.textContent=SLIDES[UI.slide].sub}

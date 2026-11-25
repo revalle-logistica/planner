@@ -147,7 +147,7 @@ js = js.replace("Sem pedidos no período. Importe o relatório de pedidos.", "Se
 js = js.replace("$('#bPos').setAttribute('aria-pressed',UI.k==='pos');", "$('#bPos').setAttribute('aria-pressed',UI.k==='pos');{const id=(SLIDES[UI.slide]||{}).id;const usaP=['sem','ind','kdia','chk','res','todos','setor','dia','pdvvol','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol'].includes(id);$('#selP').parentElement.style.display=usaP?'':'none';$('#bPre').parentElement.style.display=usaK?'':'none'}",1)
 # Visita × próxima janela de entrega (Análise do planner: planner e semanal)
 js = js.replace("R.pdvvol=()=>{", open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'vj.js'),encoding='utf8').read()+"\nR.pdvvol=()=>{",1)
-js = js.replace(" {id:'num',n:'Números do planner'", " {id:'vj',n:'Visita × janela',g:'Planner',ic:'chart',sub:'Dia de visita × próxima janela de entrega (D+1)'},\n {id:'num',n:'Números do planner'",1)
+js = js.replace(" {id:'num',n:'Números do planner'", " {id:'vj',n:'Visita × janela',g:'Planner',ic:'chart',sub:'Planner congelado: dia de visita × próxima janela de entrega'},\n {id:'vjs',n:'Visita × janela',g:'Checklist 3.4',ic:'chart',sub:'Semana a semana: relatórios de visita × janela de entrega'},\n {id:'num',n:'Números do planner'",1)
 js = js.replace("'res','todos','setor','dia','pdvvol','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol']", "'res','todos','setor','dia','pdvvol','vj','num','alt'].includes(id),usaK=['todos','setor','dia','pdvvol','vj']",1)
 # vendedor só pelo código do setor (sem nome)
 rep("<div class=\"sub\">Setor ${esc(UI.setor)} · ${esc(s.vn[UI.setor]||'')}</div>", "<div class=\"sub\">Setor ${esc(UI.setor)}</div>")
